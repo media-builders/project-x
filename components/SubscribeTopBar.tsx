@@ -9,12 +9,10 @@ import { Button } from "@/components/ui/button";
  */
 export default function SubscribeTopBar() {
   return (
-    <div className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur border-b">
-      <div className="mx-auto max-w-5xl px-4 py-3 flex items-center justify-end">
+
         <Link href="/auth/logout" prefetch={false}>
           <Button variant="outline">Log out</Button>
         </Link>
-      </div>
-    </div>
+
   );
 }
