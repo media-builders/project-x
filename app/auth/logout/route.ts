@@ -4,13 +4,14 @@ import { createClient } from "@/utils/supabase/server";
 
 /**
  * GET /auth/logout
- * Server route to invalidate the Supabase session and redirect to /login.
- * Keeps secrets on the server; safe to link from any page (client or server).
+ * Invalidates Supabase session and redirects to /login.
  */
 export async function GET() {
   const supabase = createClient();
-  // clear session cookies
   await supabase.auth.signOut();
-  // Redirect to the login screen after logout
-  return NextResponse.redirect(new URL("/login", process.env.NEXT_PUBLIC_WEBSITE_URL || "https://project-x-gamma-five.vercel.app/"));
+
+  const base =
+    process.env.NEXT_PUBLIC_WEBSITE_URL?.replace(/\/+$/, "") ||
+    "https://project-x-gamma-five.vercel.app/";
+  return NextResponse.redirect(new URL("/login", base));
 }
