@@ -1,5 +1,7 @@
-// app/subscribe/page.tsx (add these two lines)
-import LogoutButton from "@/components/LogoutButton";
+// app/subscribe/page.tsx
+import SubscribeTopBar from "@/components/SubscribeTopBar"; // [ADD THIS IMPORT]
+
+
 import StripePricingTable from "@/components/StripePricingTable";
 import Image from "next/image"
 import { createClient } from '@/utils/supabase/server'
@@ -20,9 +22,9 @@ export default async function Subscribe() {
             <div className="w-full py-20 lg:py-32 xl:py-40">
                 <div className="text-center py-6 md:py-10 lg:py-12 ">
                     <h1 className="font-bold text-xl md:text-3xl lg:text-4xl ">Pricing Test</h1>
-                    <div className="flex justify-end mb-4"><LogoutButton /></div>
                     <h1 className="pt-4 text-muted-foreground text-sm md:text-md lg:text-lg">Choose the right plan for your team! Cancel anytime!</h1>
                 </div>
+                <SubscribeTopBar />
                 <StripePricingTable checkoutSessionSecret={checkoutSessionSecret} />
             </div>
         </div>
