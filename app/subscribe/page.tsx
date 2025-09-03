@@ -46,7 +46,7 @@ export default async function Subscribe() {
 
         {/* 3) Render pricing table always for logged-in not-subscribed users.
                Your StripePricingTable should accept a nullable secret. */}
-        <StripePricingTable checkoutSessionSecret={checkoutSessionSecret ?? ''} />
+        <StripePricingTable checkoutSessionSecret={checkoutSessionSecret} />
       </div>
     </div>
   );

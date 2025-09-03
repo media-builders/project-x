@@ -1,23 +1,24 @@
-"use client"
-import React, { useState, useEffect } from 'react';
+'use client';
 
-declare global {
-    namespace JSX {
-        interface IntrinsicElements {
-            'stripe-pricing-table': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
-        }
-    }
-}
-export default function StripePricingTable({ checkoutSessionSecret }: { checkoutSessionSecret: string }) {
-
-    return (
-        <stripe-pricing-table
-            pricing-table-id={process.env.NEXT_PUBLIC_STRIPE_PRICING_TABLE_ID}
-            publishable-key={process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
-            customer-session-client-secret={checkoutSessionSecret}
-        >
-        </stripe-pricing-table>
-    )
-
-
+type Props = {
+  checkoutSessionSecret?: string; // optional
 };
+
+export default function StripePricingTable({ checkoutSessionSecret }: Props) {
+  const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!;
+  const pricingTableId = process.env.NEXT_PUBLIC_STRIPE_PRICING_TABLE_ID!;
+
+  return (
+    <div className="container mx-auto px-4">
+      <stripe-pricing-table
+        pricing-table-id={pricingTableId}
+        publishable-key={publishableKey}
+        {...(
+          checkoutSessionSecret
+            ? { 'customer-session-client-secret': checkoutSessionSecret }
+            : {}
+        )}
+      />
+    </div>
+  );
+}
