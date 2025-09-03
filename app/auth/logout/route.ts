@@ -12,5 +12,5 @@ export async function GET() {
   // clear session cookies
   await supabase.auth.signOut();
   // Redirect to the login screen after logout
-  return NextResponse.redirect(new URL("/login", process.env.NEXT_PUBLIC_WEBSITE_URL || "http://localhost:3000"));
+  return NextResponse.redirect(new URL("/login", process.env.NEXT_PUBLIC_WEBSITE_URL || "https://project-x-gamma-five.vercel.app/"));
 }

@@ -1,6 +1,4 @@
-// app/subscribe/page.tsx
-import SubscribeTopBar from "@/components/SubscribeTopBar"; // [ADD THIS IMPORT]
-
+import SubscribeTopBar from "@/components/SubscribeTopBar";
 
 import StripePricingTable from "@/components/StripePricingTable";
 import Image from "next/image"
