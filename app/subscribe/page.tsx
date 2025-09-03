@@ -5,9 +5,6 @@ import Image from "next/image"
 import { createClient } from '@/utils/supabase/server'
 import { createStripeCheckoutSession } from "@/utils/stripe/api";
 
-// [ADD] Import the fixed logout FAB
-import SubscribeLogoutFab from "@/components/SubscribeLogoutFab";
-
 export default async function Subscribe() {
     const supabase = createClient()
     const {
@@ -21,9 +18,6 @@ export default async function Subscribe() {
                 <Image src="/logo.png" alt="logo" width={50} height={50} />
                 <span className="sr-only">Acme Inc</span>
             </header>
-
-            {/* [ADD] Fixed Logout button that always shows (above overlays) */}
-            <SubscribeLogoutFab />
 
             <div className="w-full py-20 lg:py-32 xl:py-40">
                 <div className="text-center py-6 md:py-10 lg:py-12 ">
