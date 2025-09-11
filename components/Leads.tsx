@@ -2,27 +2,27 @@
 
 export default function LeadsTable() {
   return (
-    <table class="contact-table">
+    <table className="contact-table">
     <thead>
       <tr>
-        <th class="header-cell">First Name</th>
-        <th class="header-cell">Last Name</th>
-        <th class="header-cell">Email</th>
-        <th class="header-cell">Phone Number</th>
+        <th className="header-cell">First Name</th>
+        <th className="header-cell">Last Name</th>
+        <th className="header-cell">Email</th>
+        <th className="header-cell">Phone Number</th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td class="data-cell">Jane</td>
-        <td class="data-cell">Doe</td>
-        <td class="data-cell">jane.doe@example.com</td>
-        <td class="data-cell">(555) 123-4567</td>
+        <td className="data-cell">Jane</td>
+        <td className="data-cell">Doe</td>
+        <td className="data-cell">jane.doe@example.com</td>
+        <td className="data-cell">(555) 123-4567</td>
       </tr>
       <tr>
-        <td class="data-cell">John</td>
-        <td class="data-cell">Smith</td>
-        <td class="data-cell">john.smith@example.com</td>
-        <td class="data-cell">(555) 987-6543</td>
+        <td className="data-cell">John</td>
+        <td className="data-cell">Smith</td>
+        <td className="data-cell">john.smith@example.com</td>
+        <td className="data-cell">(555) 987-6543</td>
       </tr>
     </tbody>
   </table>
