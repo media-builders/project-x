@@ -11,25 +11,12 @@ type Lead = {
   featured?: boolean;
 };
 
-export default function Leads() {
+export default function LeadsTable() {
   // Demo seed; replaced on Import
   const initialRows: Lead[] = useMemo(
     () => [
-      {
-        id: "jane",
-        first: "Jane",
-        last: "Doe",
-        email: "jane.doe@example.com",
-        phone: "(555) 123-4567",
-      },
-      {
-        id: "john",
-        first: "John",
-        last: "Smith",
-        email: "john.smith@example.com",
-        phone: "(555) 987-6543",
-        featured: true,
-      },
+      { id: "jane", first: "Jane", last: "Doe", email: "jane.doe@example.com", phone: "(555) 123-4567" },
+      { id: "john", first: "John", last: "Smith", email: "john.smith@example.com", phone: "(555) 987-6543", featured: true },
     ],
     []
   );
@@ -55,18 +42,15 @@ export default function Leads() {
     );
   };
 
-  // Import from our secure API route (app/api/leads/route.ts -> utils/fub.ts)
+  // Import via our server route -> utils/fub.ts
   const handleImport = useCallback(async () => {
     try {
       setImporting(true);
-      const res = await fetch("/api/leads", {
-        method: "GET",
-        headers: { accept: "application/json" },
-      });
+      const res = await fetch("/api/leads", { method: "GET", headers: { accept: "application/json" } });
       if (!res.ok) throw new Error(`Import failed (${res.status})`);
       const data: { people: Lead[] } = await res.json();
       setRows(data.people ?? []);
-      setSelected([]); // clear selections after import
+      setSelected([]);
     } catch (e) {
       console.error(e);
       alert("Import failed. See console for details.");
@@ -80,21 +64,11 @@ export default function Leads() {
       {/* Toolbar */}
       <div className="table-toolbar" role="toolbar" aria-label="Leads actions">
         <div className="table-actions">
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={handleImport}
-            disabled={importing}
-            aria-label="Import leads"
-          >
+          <button type="button" className="btn btn-ghost" onClick={handleImport} disabled={importing}>
             {importing ? "Importing…" : "Import"}
           </button>
-          <button type="button" className="btn btn-ghost" aria-label="Export leads">
-            Export
-          </button>
-          <button type="button" className="btn btn-ghost" aria-label="Sync leads">
-            Sync
-          </button>
+          <button type="button" className="btn btn-ghost">Export</button>
+          <button type="button" className="btn btn-ghost">Sync</button>
         </div>
 
         <div className="secondary-actions">
@@ -103,7 +77,6 @@ export default function Leads() {
             className="btn btn-primary"
             onClick={handleCall}
             disabled={selected.length === 0}
-            aria-label="Call selected leads"
           >
             Call Lead{selected.length > 1 ? "s" : ""}
           </button>
@@ -120,12 +93,7 @@ export default function Leads() {
             <thead>
               <tr>
                 <th scope="col" className="header-cell checkbox-cell">
-                  <input
-                    type="checkbox"
-                    aria-label="Select all leads"
-                    checked={allSelected}
-                    onChange={toggleAll}
-                  />
+                  <input type="checkbox" aria-label="Select all leads" checked={allSelected} onChange={toggleAll} />
                 </th>
                 <th scope="col" className="header-cell">First Name</th>
                 <th scope="col" className="header-cell">Last Name</th>
@@ -133,7 +101,6 @@ export default function Leads() {
                 <th scope="col" className="header-cell">Phone Number</th>
               </tr>
             </thead>
-
             <tbody>
               {rows.map((r) => {
                 const isChecked = selected.includes(r.id);
