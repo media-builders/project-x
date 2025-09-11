@@ -190,7 +190,6 @@
 /* Hover elevation */
 .contact-table tbody tr.row:hover{
   background: var(--tbl-row-hover);
-  transform: translateY(-1px);
   box-shadow: var(--tbl-shadow);
 }
 
