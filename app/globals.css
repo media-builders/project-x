@@ -103,34 +103,57 @@ body{
 }
 
 /* ============ LAYOUT PANELS ============ */
+/* === Dash layout: remove spacing between panels === */
 .dashboard{
-  min-height: 100vh;
+  /* keep outer padding if you like, but no gap between children */
   padding: 24px;
-  gap: 24px;
-  background: transparent;           /* let page gradient show */
-  border: none;
-  display: flex;
+  gap: 0 !important;                  /* was 16–24px */
 }
 
+/* === Sidebar & Main: fuse the seam === */
 .dashboard-menu{
-  flex: 0 0 260px;
-  background: var(--navy-1);
-  border: 1px solid var(--hairline);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-outer);
-  padding: 18px 10px;
+  /* keep your existing bg/gradient */
+  margin: 0 !important;
+  border-right: none !important;      /* no double border at seam */
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  /* ensure the panel height stretches to match */
+  display: flex;
+  flex-direction: column;
 }
 
 .dashboard-window{
-  flex: 1 1 auto;
-  background: var(--surface);
-  border: 1px solid var(--hairline);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-outer);
-  padding: 22px 22px 28px;
-  overflow: hidden;
-  color: var(--txt-1);
+  margin: 0 !important;
+  border-left: none !important;       /* no double border at seam */
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
 }
+
+/* Optional: make both panels share the same outer shadow look */
+.dashboard-menu,
+.dashboard-window{
+  box-shadow: 0 22px 50px rgba(16,27,55,.45); /* keep consistent */
+}
+
+/* Optional: tighter sidebar padding so content aligns with table */
+.dashboard-menu{ padding: 16px 10px; }
+.dashboard-window{ padding: 22px; }
+
+/* Responsive: still no gap when stacking */
+@media (max-width: 760px){
+  .dashboard{ padding: 16px; }
+  .dashboard-menu{
+    border-right: 1px solid var(--hairline) !important; /* back when stacked */
+    border-bottom: none !important;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+  }
+  .dashboard-window{
+    border-left: 1px solid var(--hairline) !important;
+    border-top: none !important;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg) !important;
+  }
+}
+
 
 /* Optional panel section title inside main area */
 .table-title{
@@ -229,19 +252,4 @@ body{
 .contact-table tr:nth-child(even) .data-cell{
   background: transparent !important;
   border-color: var(--hairline);
-}
-
-/* Spacing at table bottom like pagination bar space in the mock */
-.dashboard-window .table-footer-space{
-  height: 24px;
-}
-
-/* Responsive tweaks */
-@media (max-width: 1024px){
-  .dashboard{ padding: 16px; gap: 16px; }
-  .dashboard-menu{ flex-basis: 230px; }
-}
-@media (max-width: 760px){
-  .dashboard{ flex-direction: column; }
-  .dashboard-menu{ flex-basis: auto; width: 100%; }
 }
