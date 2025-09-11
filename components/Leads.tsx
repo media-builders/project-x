@@ -1,4 +1,5 @@
 // components/LeadsTable.tsx
+// Minimal structural tweaks only: wrapper, title, row classes, and optional "is-featured" flag.
 
 export default function LeadsTable() {
   return (
@@ -16,20 +17,21 @@ export default function LeadsTable() {
               <th scope="col" className="header-cell">Phone Number</th>
             </tr>
           </thead>
+
           <tbody>
             <tr className="row">
-              <td className="data-cell">Jane</td>
-              <td className="data-cell">Doe</td>
-              <td className="data-cell">jane.doe@example.com</td>
-              <td className="data-cell">(555) 123-4567</td>
+              <td className="data-cell" data-label="First Name">Jane</td>
+              <td className="data-cell" data-label="Last Name">Doe</td>
+              <td className="data-cell" data-label="Email">jane.doe@example.com</td>
+              <td className="data-cell" data-label="Phone Number">(555) 123-4567</td>
             </tr>
 
-            {/* Add this class to any row you want visually emphasized */}
+            {/* Add `is-featured` to any row you want accented (gold text like the screenshot) */}
             <tr className="row is-featured">
-              <td className="data-cell">John</td>
-              <td className="data-cell">Smith</td>
-              <td className="data-cell">john.smith@example.com</td>
-              <td className="data-cell">(555) 987-6543</td>
+              <td className="data-cell" data-label="First Name">John</td>
+              <td className="data-cell" data-label="Last Name">Smith</td>
+              <td className="data-cell" data-label="Email">john.smith@example.com</td>
+              <td className="data-cell" data-label="Phone Number">(555) 987-6543</td>
             </tr>
           </tbody>
         </table>
