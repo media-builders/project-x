@@ -69,15 +69,15 @@ export default async function LandingPage() {
             <div className="flex flex-col space-y-4 md:w-1/2 w-full ">
               <div className="space-y-2">
                 <h1 className="text-2xl  tracking-tighter sm:text-3xl md:text-4xl lg:text-5xl/none">
-                  BrokerNest.ai
+                  Never Lose Another Lead Again
                 </h1>
                 <p className=" text-muted-foreground md:text-xl">
-                  The Future of Real Estate AI
+                  An AI-powered real estate CRM that works while you’re showing homes—auto-dialing, logging, and requalifying so no contact slips through the cracks
                 </p>
               </div>
               <div className="space-x-4">
-                <Button>Get Started</Button>
-                <Button variant="outline">Learn More</Button>
+                <Button>Start Free Trial</Button>
+                <Button variant="outline">Get Your AI Assistant Today</Button>
               </div>
             </div>
             <div className="w-full md:w-1/2  flex justify-center">
@@ -93,22 +93,22 @@ export default async function LandingPage() {
                 <div className="p-2 bg-primary/10 rounded-full">
                   <Coins className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold">Payments</h3>
-                <p className="text-muted-foreground text-center">Seamlesly integrate Stripe Billing to capture subscription payments - Webhooks and all</p>
+                <h3 className="text-xl font-bold">AI Dialer</h3>
+                <p className="text-muted-foreground text-center">Respond faster than any competitor—book while you show.</p>
               </div>
               <div className="flex flex-col items-center space-y-2 border-muted-foreground/10 p-4 rounded-lg">
                 <div className="p-2 bg-primary/10 rounded-full">
                   <UserCheck className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold">Auth</h3>
-                <p className="text-muted-foreground text-center">Utilize our preexisting Superbase integration to auth your users and secure your app </p>
+                <h3 className="text-xl font-bold">Auto Call Logging</h3>
+                <p className="text-muted-foreground text-center">Every detail captured without lifting a pen</p>
               </div>
               <div className="flex flex-col items-center space-y-2 border-muted-foreground/10 p-4 rounded-lg">
                 <div className="p-2 bg-primary/10 rounded-full">
                   <Database className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold">Database</h3>
-                <p className="text-muted-foreground text-center">Hook into any PostgresDB instance</p>
+                <h3 className="text-xl font-bold">Lead Requalification Engine</h3>
+                <p className="text-muted-foreground text-center">Breathes life into “dead” leads, turning your database into hidden revenue.</p>
               </div>
             </div>
           </div>
@@ -124,7 +124,7 @@ export default async function LandingPage() {
                       <Star key={i} className="w-5 h-5 fill-primary text-primary" />
                     ))}
                   </div>
-                  <p className="text-muted-foreground mb-2">&quot;This product has revolutionized our workflow. Highly recommended!&quot;</p>
+                  <p className="text-muted-foreground mb-2">&quot;I believe missing follow-ups is costing me money.&quot;</p>
                   <p className="font-semibold">- Sarah J., CEO</p>
                 </CardContent>
               </Card>
@@ -135,7 +135,7 @@ export default async function LandingPage() {
                       <Star key={i} className="w-5 h-5 fill-primary text-primary" />
                     ))}
                   </div>
-                  <p className="text-muted-foreground mb-2">&quot;Wow everything is already integrated! Less time configuring, more time building!.&quot;</p>
+                  <p className="text-muted-foreground mb-2">&quot;I believe AI can help without replacing my personal touch.&quot;</p>
                   <p className="font-semibold">- Mark T., CTO</p>
                 </CardContent>
               </Card>
@@ -146,7 +146,7 @@ export default async function LandingPage() {
                       <Star key={i} className="w-5 h-5 fill-primary text-primary" />
                     ))}
                   </div>
-                  <p className="text-muted-foreground mb-2">&quot;We&aposve seen a 200% increase in productivity since implementing this solution.&quot;</p>
+                  <p className="text-muted-foreground mb-2">&quot;I believe this CRM is simple enough for me to actually use.&quot;</p>
                   <p className="font-semibold">- Emily R., Operations Manager</p>
                 </CardContent>
               </Card>
@@ -184,7 +184,7 @@ export default async function LandingPage() {
                       className="text-sm font-medium hover:underline underline-offset-4 w-full" 
                       href={`/signup?plan=${product.id}`}
                     >
-                      <Button className="w-full">Get Started</Button>
+                      <Button className="w-full">Start Free Trial</Button>
                     </Link>
                   </CardFooter>
                 </Card>
@@ -196,14 +196,14 @@ export default async function LandingPage() {
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Start Your Journey Today</h2>
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Your Next Closing Is Already in Your Phone.</h2>
                 <p className="max-w-[600px] text-muted-foreground md:text-xl">
                   Join thousands of satisfied customers and take your business to the next level.
                 </p>
               </div>
               <div className="w-full max-w-sm space-y-2">
                 <Link className="btn" href="#">
-                  <Button className=" p-7" >Get Started</Button>
+                  <Button className=" p-7" >Start Free Trial</Button>
                 </Link>
               </div>
             </div>
