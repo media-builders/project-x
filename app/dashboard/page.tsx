@@ -1,5 +1,5 @@
 import LeadsTable from "@/components/Leads";
-
+import DashboardMenu from "@/components/DashboardMenu";
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 
@@ -17,13 +17,8 @@ export default async function Dashboard() {
                 Hello {data.user.email} welcome to BrokerNest
             </div>
             <div className="dashboard">
-                <div className="dashboard-menu">
-                    <ul>
-                        <li>Leads</li>
-                        <li>Settings</li>
-                    </ul>
-                </div>
-                <div className="dashboard-window">
+                <DashboardMenu />
+                
                     <LeadsTable />
                 </div>
             </div>
