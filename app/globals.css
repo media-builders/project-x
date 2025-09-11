@@ -330,3 +330,32 @@ body{
     justify-content: flex-end;
   }
 }
+
+/* Narrow checkbox column and consistent styling */
+.checkbox-cell{
+  width: 44px;
+  text-align: center;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
+/* Use the dashboard accent for checkboxes (supported in modern browsers) */
+.contact-table input[type="checkbox"]{
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--accent, #49b3ff);
+}
+
+/* When Call button is disabled */
+.btn.btn-primary:disabled{
+  opacity: .6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Optional: align mobile stacking labels when checkboxes are present */
+@media (max-width: 640px){
+  .checkbox-cell{ width: auto; }
+}
