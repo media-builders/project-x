@@ -87,33 +87,143 @@
   border: 1px solid black;
 }
 
-.contact-table {
-  width: 60%;
-  border-collapse: collapse;
-  margin: 20px auto;
-  font-family: Arial, sans-serif;
+/* ===== Accessible caption helper ===== */
+.sr-only{
+  position: absolute;
+  width:1px;height:1px;
+  padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0,0,0,0);
+  white-space:nowrap;border:0;
+}
+
+/* ===== Color tokens for the “Table #6” look ===== */
+:root{
+  --tbl-bg: #2e2d32;                /* page background */
+  --tbl-row: rgba(255,255,255,.045);
+  --tbl-row-hover: rgba(255,255,255,.075);
+  --tbl-row-featured: rgba(255,255,255,.09);
+  --tbl-text: rgba(255,255,255,.88);
+  --tbl-muted: rgba(255,255,255,.56);
+  --tbl-accent: #f5c76a;            /* soft gold */
+  --tbl-radius: 12px;
+  --tbl-shadow: 0 10px 28px rgba(0,0,0,.35);
+}
+
+/* Prefer Tailwind dark palette when .dark is present */
+.dark{
+  --tbl-bg: hsl(var(--background)); /* your dark bg already matches */
+}
+
+/* ===== Stage / container to mimic screenshot layout ===== */
+.table-viewport{
+  min-height: 100vh;
+  background: var(--tbl-bg);
+  display:flex;align-items:center;justify-content:center;
+  padding: 48px 24px;
+}
+.table-card{
+  width:100%;
+  max-width: 980px;
+}
+.table-title{
+  color: var(--tbl-muted);
   font-size: 14px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  margin: 0 0 18px 8px;
 }
 
-.contact-table tr {
-  height: 25px;
+/* ===== Table reset to switch from gridlines to spaced “pill” rows ===== */
+.contact-table{
+  width:100%;
+  border-collapse: separate !important; /* override previous collapse */
+  border-spacing: 0 14px;               /* gaps between rows */
+  table-layout: fixed;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-size: 14px;
+  color: var(--tbl-text);
+  margin: 0 auto;                       /* center like screenshot */
 }
 
+/* Remove old borders/backgrounds that were set earlier */
+.contact-table .header-cell,
+.contact-table .data-cell{
+  border: none !important;
+  background: transparent;
+}
 
-.contact-table .header-cell {
-  background-color: #f2f2f2;
-  border: 1px solid #333;
-  padding: 8px 12px;
+/* Header: muted, uppercase, letter-spaced */
+.contact-table thead th.header-cell{
+  color: var(--tbl-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  font-size: 12px;
+  padding: 12px 20px;
   text-align: left;
-  font-weight: bold;
 }
 
-.contact-table .data-cell {
-  border: 1px solid #333;
-  padding: 8px 12px;
-  text-align: left;
+/* Row “cards” */
+.contact-table tbody tr.row{
+  background: var(--tbl-row);
+  transition: background .2s ease, transform .2s ease, box-shadow .2s ease;
 }
 
-.contact-table tr:nth-child(even) .data-cell {
-  background-color: #fafafa;
+/* Rounded row ends */
+.contact-table tbody tr.row td:first-child{
+  border-top-left-radius: var(--tbl-radius);
+  border-bottom-left-radius: var(--tbl-radius);
+}
+.contact-table tbody tr.row td:last-child{
+  border-top-right-radius: var(--tbl-radius);
+  border-bottom-right-radius: var(--tbl-radius);
+}
+
+/* Cells */
+.contact-table tbody td.data-cell{
+  padding: 18px 20px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Hover elevation */
+.contact-table tbody tr.row:hover{
+  background: var(--tbl-row-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--tbl-shadow);
+}
+
+/* Featured row with gold accents (matches screenshot emphasis) */
+.contact-table tbody tr.is-featured{
+  background: var(--tbl-row-featured);
+}
+.contact-table tbody tr.is-featured td:nth-child(1),
+.contact-table tbody tr.is-featured td:nth-child(2){
+  color: var(--tbl-accent);
+  font-weight: 600;
+}
+
+/* Optional: subtle wider padding on large screens */
+@media (min-width: 900px){
+  .contact-table thead th.header-cell{ padding-left: 24px; padding-right: 24px; }
+  .contact-table tbody td.data-cell{   padding-left: 24px; padding-right: 24px; }
+}
+
+/* Mobile-friendly stacking with inline labels */
+@media (max-width: 640px){
+  .contact-table{ border-spacing: 0 10px; }
+  .contact-table thead{ display:none; }
+  .contact-table tbody tr.row{ display:block; }
+  .contact-table tbody td.data-cell{
+    display:flex; justify-content:space-between; gap:12px;
+    padding:12px 16px; font-size:13px;
+  }
+  .contact-table tbody td.data-cell::before{
+    content: attr(data-label);
+    color: var(--tbl-muted);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    font-size: 11px;
+  }
 }
