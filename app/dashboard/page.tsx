@@ -15,7 +15,7 @@ export default async function Dashboard() {
             <div className="container">
                 Hello {data.user.email} welcome to BrokerNest
             </div>
-            <div>
+            <div className="dashboard">
                 <div className="dashboard-menu">
                     <ul>
                         <li>Leads</li>

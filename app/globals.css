@@ -68,6 +68,17 @@
   }
 }
 
-.dashboard-menu {}
+.dashboard {
+  display: flex;
+  flex-direction: row;
+}
 
-.dashboard-window {}
+.dashboard-menu {
+  display: flex;
+  width: 20%;
+}
+
+.dashboard-window {
+  display: flex;
+  width: 80%;
+}
