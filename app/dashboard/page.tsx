@@ -13,7 +13,7 @@ export default async function Dashboard() {
     return (
         <main className="flex-1">
             <div className="container">
-                Hello {data.user.email}
+                Hello {data.user.email} welcome to BrokerNest
             </div>
             <div>
                 <div class="dashboard-menu">
