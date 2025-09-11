@@ -14,11 +14,13 @@ export default async function Dashboard() {
     return (
         <main className="flex-1">
             <div className="dashboard">
-            <div className="container">
-                Hello {data.user.email} welcome to BrokerNest
-            </div>
-                <DashboardMenu />
-                <LeadsTable />
+                <div className="container">
+                    Hello {data.user.email} welcome to BrokerNest
+                </div>
+                <div>
+                    <DashboardMenu />
+                    <LeadsTable />
+                </div>
             </div>
         </main>)
 
