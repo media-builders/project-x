@@ -181,7 +181,7 @@ export default async function LandingPage() {
                       <Star key={i} className="w-5 h-5 fill-primary text-primary" />
                     ))}
                   </div>
-                  <p className="text-muted-foreground mb-2">&quot;I believe missing follow-ups is costing me money.&quot;</p>
+                  <p className="text-muted-foreground mb-2">&quot;Before this, I was drowning in sticky notes and half-finished follow-ups. Now every lead is called, logged, and organized automatically. I picked up 3 extra closings last quarter just from leads I would’ve forgotten about.&quot;</p>
                   <p className="font-semibold">- Sarah J., CEO</p>
                 </CardContent>
               </Card>
@@ -192,7 +192,7 @@ export default async function LandingPage() {
                       <Star key={i} className="w-5 h-5 fill-primary text-primary" />
                     ))}
                   </div>
-                  <p className="text-muted-foreground mb-2">&quot;I believe AI can help without replacing my personal touch.&quot;</p>
+                  <p className="text-muted-foreground mb-2">&quot;What blew me away was how fast the AI dialer responds. I had a new Zillow lead come in while I was showing a property, and by the time I got back to my car, an appointment was already on my calendar. It’s like having a full-time assistant I don’t have to manage.&quot;</p>
                   <p className="font-semibold">- Mark T., CTO</p>
                 </CardContent>
               </Card>
@@ -203,7 +203,7 @@ export default async function LandingPage() {
                       <Star key={i} className="w-5 h-5 fill-primary text-primary" />
                     ))}
                   </div>
-                  <p className="text-muted-foreground mb-2">&quot;I believe this CRM is simple enough for me to actually use.&quot;</p>
+                  <p className="text-muted-foreground mb-2">&quot;I’ve tried other CRMs, but they were too complicated. This one actually feels like it was built for real estate agents. Setup was easy, and now I wake up every day with a short list of who to call—no overwhelm, just results.&quot;</p>
                   <p className="font-semibold">- Emily R., Operations Manager</p>
                 </CardContent>
               </Card>
