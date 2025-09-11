@@ -1,5 +1,6 @@
-import { redirect } from 'next/navigation'
+import LeadsTable from "@/components/Leads";
 
+import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 
 export default async function Dashboard() {
@@ -22,7 +23,9 @@ export default async function Dashboard() {
                         <li>Settings</li>
                     </ul>
                 </div>
-                <div className="dashboard-window"></div>
+                <div className="dashboard-window">
+                    <LeadsTable />
+                </div>
             </div>
         </main>)
 
