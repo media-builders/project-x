@@ -15,6 +15,15 @@ export default async function Dashboard() {
             <div className="container">
                 Hello {data.user.email}
             </div>
+            <div>
+                <div class="dashboard-menu">
+                    <ul>
+                        <li>Leads</li>
+                        <li>Settings</li>
+                    </ul>
+                </div>
+                <div class="dashboard-window"></div>
+            </div>
         </main>)
 
 }
