@@ -132,39 +132,39 @@ export default async function LandingPage() {
                 <div className="p-2 bg-primary/10 rounded-full">
                   <Database className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold">Lead Requalification Engine</h3>
-                <p className="text-muted-foreground text-center">Turn “dead” leads into booked appointments.</p>
-                <p className="text-muted-foreground text-center">Your database is full of hidden money. The system re-engages old leads with natural, human-sounding outreach that feels personal—not robotic. Agents report booking 5–10 extra appointments a month just from contacts they’d written off.</p>
+                <h3 className="text-xl font-bold">Compliance Guard (TCPA Safe)</h3>
+                <p className="text-muted-foreground text-center">Protect your reputation, brand, and wallet.</p>
+                <p className="text-muted-foreground text-center">Every text, call, and outreach workflow is designed to meet TCPA guidelines so you don’t get hit with fines or risk looking “spammy.” Trust is baked into the system.</p>
                 <ul>
-                  <li>Re-engages past internet leads & sphere-of-influence</li>
-                  <li>Detects buyer/seller intent from replies & actions</li>
-                  <li>Auto-books callbacks when interest resurfaces</li>
+                  <li>Automatic opt-in/opt-out management</li>
+                  <li>Quiet hours + Do Not Call scrubbing built in</li>
+                  <li>Templates tuned to sound like you, not a robot</li>
                 </ul>
               </div>
               <div className="flex flex-col items-center space-y-2 border-muted-foreground/10 p-4 rounded-lg">
                 <div className="p-2 bg-primary/10 rounded-full">
                   <Database className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold">Lead Requalification Engine</h3>
-                <p className="text-muted-foreground text-center">Turn “dead” leads into booked appointments.</p>
-                <p className="text-muted-foreground text-center">Your database is full of hidden money. The system re-engages old leads with natural, human-sounding outreach that feels personal—not robotic. Agents report booking 5–10 extra appointments a month just from contacts they’d written off.</p>
+                <h3 className="text-xl font-bold">Next-Best Action Dashboard</h3>
+                <p className="text-muted-foreground text-center">Wake up every morning knowing exactly what to do.</p>
+                <p className="text-muted-foreground text-center">The CRM prioritizes your tasks based on intent signals, timing, and conversation history. No more guesswork—just a short, focused list that keeps your pipeline moving.</p>
                 <ul>
-                  <li>Re-engages past internet leads & sphere-of-influence</li>
-                  <li>Detects buyer/seller intent from replies & actions</li>
-                  <li>Auto-books callbacks when interest resurfaces</li>
+                  <li>AI ranks leads daily by urgency and likelihood</li>
+                  <li>Generates call, text, and follow-up reminders automatically</li>
+                  <li>Helps solo agents stay consistent without overwhelm</li>
                 </ul>
               </div>
               <div className="flex flex-col items-center space-y-2 border-muted-foreground/10 p-4 rounded-lg">
                 <div className="p-2 bg-primary/10 rounded-full">
                   <Database className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold">Lead Requalification Engine</h3>
-                <p className="text-muted-foreground text-center">Turn “dead” leads into booked appointments.</p>
-                <p className="text-muted-foreground text-center">Your database is full of hidden money. The system re-engages old leads with natural, human-sounding outreach that feels personal—not robotic. Agents report booking 5–10 extra appointments a month just from contacts they’d written off.</p>
+                <h3 className="text-xl font-bold">One-Day Setup & Solo-Friendly Onboarding</h3>
+                <p className="text-muted-foreground text-center">No “set-up tax,” no headaches.</p>
+                <p className="text-muted-foreground text-center">Other CRMs bury you in training videos. This one comes pre-loaded with real estate-specific templates and workflows. You’ll be live in a day, not weeks.</p>
                 <ul>
-                  <li>Re-engages past internet leads & sphere-of-influence</li>
-                  <li>Detects buyer/seller intent from replies & actions</li>
-                  <li>Auto-books callbacks when interest resurfaces</li>
+                  <li>Done-for-you setup with plug-and-play flows</li>
+                  <li>Import leads via CSV or CRM in seconds</li>
+                  <li>Simple UI designed for non-technical agents</li>
                 </ul>
               </div>
             </div>
