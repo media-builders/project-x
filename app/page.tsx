@@ -128,6 +128,45 @@ export default async function LandingPage() {
                   <li>Auto-books callbacks when interest resurfaces</li>
                 </ul>
               </div>
+              <div className="flex flex-col items-center space-y-2 border-muted-foreground/10 p-4 rounded-lg">
+                <div className="p-2 bg-primary/10 rounded-full">
+                  <Database className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-bold">Lead Requalification Engine</h3>
+                <p className="text-muted-foreground text-center">Turn “dead” leads into booked appointments.</p>
+                <p className="text-muted-foreground text-center">Your database is full of hidden money. The system re-engages old leads with natural, human-sounding outreach that feels personal—not robotic. Agents report booking 5–10 extra appointments a month just from contacts they’d written off.</p>
+                <ul>
+                  <li>Re-engages past internet leads & sphere-of-influence</li>
+                  <li>Detects buyer/seller intent from replies & actions</li>
+                  <li>Auto-books callbacks when interest resurfaces</li>
+                </ul>
+              </div>
+              <div className="flex flex-col items-center space-y-2 border-muted-foreground/10 p-4 rounded-lg">
+                <div className="p-2 bg-primary/10 rounded-full">
+                  <Database className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-bold">Lead Requalification Engine</h3>
+                <p className="text-muted-foreground text-center">Turn “dead” leads into booked appointments.</p>
+                <p className="text-muted-foreground text-center">Your database is full of hidden money. The system re-engages old leads with natural, human-sounding outreach that feels personal—not robotic. Agents report booking 5–10 extra appointments a month just from contacts they’d written off.</p>
+                <ul>
+                  <li>Re-engages past internet leads & sphere-of-influence</li>
+                  <li>Detects buyer/seller intent from replies & actions</li>
+                  <li>Auto-books callbacks when interest resurfaces</li>
+                </ul>
+              </div>
+              <div className="flex flex-col items-center space-y-2 border-muted-foreground/10 p-4 rounded-lg">
+                <div className="p-2 bg-primary/10 rounded-full">
+                  <Database className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-bold">Lead Requalification Engine</h3>
+                <p className="text-muted-foreground text-center">Turn “dead” leads into booked appointments.</p>
+                <p className="text-muted-foreground text-center">Your database is full of hidden money. The system re-engages old leads with natural, human-sounding outreach that feels personal—not robotic. Agents report booking 5–10 extra appointments a month just from contacts they’d written off.</p>
+                <ul>
+                  <li>Re-engages past internet leads & sphere-of-influence</li>
+                  <li>Detects buyer/seller intent from replies & actions</li>
+                  <li>Auto-books callbacks when interest resurfaces</li>
+                </ul>
+              </div>
             </div>
           </div>
         </section>
