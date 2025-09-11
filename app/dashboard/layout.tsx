@@ -10,8 +10,8 @@ import { eq } from "drizzle-orm";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-    title: "SAAS Starter Kit",
-    description: "SAAS Starter Kit with Stripe, Supabase, Postgres",
+    title: "BrokerNest.ai",
+    description: "AI CRM Dialer",
 };
 
 export default async function DashboardLayout({

@@ -44,7 +44,7 @@ export default async function LandingPage() {
       <header className="px-4 lg:px-6 h-16 flex items-center  bg-white border-b fixed border-b-slate-200 w-full">
         <Link className="flex items-center justify-center" href="#">
           <Image src="/logo.png" alt="logo" width={50} height={50} />
-          <span className="sr-only">Acme Inc</span>
+          <span className="sr-only">BrokerNest.ai</span>
         </Link>
         <nav className="ml-auto flex gap-4 sm:gap-6">
           <a className="text-sm font-medium hover:underline underline-offset-4" href="#features">
