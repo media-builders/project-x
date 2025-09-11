@@ -15,8 +15,7 @@ export default function LeadsTable() {
   // Demo seed; replaced on Import
   const initialRows: Lead[] = useMemo(
     () => [
-      { id: "jane", first: "Jane", last: "Doe", email: "jane.doe@example.com", phone: "(555) 123-4567" },
-      { id: "john", first: "John", last: "Smith", email: "john.smith@example.com", phone: "(555) 987-6543", featured: true },
+      
     ],
     []
   );
