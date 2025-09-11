@@ -13,14 +13,7 @@ export default async function Dashboard() {
 
   const user = data.user;
 
-  // 1) Try DB-backed profile name
-  const { data: profile, error: profileError } = await supabase
-    .from("users_table") // <-- your table
-    .select("name")
-    .eq("id", user.id)   // assumes `users_table.id` = auth.users.id
-    .maybeSingle();
-
-  // 2) Fall back to auth metadata or email
+  // Use only auth user_metadata or fallback to email
   const um = (user?.user_metadata || {}) as Record<string, unknown>;
   const fallbackMetaName =
     (typeof um.full_name === "string" && um.full_name) ||
@@ -30,9 +23,9 @@ export default async function Dashboard() {
       `${um.first_name} ${um.last_name}`) ||
     null;
 
-  const rawName = profile?.name || fallbackMetaName || user.email;
+  const rawName = fallbackMetaName || user.email;
 
-  // 3) Extract first name only
+  // Extract first name only
   const firstName =
     typeof rawName === "string" ? rawName.trim().split(/\s+/)[0] : rawName;
 
