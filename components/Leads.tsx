@@ -1,9 +1,25 @@
 // components/LeadsTable.tsx
 // Minimal structural tweaks only: wrapper, title, row classes, and optional "is-featured" flag.
+// Added: action toolbar with Import / Export / Sync, and a separate "Call Lead" button area.
 
 export default function LeadsTable() {
   return (
     <div className="dashboard-window">
+      {/* Top actions */}
+      <div className="table-toolbar" role="toolbar" aria-label="Leads actions">
+        <div className="table-actions">
+          <button type="button" className="btn btn-ghost" aria-label="Import leads">Import</button>
+          <button type="button" className="btn btn-ghost" aria-label="Export leads">Export</button>
+          <button type="button" className="btn btn-ghost" aria-label="Sync leads">Sync</button>
+        </div>
+
+        <div className="secondary-actions">
+          <button type="button" className="btn btn-primary" aria-label="Call selected lead">
+            Call Lead
+          </button>
+        </div>
+      </div>
+
       <div className="table-viewport">
         <div className="table-card">
           <h2 className="table-title">Leads</h2>
@@ -27,7 +43,7 @@ export default function LeadsTable() {
                 <td className="data-cell" data-label="Phone Number">(555) 123-4567</td>
               </tr>
 
-              {/* Add `is-featured` to any row you want accented (gold text like the screenshot) */}
+              {/* Add `is-featured` to any row you want accented */}
               <tr className="row is-featured">
                 <td className="data-cell" data-label="First Name">John</td>
                 <td className="data-cell" data-label="Last Name">Smith</td>
@@ -36,6 +52,9 @@ export default function LeadsTable() {
               </tr>
             </tbody>
           </table>
+
+          {/* spacer below table if you need room for pagination, etc. */}
+          <div className="table-footer-space" />
         </div>
       </div>
     </div>
