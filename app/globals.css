@@ -245,3 +245,88 @@ body{
   .dashboard{ flex-direction: column; }
   .dashboard-menu{ flex-basis: auto; width: 100%; }
 }
+
+/* ======= Toolbar layout (matches flat navy dashboard) ======= */
+.table-toolbar{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;  /* left: Import/Export/Sync, right: Call Lead */
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.table-actions{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.secondary-actions{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ======= Buttons (ghost + primary) ======= */
+.btn{
+  appearance: none;
+  border: 1px solid var(--hairline, rgba(255,255,255,.12));
+  background: transparent;
+  color: var(--txt-1, #e9f1ff);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  padding: 10px 14px;
+  border-radius: 10px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background .18s ease, border-color .18s ease, color .18s ease, transform .12s ease;
+}
+
+.btn:focus{
+  outline: 2px solid rgba(73,179,255,.35);
+  outline-offset: 2px;
+}
+
+/* Ghost buttons for Import/Export/Sync */
+.btn-ghost{
+  background: rgba(255,255,255,.06);
+  border-color: var(--hairline, rgba(255,255,255,.12));
+  color: var(--txt-2, #a9b8d9);
+}
+.btn-ghost:hover{
+  background: rgba(255,255,255,.10);
+  border-color: var(--hairline-2, rgba(255,255,255,.18));
+  color: var(--txt-1, #e9f1ff);
+}
+
+/* Primary action for Call Lead */
+.btn-primary{
+  background: linear-gradient(180deg, #5bc9ff, #49b3ff);
+  border-color: rgba(73,179,255,.55);
+  color: #07182d;
+  box-shadow: 0 6px 18px rgba(73,179,255,.28), inset 0 1px 0 rgba(255,255,255,.25);
+}
+.btn-primary:hover{
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+.btn-primary:active{
+  transform: translateY(0);
+}
+
+/* Keep toolbar snug with panel edges when you fused menu+window */
+.dashboard-window .table-toolbar{
+  margin-top: 2px;
+}
+
+/* Make sure buttons don’t wrap too early on smaller screens */
+@media (max-width: 640px){
+  .table-toolbar{
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .secondary-actions{
+    justify-content: flex-end;
+  }
+}
