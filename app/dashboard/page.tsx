@@ -16,13 +16,13 @@ export default async function Dashboard() {
                 Hello {data.user.email} welcome to BrokerNest
             </div>
             <div>
-                <div class="dashboard-menu">
+                <div className="dashboard-menu">
                     <ul>
                         <li>Leads</li>
                         <li>Settings</li>
                     </ul>
                 </div>
-                <div class="dashboard-window"></div>
+                <div className="dashboard-window"></div>
             </div>
         </main>)
 
