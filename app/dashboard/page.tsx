@@ -30,12 +30,16 @@ export default async function Dashboard() {
       `${um.first_name} ${um.last_name}`) ||
     null;
 
-  const displayName = profile?.name || fallbackMetaName || user.email;
+  const rawName = profile?.name || fallbackMetaName || user.email;
+
+  // 3) Extract first name only
+  const firstName =
+    typeof rawName === "string" ? rawName.trim().split(/\s+/)[0] : rawName;
 
   return (
     <main className="flex-1">
       <div className="container">
-        Hello {displayName} welcome to BrokerNest
+        Hello {firstName} welcome to BrokerNest
       </div>
       <div className="dashboard">
         <DashboardMenu />
