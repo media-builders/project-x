@@ -13,14 +13,24 @@ export default async function Dashboard() {
 
   const user = data.user;
 
-  // Fetch only from your custom users_table
+  // 1) Try DB-backed profile name
   const { data: profile, error: profileError } = await supabase
-    .from("users_table")
+    .from("users_table") // <-- your table
     .select("name")
-    .eq("id", user.id)   // assumes users_table.id = auth.users.id
+    .eq("id", user.id)   // assumes `users_table.id` = auth.users.id
     .maybeSingle();
 
-  const displayName = profile?.name; // <- no fallbacks
+  // 2) Fall back to auth metadata or email
+  const um = (user?.user_metadata || {}) as Record<string, unknown>;
+  const fallbackMetaName =
+    (typeof um.full_name === "string" && um.full_name) ||
+    (typeof um.name === "string" && um.name) ||
+    (typeof um.first_name === "string" &&
+      typeof um.last_name === "string" &&
+      `${um.first_name} ${um.last_name}`) ||
+    null;
+
+  const displayName = profile?.name || fallbackMetaName || user.email;
 
   return (
     <main className="flex-1">
