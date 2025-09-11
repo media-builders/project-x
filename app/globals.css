@@ -97,6 +97,10 @@
   font-size: 14px;
 }
 
+.contact-table tr {
+  height: 25px;
+}
+
 
 .contact-table .header-cell {
   background-color: #f2f2f2;
