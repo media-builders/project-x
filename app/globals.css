@@ -87,3 +87,32 @@
   width: 80%;
   border: 1px solid black;
 }
+
+
+.contact-table {
+  width: 60%;
+  border-collapse: collapse;
+  margin: 20px auto;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+}
+
+
+
+.contact-table .header-cell {
+  background-color: #f2f2f2;
+  border: 1px solid #333;
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: bold;
+}
+
+.contact-table .data-cell {
+  border: 1px solid #333;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.contact-table tr:nth-child(even) .data-cell {
+  background-color: #fafafa;
+}
