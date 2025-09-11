@@ -18,9 +18,7 @@ export default async function Dashboard() {
             </div>
             <div className="dashboard">
                 <DashboardMenu />
-                
-                    <LeadsTable />
-                </div>
+                <LeadsTable />
             </div>
         </main>)
 
