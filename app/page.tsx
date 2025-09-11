@@ -127,7 +127,7 @@ Your database is full of hidden money. The system re-engages old leads with natu
                 <ul>
                   <li>Re-engages past internet leads & sphere-of-influence</li>
                   <li>Detects buyer/seller intent from replies & actions</li>
-                  <li>Auto-books callbacks when interest resurfaces</li>
+                  <li>Auto-books callbacks when interest resurfaces </li>
                 </ul>
               </div>
             </div>
