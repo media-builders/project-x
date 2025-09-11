@@ -71,14 +71,18 @@
 .dashboard {
   display: flex;
   flex-direction: row;
+  border: 1px solid black;
 }
 
 .dashboard-menu {
   display: flex;
+  flex-direction: column;
   width: 20%;
+  border: 1px solid black;
 }
 
 .dashboard-window {
   display: flex;
   width: 80%;
+  border: 1px solid black;
 }
