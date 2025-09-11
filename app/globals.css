@@ -67,211 +67,181 @@
     @apply bg-background text-foreground;
   }
 }
+ /* ===============================
+   Navy / Blue Dashboard Theme
+   =============================== */
 
-/* ===== Accessible caption helper ===== */
-.sr-only{
-  position: absolute;
-  width:1px;height:1px;
-  padding:0;margin:-1px;
-  overflow:hidden;clip:rect(0,0,0,0);
-  white-space:nowrap;border:0;
-}
-
-/* ===== Color tokens for the “Table #6” look ===== */
+/* Palette + tokens */
 :root{
-  --tbl-bg: #2e2d32;                /* page background */
-  --tbl-row: rgba(255,255,255,.045);
-  --tbl-row-hover: rgba(255,255,255,.075);
-  --tbl-row-featured: rgba(255,255,255,.09);
-  --tbl-text: rgba(255,255,255,.88);
-  --tbl-muted: rgba(255,255,255,.56);
-  --tbl-accent: #f5c76a;            /* soft gold */
-  --tbl-radius: 12px;
-  --tbl-shadow: 0 10px 28px rgba(0,0,0,.35);
+  --sky-1: #d8e6ff;                    /* page glow */
+  --sky-2: #c5d8ff;
+
+  --navy-1: #0c1526;                   /* sidebar base */
+  --navy-2: #0f1f3d;                   /* panel top */
+  --navy-3: #122749;                   /* panel bottom */
+
+  --surface: linear-gradient(180deg, var(--navy-2), var(--navy-3));
+  --hdr-bg: rgba(255,255,255,.065);    /* table header background */
+  --row-hover: rgba(255,255,255,.045); /* table row hover */
+  --hairline: rgba(255,255,255,.12);   /* inner borders */
+  --hairline-2: rgba(255,255,255,.18); /* hover/active borders */
+
+  --txt-1: #e9f1ff;                    /* primary text */
+  --txt-2: #a9b8d9;                    /* secondary text */
+  --txt-3: #7f93bd;                    /* muted */
+
+  --accent: #49b3ff;                   /* active cyan */
+  --radius-lg: 18px;
+  --shadow-outer: 0 22px 50px rgba(16,27,55,.45);
 }
 
-/* Prefer Tailwind dark palette when .dark is present */
-.dark{
-  --tbl-bg: hsl(var(--background)); /* your dark bg already matches */
+/* Page background like the mock (soft blue glow) */
+body{
+  background:
+    radial-gradient(1100px 520px at 35% -8%, var(--sky-1), transparent 60%),
+    linear-gradient(180deg, var(--sky-1), var(--sky-2));
 }
 
-/* ===== Stage / container to mimic screenshot layout ===== */
-.table-viewport{
+/* ============ LAYOUT PANELS ============ */
+.dashboard{
   min-height: 100vh;
-  background: var(--tbl-bg);
-  display:flex;align-items:center;justify-content:center;
-  padding: 48px 24px;
+  padding: 24px;
+  gap: 24px;
+  background: transparent;           /* let page gradient show */
+  border: none;
+  display: flex;
 }
-.table-card{
-  width:100%;
-  max-width: 980px;
+
+.dashboard-menu{
+  flex: 0 0 260px;
+  background: var(--navy-1);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-outer);
+  padding: 18px 10px;
 }
+
+.dashboard-window{
+  flex: 1 1 auto;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-outer);
+  padding: 22px 22px 28px;
+  overflow: hidden;
+  color: var(--txt-1);
+}
+
+/* Optional panel section title inside main area */
 .table-title{
-  color: var(--tbl-muted);
-  font-size: 14px;
-  letter-spacing: .14em;
+  color: var(--txt-3);
   text-transform: uppercase;
-  margin: 0 0 18px 8px;
+  letter-spacing: .12em;
+  font-size: 12px;
+  margin: 0 0 14px;
 }
 
-/* ===== Table reset to switch from gridlines to spaced “pill” rows ===== */
-.contact-table{
-  width:100%;
-  border-collapse: separate !important; /* override previous collapse */
-  border-spacing: 0 14px;               /* gaps between rows */
-  table-layout: fixed;
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+/* ============ SIDEBAR MENU ============ */
+.menu-list{
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.menu-item{
+  position: relative;
+  color: var(--txt-1);
+  border-radius: 10px;                /* subtle rounding like mock */
+  padding: 10px 12px 10px 16px;
   font-size: 14px;
-  color: var(--tbl-text);
-  margin: 0 auto;                       /* center like screenshot */
+  letter-spacing: .02em;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  transition: background .18s ease, border-color .18s ease, color .18s ease;
 }
 
-/* Remove old borders/backgrounds that were set earlier */
-.contact-table .header-cell,
-.contact-table .data-cell{
-  border: none !important;
-  background: transparent;
+.menu-item:hover{
+  background: rgba(255,255,255,.06);
 }
 
-/* Header: muted, uppercase, letter-spaced */
+.menu-item.is-active{
+  background: rgba(255,255,255,.10);
+  color: #cfe9ff;
+  border: 1px solid var(--hairline-2);
+}
+
+/* left cyan indicator for active item */
+.menu-item.is-active::before{
+  content: "";
+  position: absolute;
+  left: -6px; top: 8px; bottom: 8px;
+  width: 3px; border-radius: 3px;
+  background: linear-gradient(180deg, #6bdcff, var(--accent));
+}
+
+/* ============ TABLE (flat rows, header bar) ============ */
+
+/* Drop previous pill styling, go back to classic collapsed table */
+.contact-table{
+  width: 100%;
+  border-collapse: collapse !important;
+  table-layout: fixed;
+  margin: 8px 0 0;
+  color: var(--txt-1);
+  font-size: 14px;
+}
+
+/* Header row block with darker bg like the mock */
 .contact-table thead th.header-cell{
-  color: var(--tbl-muted);
+  background: var(--hdr-bg);
+  color: var(--txt-2);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: .12em;
   font-size: 12px;
-  padding: 12px 20px;
   text-align: left;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--hairline);
 }
 
-/* Row “cards” */
-.contact-table tbody tr.row{
-  background: var(--tbl-row);
-  transition: background .2s ease, transform .2s ease, box-shadow .2s ease;
-}
-
-/* Rounded row ends */
-.contact-table tbody tr.row td:first-child{
-  border-top-left-radius: var(--tbl-radius);
-  border-bottom-left-radius: var(--tbl-radius);
-}
-.contact-table tbody tr.row td:last-child{
-  border-top-right-radius: var(--tbl-radius);
-  border-bottom-right-radius: var(--tbl-radius);
-}
-
-/* Cells */
+/* Data cells: flat rows with hairline separators */
 .contact-table tbody td.data-cell{
-  padding: 18px 20px;
+  padding: 14px;
+  border-bottom: 1px solid var(--hairline);
+  color: var(--txt-1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* Hover elevation */
-.contact-table tbody tr.row:hover{
-  background: var(--tbl-row-hover);
-  box-shadow: var(--tbl-shadow);
+/* Row hover: subtle tint (no lift, no pill) */
+.contact-table tbody tr:hover td{
+  background: var(--row-hover);
+  border-bottom-color: var(--hairline-2);
 }
 
-/* Featured row with gold accents (matches screenshot emphasis) */
-.contact-table tbody tr.is-featured{
-  background: var(--tbl-row-featured);
-}
-.contact-table tbody tr.is-featured td:nth-child(1),
-.contact-table tbody tr.is-featured td:nth-child(2){
-  color: var(--tbl-accent);
-  font-weight: 600;
+/* Remove zebra stripes, borders from earlier CSS */
+.contact-table tr:nth-child(even) .data-cell{
+  background: transparent !important;
+  border-color: var(--hairline);
 }
 
-/* Optional: subtle wider padding on large screens */
-@media (min-width: 900px){
-  .contact-table thead th.header-cell{ padding-left: 24px; padding-right: 24px; }
-  .contact-table tbody td.data-cell{   padding-left: 24px; padding-right: 24px; }
+/* Spacing at table bottom like pagination bar space in the mock */
+.dashboard-window .table-footer-space{
+  height: 24px;
 }
 
-/* Mobile-friendly stacking with inline labels */
-@media (max-width: 640px){
-  .contact-table{ border-spacing: 0 10px; }
-  .contact-table thead{ display:none; }
-  .contact-table tbody tr.row{ display:block; }
-  .contact-table tbody td.data-cell{
-    display:flex; justify-content:space-between; gap:12px;
-    padding:12px 16px; font-size:13px;
-  }
-  .contact-table tbody td.data-cell::before{
-    content: attr(data-label);
-    color: var(--tbl-muted);
-    text-transform: uppercase;
-    letter-spacing: .08em;
-    font-size: 11px;
-  }
+/* Responsive tweaks */
+@media (max-width: 1024px){
+  .dashboard{ padding: 16px; gap: 16px; }
+  .dashboard-menu{ flex-basis: 230px; }
 }
-
-
-/* ==== Layout: remove debug borders and match the dark canvas ==== */
-.dashboard{
-  display:flex;
-  flex-direction:row;
-  min-height: 100vh;
-  background: var(--tbl-bg);
-  border: none;              /* override previous 1px black border */
-}
-
-/* Left rail uses same background and spacing as table stage */
-.dashboard-menu{
-  display:flex;
-  flex-direction:column;
-  width: 260px;              /* fixed comfy rail */
-  padding: 48px 16px;
-  background: var(--tbl-bg);
-  border: none;              /* override previous */
-}
-
-/* Main content area stays dark too */
-.dashboard-window{
-  flex: 1 1 auto;
-  border: none;              /* override previous */
-  background: var(--tbl-bg);
-}
-
-/* ==== Menu list styled like the table rows ==== */
-.menu-list{
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.menu-item{
-  color: var(--tbl-text);
-  background: var(--tbl-row);
-  border-radius: var(--tbl-radius);
-  padding: 14px 16px;
-  font-size: 14px;
-  letter-spacing: .02em;
-  cursor: pointer;
-  user-select: none;
-  transition: background .2s ease, transform .2s ease, box-shadow .2s ease;
-}
-
-.menu-item:hover{
-  background: var(--tbl-row-hover);
-  transform: translateY(-1px);
-  box-shadow: var(--tbl-shadow);
-}
-
-/* Active item = same “featured” accent as the table */
-.menu-item.is-active{
-  background: var(--tbl-row-featured);
-  color: var(--tbl-accent);
-  font-weight: 600;
-}
-
-/* Optional focus ring for keyboard nav */
-.menu-item:focus{
-  outline: 2px solid var(--tbl-accent);
-  outline-offset: 2px;
+@media (max-width: 760px){
+  .dashboard{ flex-direction: column; }
+  .dashboard-menu{ flex-basis: auto; width: 100%; }
 }
