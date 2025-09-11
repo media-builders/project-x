@@ -85,31 +85,108 @@ export default async function LandingPage() {
             </div>
           </div>
         </section>
-        <section className="w-full py-10 md:py-20 lg:py-32 bg-muted" id="features">
-          <div className="container px-4 md:px-6">
-            <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl text-center mb-4">Our Features</h2>
-            <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-3">
-              <div className="flex flex-col items-center space-y-2 border-muted-foreground/10 p-4 rounded-lg">
-                <div className="p-2 bg-primary/10 rounded-full">
-                  <Coins className="h-6 w-6 text-primary" />
+        <section aria-labelledby="features-heading" class="relative isolate overflow-hidden">
+          <div class="absolute inset-0 -z-10 bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-950"></div>
+
+          <div class="mx-auto max-w-7xl px-6 py-20 lg:px-8">
+            <div class="mx-auto max-w-3xl text-center">
+              <h2 id="features-heading" class="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+                Our Features
+              </h2>
+              <p class="mt-4 text-lg text-slate-600 dark:text-slate-300">
+                Built for solo agents and small teams—so you move faster, follow up smarter, and never let a lead slip.
+              </p>
+            </div>
+
+            <div class="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <!-- Feature 1 -->
+              <div class="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
+                <div class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600 ring-1 ring-blue-100 group-hover:scale-105 transition dark:bg-blue-900/30 dark:text-blue-300 dark:ring-blue-900/40" aria-hidden="true">
+                  <!-- icon placeholder -->
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M3 5h3l3 7-2 4h4l3-6h5"/></svg>
                 </div>
-                <h3 className="text-xl font-bold">AI Dialer</h3>
-                <p className="text-muted-foreground text-center">Respond faster than any competitor—book while you show.</p>
+                <h3 class="text-xl font-semibold text-slate-900 dark:text-white">AI Dialer — Speed-to-Lead, <span class="whitespace-nowrap">&lt;60s</span></h3>
+                <p class="mt-2 text-slate-600 dark:text-slate-300">Instant outreach that books while you show homes.</p>
+                <ul class="mt-3 space-y-1 text-sm text-slate-500 dark:text-slate-400">
+                  <li>• Auto-call + SMS first touch on new leads</li>
+                  <li>• Smart retries at optimal times</li>
+                </ul>
               </div>
-              <div className="flex flex-col items-center space-y-2 border-muted-foreground/10 p-4 rounded-lg">
-                <div className="p-2 bg-primary/10 rounded-full">
-                  <UserCheck className="h-6 w-6 text-primary" />
+
+              <!-- Feature 2 -->
+              <div class="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
+                <div class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100 group-hover:scale-105 transition dark:bg-emerald-900/30 dark:text-emerald-300 dark:ring-emerald-900/40" aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M8 7h8M8 11h8M8 15h5M5 4h14v16H5z"/></svg>
                 </div>
-                <h3 className="text-xl font-bold">Auto Call Logging</h3>
-                <p className="text-muted-foreground text-center">Every detail captured without lifting a pen</p>
+                <h3 class="text-xl font-semibold text-slate-900 dark:text-white">Auto Call Logging</h3>
+                <p class="mt-2 text-slate-600 dark:text-slate-300">Every detail captured without lifting a pen.</p>
+                <ul class="mt-3 space-y-1 text-sm text-slate-500 dark:text-slate-400">
+                  <li>• Records calls, outcomes, and notes automatically</li>
+                  <li>• Threaded timeline for each contact</li>
+                </ul>
               </div>
-              <div className="flex flex-col items-center space-y-2 border-muted-foreground/10 p-4 rounded-lg">
-                <div className="p-2 bg-primary/10 rounded-full">
-                  <Database className="h-6 w-6 text-primary" />
+
+              <!-- Feature 3 -->
+              <div class="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
+                <div class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-violet-50 text-violet-600 ring-1 ring-violet-100 group-hover:scale-105 transition dark:bg-violet-900/30 dark:text-violet-300 dark:ring-violet-900/40" aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M12 8v8m-4-4h8M4 7a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V7z"/></svg>
                 </div>
-                <h3 className="text-xl font-bold">Lead Requalification Engine</h3>
-                <p className="text-muted-foreground text-center">Breathes life into “dead” leads, turning your database into hidden revenue.</p>
+                <h3 class="text-xl font-semibold text-slate-900 dark:text-white">Lead Re-qualification Engine</h3>
+                <p class="mt-2 text-slate-600 dark:text-slate-300">Breathes life into “dead” leads and uncovers hidden revenue.</p>
+                <ul class="mt-3 space-y-1 text-sm text-slate-500 dark:text-slate-400">
+                  <li>• AI re-engages old contacts with human-sounding outreach</li>
+                  <li>• Books callbacks & surfaces hot intent signals</li>
+                </ul>
               </div>
+
+              <!-- Feature 4 -->
+              <div class="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
+                <div class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 text-amber-600 ring-1 ring-amber-100 group-hover:scale-105 transition dark:bg-amber-900/30 dark:text-amber-300 dark:ring-amber-900/40" aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M12 9v4m0 4h.01M4 6h16l-2 12H6L4 6z"/></svg>
+                </div>
+                <h3 class="text-xl font-semibold text-slate-900 dark:text-white">Compliance Guard</h3>
+                <p class="mt-2 text-slate-600 dark:text-slate-300">TCPA-aware cadences that protect reputation and deliverability.</p>
+                <ul class="mt-3 space-y-1 text-sm text-slate-500 dark:text-slate-400">
+                  <li>• Opt-in/opt-out, quiet hours & DNC checks</li>
+                  <li>• Templates tuned for trust (not spam)</li>
+                </ul>
+              </div>
+
+              <!-- Feature 5 -->
+              <div class="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
+                <div class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-fuchsia-50 text-fuchsia-600 ring-1 ring-fuchsia-100 group-hover:scale-105 transition dark:bg-fuchsia-900/30 dark:text-fuchsia-300 dark:ring-fuchsia-900/40" aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M13 7H7v10h10V9l-4-2zM9 11h6m-6 3h4"/></svg>
+                </div>
+                <h3 class="text-xl font-semibold text-slate-900 dark:text-white">Next-Best Action</h3>
+                <p class="mt-2 text-slate-600 dark:text-slate-300">Wake up to a prioritized list—just call, text, or book.</p>
+                <ul class="mt-3 space-y-1 text-sm text-slate-500 dark:text-slate-400">
+                  <li>• Intent scoring from behavior & history</li>
+                  <li>• Tasks that fit a solo agent’s day</li>
+                </ul>
+              </div>
+
+              <!-- Feature 6 -->
+              <div class="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
+                <div class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-sky-50 text-sky-600 ring-1 ring-sky-100 group-hover:scale-105 transition dark:bg-sky-900/30 dark:text-sky-300 dark:ring-sky-900/40" aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M8 21h8M12 17V3m7 6l-7-6-7 6"/></svg>
+                </div>
+                <h3 class="text-xl font-semibold text-slate-900 dark:text-white">Plug-and-Play with Your Stack</h3>
+                <p class="mt-2 text-slate-600 dark:text-slate-300">Import leads instantly and keep your tools in sync.</p>
+                <ul class="mt-3 space-y-1 text-sm text-slate-500 dark:text-slate-400">
+                  <li>• Zapier & CSV import ready</li>
+                  <li>• Calendar, email & website forms</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- trust strip / micro-CTA -->
+            <div class="mt-16 rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center dark:border-slate-800 dark:bg-slate-800/50">
+              <p class="text-slate-700 dark:text-slate-200">
+                Agents report faster responses, cleaner notes, and more booked appointments within the first 30 days.
+              </p>
+              <a href="#get-started" class="mt-4 inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow hover:bg-blue-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">
+                Start Free Trial
+              </a>
             </div>
           </div>
         </section>
