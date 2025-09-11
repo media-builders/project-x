@@ -32,7 +32,7 @@ export default async function Dashboard() {
   return (
     <main className="flex-1">
       <div className="container">
-        Hello {firstName} welcome to BrokerNest
+        Hello {firstName}. Welcome to BrokerNest
       </div>
       <div className="dashboard">
         <DashboardMenu />
