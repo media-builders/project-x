@@ -88,47 +88,27 @@ export default async function LandingPage() {
         <section className="w-full py-10 md:py-20 lg:py-32 bg-muted" id="features">
           <div className="container px-4 md:px-6">
             <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl text-center mb-4">Our Features</h2>
-            <p className="mt-4 text-lg text-slate-600 dark:text-slate-300">
-        Built for solo agents and small teams—so you move faster, follow up smarter, and never let a lead slip.
-      </p>
             <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-3">
               <div className="flex flex-col items-center space-y-2 border-muted-foreground/10 p-4 rounded-lg">
                 <div className="p-2 bg-primary/10 rounded-full">
                   <Coins className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold">AI Dialer — Speed-to-Lead in <60 Seconds</h3>
-                <p className="text-muted-foreground text-center">The system instantly calls and texts new leads the moment they hit your CRM, so you’re the first to respond—even when you’re in a showing. No more “sorry, already talking to another agent.”</p>
-                <ul>
-                  <li>Multi-channel outreach (voice + SMS) in seconds</li>
-                  <li>Smart retry engine—calls back at the best times until connected</li>
-                  <li>Hands-free booking of live appointments</li>
-                </ul>
+                <h3 className="text-xl font-bold">AI Dialer</h3>
+                <p className="text-muted-foreground text-center">Respond faster than any competitor—book while you show.</p>
               </div>
               <div className="flex flex-col items-center space-y-2 border-muted-foreground/10 p-4 rounded-lg">
                 <div className="p-2 bg-primary/10 rounded-full">
                   <UserCheck className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold">Auto Call Logging & Follow-Up Timeline</h3>
-                <p className="text-muted-foreground text-center">Never worry about forgetting who said what.
-Every call, text, and note is automatically captured, organized, and threaded to the right contact. You get one clear timeline—no more sticky notes or lost scraps of paper.</p>
-                <ul>
-                  <li>Voice-to-text notes recorded instantly</li>
-                  <li>Daily digest of all calls and outcomes in your inbox</li>
-                  <li>One-click view of the entire relationship history</li>
-                </ul>
+                <h3 className="text-xl font-bold">Auto Call Logging</h3>
+                <p className="text-muted-foreground text-center">Every detail captured without lifting a pen</p>
               </div>
               <div className="flex flex-col items-center space-y-2 border-muted-foreground/10 p-4 rounded-lg">
                 <div className="p-2 bg-primary/10 rounded-full">
                   <Database className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold">Lead Re-qualification Engine</h3>
-                <p className="text-muted-foreground text-center">Turn “dead” leads into booked appointments.
-Your database is full of hidden money. The system re-engages old leads with natural, human-sounding outreach that feels personal—not robotic. Agents report booking 5–10 extra appointments a month just from contacts they’d written off.</p>
-                <ul>
-                  <li>Re-engages past internet leads & sphere-of-influence</li>
-                  <li>Detects buyer/seller intent from replies & actions</li>
-                  <li>Auto-books callbacks when interest resurfaces </li>
-                </ul>
+                <h3 className="text-xl font-bold">Lead Requalification Engine</h3>
+                <p className="text-muted-foreground text-center">Breathes life into “dead” leads, turning your database into hidden revenue.</p>
               </div>
             </div>
           </div>
