@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 
 type Lead = {
-  id: string;
+  id: string;   // in UI: DB uuid when loaded from DB; temporary for imported array
   first: string;
   last: string;
   email: string;
@@ -12,10 +12,11 @@ type Lead = {
 };
 
 export default function LeadsTable() {
-  // Demo seed; replaced on Import
+  // Demo seed; replaced by DB on mount (if any rows exist)
   const initialRows: Lead[] = useMemo(
     () => [
-      
+      { id: "jane", first: "Jane", last: "Doe", email: "jane.doe@example.com", phone: "(555) 123-4567" },
+      { id: "john", first: "John", last: "Smith", email: "john.smith@example.com", phone: "(555) 987-6543", featured: true },
     ],
     []
   );
@@ -23,6 +24,7 @@ export default function LeadsTable() {
   const [rows, setRows] = useState<Lead[]>(initialRows);
   const [selected, setSelected] = useState<string[]>([]);
   const [importing, setImporting] = useState(false);
+  const [loadingDb, setLoadingDb] = useState(true);
 
   const allSelected = selected.length === rows.length && rows.length > 0;
 
@@ -41,22 +43,60 @@ export default function LeadsTable() {
     );
   };
 
-  // Import via our server route -> utils/fub.ts
+  // 1) Load saved leads from DB on mount
+  const loadFromDb = useCallback(async () => {
+    try {
+      setLoadingDb(true);
+      const res = await fetch("/api/leads/db", { method: "GET", headers: { accept: "application/json" } });
+      if (!res.ok) throw new Error(`DB load failed (${res.status})`);
+      const data: { people: Lead[] } = await res.json();
+      if (Array.isArray(data.people) && data.people.length > 0) {
+        setRows(data.people);
+        setSelected([]);
+      }
+    } catch (e) {
+      console.error(e);
+      // keep demo seed if DB is empty or error
+    } finally {
+      setLoadingDb(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadFromDb();
+  }, [loadFromDb]);
+
+  // 2) Import from FUB -> save -> refresh from DB (so UI shows appended union)
   const handleImport = useCallback(async () => {
     try {
       setImporting(true);
+
+      // a) import from FUB via server
       const res = await fetch("/api/leads", { method: "GET", headers: { accept: "application/json" } });
       if (!res.ok) throw new Error(`Import failed (${res.status})`);
       const data: { people: Lead[] } = await res.json();
-      setRows(data.people ?? []);
-      setSelected([]);
+      const imported = data.people ?? [];
+
+      // b) save to DB for current user (upsert de-dupes)
+      const saveRes = await fetch("/api/leads/save", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ people: imported }),
+      });
+      if (!saveRes.ok) {
+        const err = await saveRes.json().catch(() => ({}));
+        console.warn("Save failed:", err);
+      }
+
+      // c) refresh from DB — now includes previous + newly added (no dupes)
+      await loadFromDb();
     } catch (e) {
       console.error(e);
       alert("Import failed. See console for details.");
     } finally {
       setImporting(false);
     }
-  }, []);
+  }, [loadFromDb]);
 
   return (
     <div className="dashboard-window">
@@ -100,6 +140,7 @@ export default function LeadsTable() {
                 <th scope="col" className="header-cell">Phone Number</th>
               </tr>
             </thead>
+
             <tbody>
               {rows.map((r) => {
                 const isChecked = selected.includes(r.id);
@@ -121,10 +162,10 @@ export default function LeadsTable() {
                 );
               })}
 
-              {rows.length === 0 && (
+              {rows.length === 0 && !loadingDb && (
                 <tr>
                   <td className="data-cell" colSpan={5} style={{ textAlign: "center", color: "var(--txt-2, #a9b8d9)" }}>
-                    No leads found. Click <strong>Import</strong>.
+                    No leads yet. Click <strong>Import</strong> to load data.
                   </td>
                 </tr>
               )}
