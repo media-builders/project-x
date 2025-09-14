@@ -3,6 +3,11 @@ import DashboardMenu from "@/components/DashboardMenu";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 
+function capitalize(name: string) {
+  if (!name) return"";
+  return name[0].toUpperCase() + name.slice(1).toLowerCase();
+}
+
 export default async function Dashboard() {
   const supabase = createClient();
 
@@ -27,12 +32,14 @@ export default async function Dashboard() {
 
   // Extract first name only
   const firstName =
-    typeof rawName === "string" ? rawName.trim().split(/\s+/)[0] : rawName;
+    typeof rawName === "string" ? capitalize(rawName.trim().split(/\s+/)[0]) : rawName;
 
   return (
-    <main className="flex-1">
+    <main className="flex-1 py-4">
       <div className="container">
-        Hello {firstName}. Welcome to BrokerNest
+        <h1 className="text-2xl md:text-2xl lg:text-2xl font-semibold font-sans text-gray-900 pl-6 md:pl-10 lg:pl-12">
+          Hello {firstName}! Welcome to BrokerNest
+        </h1>
       </div>
       <div className="dashboard">
         <DashboardMenu />
