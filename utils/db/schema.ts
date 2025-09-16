@@ -6,6 +6,7 @@ export const usersTable = pgTable('users_table', {
     email: text('email').notNull().unique(),
     plan: text('plan').notNull(),
     stripe_id: text('stripe_id').notNull(),
+    crm_api_key: text('crm_api_key'),
 });
 
 export type InsertUser = typeof usersTable.$inferInsert;

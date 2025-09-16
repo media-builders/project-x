@@ -7,38 +7,30 @@ import LeadsTable from "@/components/Leads";
 import SettingsPanel from "@/components/SettingsPanel";
 
 
-export default function DasboardMenu() {
- 
-  // activeTab can be "Leads" or "Settings"
-  // on first render the "Leads" tab loads 
-  const [activeTab, setActiveTab] = useState<"Leads" | "Settings">("Leads");
+export default function DasboardMenu() { 
+  const [showSettings, setshowSettings] = useState(false);
 
   return (
-    //dashboard holds the menu and content div
-    <div className = "dashboard"> 
-      
       <div className="dashboard-menu">
         <ul className="menu-list">
           <li 
-            //highlights the Leads tab when selected
-            className={`menu-item ${activeTab === "Leads" ? "is-active" : ""}`}
-            onClick={() => setActiveTab("Leads")}>
+            //Leads tab is opened by default when first rendered
+            className={`menu-item ${!showSettings ? "is-active" : ""}`}
+            onClick={() => setshowSettings(false)}>
             Leads
           </li>
           <li 
-            //highlights the Settings tab when selected
-            className={`menu-item ${activeTab === "Settings" ? "is-active" : ""}`}
-            onClick={() => setActiveTab("Settings")}>
+            //Settings panel opens up
+            className={`menu-item ${showSettings ? "is-active" : ""}`}
+            onClick={() => setshowSettings(true)}>
             Settings
           </li>
         </ul>
-      </div>
 
-      <div className = "dashboard-content">
-        
-        {activeTab === "Settings" && <SettingsPanel />}
-      </div>
-
+      {/*leads will always be visible in the background*/}
+      {showSettings && (
+        <SettingsPanel onClose={() => setshowSettings(false)} />
+      )}
     </div>
   );
 }
