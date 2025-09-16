@@ -5,13 +5,28 @@ import { useState, useEffect } from "react";
 export default function SettingsPanel({ onClose }: {onClose: () => void }) {
     const[CRMKey, setCRMKey] = useState("");
     const[saved, setSaved] = useState(false);
-    //const[loading, setLoading] = useState(false);
+    const[loading, setLoading] = useState(false);
 
-  const handleSave = () => {
-    if (!CRMKey.trim()) return;
-    // Simulate saving
-    setSaved(true);
-    setCRMKey(""); // clear the input
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/leads/save-crm-key", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ crmApiKey: CRMKey }),
+      });
+      
+      if (res.ok) {
+            setSaved(true);
+          setCRMKey(""); // clear the input
+      } else {
+          console.error("Failed to save key");
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

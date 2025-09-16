@@ -4,9 +4,9 @@ import { usersTable } from "@/utils/db/schema";
 import { eq } from "drizzle-orm";
 import { createClient} from "@/utils/supabase/server";
 
-export async function POST(req: REQUEST) {
+export async function POST(req: Request) {
     try {
-        const { crmApiKey } = await.req.json();
+        const { crmApiKey } = await req.json();
 
         //Fetches the logged in user from supabase
         const supabase = createClient();
