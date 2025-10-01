@@ -1,4 +1,6 @@
+// TO SAVE LEADS FOR EACH USER INTO SUPABASE
 // app/api/leads/save/route.ts
+
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 

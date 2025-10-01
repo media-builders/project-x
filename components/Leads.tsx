@@ -46,9 +46,11 @@ export default function LeadsTable() {
   const loadFromDb = useCallback(async () => {
     try {
       setLoadingDb(true);
-      const res = await fetch("/api/leads/db", { method: "GET", headers: { accept: "application/json" } });
+      const res = await fetch("/api/leads/db");
       if (!res.ok) throw new Error(`DB load failed (${res.status})`);
       const data: { people: Lead[] } = await res.json();
+      //
+      console.log("Imported from API:", data.people.length, "contacts");
       if (Array.isArray(data.people) && data.people.length > 0) {
         setRows(data.people);
         setSelected([]);
@@ -69,32 +71,31 @@ export default function LeadsTable() {
   const handleImport = useCallback(async () => {
     try {
       setImporting(true);
-
-      // a) import from FUB via server
-      const res = await fetch("/api/leads", { method: "GET", headers: { accept: "application/json" } });
-      if (!res.ok) throw new Error(`Import failed (${res.status})`);
-      const data: { people: Lead[] } = await res.json();
-      const imported = data.people ?? [];
-
-      // b) save to DB for current user (upsert de-dupes)
-      const saveRes = await fetch("/api/leads/save", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ people: imported }),
-      });
-      if (!saveRes.ok) {
-        const err = await saveRes.json().catch(() => ({}));
-        console.warn("Save failed:", err);
+      const res = await fetch("/api/leads/import", {method: "POST"});
+      
+      //Error message alert
+      if (res.status === 400) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "No CRM API Key found. Please enter your CRM API Key in Settings, press Save, then click IMPORT.")
+        return;
       }
 
-      // c) refresh from DB — now includes previous + newly added (no dupes)
-      await loadFromDb();
-    } catch (e) {
-      console.error(e);
-      alert("Import failed. See console for details.");
-    } finally {
-      setImporting(false);
-    }
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Import failed (${res.status})`);
+      }
+
+      const data: { ok: boolean; count: number } = await res.json();
+      if (data.ok) {
+        console.log(`Successfully imported ${data.count} leads.`);
+        await loadFromDb();
+      }
+    } catch (e: any) {
+        console.error(e);
+        alert(`Import failed. ${e.message ?? ""}`);
+      } finally {
+        setImporting(false);
+      }
   }, [loadFromDb]);
 
   return (
@@ -108,7 +109,6 @@ export default function LeadsTable() {
           <button type="button" className="btn btn-ghost">Export</button>
           <button type="button" className="btn btn-ghost">Sync</button>
         </div>
-
         <div className="secondary-actions">
           <button
             type="button"
@@ -124,7 +124,14 @@ export default function LeadsTable() {
       {/* Table */}
       <div className="table-viewport">
         <div className="table-card">
-          <h2 className="table-title">Leads</h2>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
+            <h2 className="table-title" style={{ margin: 0 }}>Leads</h2>
+            {selected.length > 0 && (
+              <span style={{ fontSize: "0.875rem", fontStyle: "italic", fontWeight: 300 }}>
+                {selected.length} Contact{selected.length > 1 ? "s" : ""} selected
+              </span>
+            )}
+          </div>
 
           <table className="contact-table">
             <caption className="sr-only">Lead contacts</caption>

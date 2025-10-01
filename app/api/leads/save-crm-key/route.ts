@@ -1,3 +1,6 @@
+// SAVES USER'S CRM API KEY INTO SUPABASE
+// app/api/leads/save-crm-key/route.ts
+
 import { NextResponse } from "next/server";
 import { db } from "@/utils/db/db";
 import { usersTable } from "@/utils/db/schema";
