@@ -34,15 +34,33 @@ export default function LeadsTable() {
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
   const handleCall = async() => {
+    
     const picked = rows.filter((r) => selected.includes(r.id));
     if (picked.length === 0) return;
-    /**alert(
-      `Calling ${picked.length} lead${picked.length === 1 ? "" : "s"}:\n` +
-        picked.map((p) => `${p.first} ${p.last} — ${p.phone}`).join("\n")
-    );**/
+    
+    //1.
+    console.log("Checking or creating Twilio subaccount...");
+    const twilioRes = await fetch("/api/twilio_subaccount", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}), 
+    });
+
+    if (!twilioRes.ok) {
+      const errData = await twilioRes.json().catch(() => ({}));
+      alert(errData.error || `Twilio subaccount setup failed (status ${twilioRes.status})`);
+      return;
+    }
+
+    const twilioData = await twilioRes.json();
+
+    //Ensure we have the subaccount SID and API key (or auth token)
+    const { subAccountSid, apiKeySid, apiKeySecret } = twilioData;
+    console.log("Twilio subaccount ready:", subAccountSid);
+
+    //2.
     try {
-    // Show basic info to user while waiting
-      console.log("Creating/retrieving agent...");
+      console.log("Creating/retrieving ElevenLabs agent...");
 
       const res = await fetch("/api/elevenlabs-agent", {
         method: "POST",

@@ -7,7 +7,6 @@ export const usersTable = pgTable('users_table', {
     plan: text('plan').notNull(),
     stripe_id: text('stripe_id').notNull(),
     crm_api_key: text('crm_api_key'),
-    twilio_number: text('twilio_number')
 });
 
 export type InsertUser = typeof usersTable.$inferInsert;
@@ -36,3 +35,14 @@ export const userAgentsTable = pgTable("user_agents", {
 
 export type InsertUserAgent = typeof userAgentsTable.$inferInsert;
 export type SelectUserAgent = typeof userAgentsTable.$inferSelect;
+
+export const userTwilioSubaccountTable = pgTable("user_twilioSubAccounts", {
+    user_id: text('user_id').primaryKey(),
+    subaccount_sid: text('subaccount_sid').notNull().primaryKey(),
+    subaccount_auth_token: text('subaccount_auth_token').notNull(),
+    phone_number: text('phone_number'),
+    created_at: timestamp("created_at").defaultNow().notNull(),
+})
+
+export type InsertUserSubaccount = typeof userTwilioSubaccountTable.$inferInsert;
+export type SelectUserSubaccount = typeof userTwilioSubaccountTable.$inferSelect;
