@@ -33,13 +33,48 @@ export default function LeadsTable() {
   const toggleOne = (id: string) =>
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
-  const handleCall = () => {
+  const handleCall = async() => {
     const picked = rows.filter((r) => selected.includes(r.id));
     if (picked.length === 0) return;
-    alert(
+    /**alert(
       `Calling ${picked.length} lead${picked.length === 1 ? "" : "s"}:\n` +
         picked.map((p) => `${p.first} ${p.last} — ${p.phone}`).join("\n")
-    );
+    );**/
+    try {
+    // Show basic info to user while waiting
+      console.log("Creating/retrieving agent...");
+
+      const res = await fetch("/api/elevenlabs-agent", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          // voiceId or llmSettings if you want, otherwise leave empty
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        alert(errData.error || `Agent API failed with status ${res.status}`);
+        return;
+      }
+
+      const data = await res.json();
+      if (!data.agent) {
+        alert("Agent not returned from API");
+        return;
+      }
+
+      // Display agent info and selected leads
+      alert(
+        `Agent: ${data.agent.name} (ID: ${data.agent.id})\n\nCalling ${picked.length} lead${picked.length === 1 ? "" : "s"}:\n` +
+          picked.map((p) => `${p.first} ${p.last} — ${p.phone}`).join("\n")
+      );
+    } catch (err) {
+      console.error(err);
+      alert("Failed to create/retrieve agent");
+    }
   };
 
   // 1) Load saved leads from DB on mount
