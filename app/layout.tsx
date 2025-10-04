@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Roboto } from "next/font/google";
 import "./globals.css";
 
+{/*prevents hydration error*/}
+import Script from "next/script"; 
+
 const inter = Inter({ subsets: ["latin"] });
+const roboto = Roboto({subsets: ["latin"], weight: "700"});
 
 export const metadata: Metadata = {
   title: "BrokerNest.ai",
@@ -16,8 +20,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      {/* Required for pricing table */}
-      <script async src="https://js.stripe.com/v3/pricing-table.js"></script>
+      <head>
+        {/* Required for pricing table */}
+        <Script
+          src="https://js.stripe.com/v3/pricing-table.js"
+          strategy = "afterInteractive"
+        />
+      </head>
+      
       <body className={inter.className}>{children}</body>
     </html>
   );
