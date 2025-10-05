@@ -1,8 +1,3 @@
-# NextJs SaaS Starter Template
-
-
-
-This is the ultimate [Next.js](https://nextjs.org/) SAAS starter kit that includes a landing page, integrations with Supabase auth(Oauth, forget password, etc), PostgresDB with DrizzleORM and Stripe to collect payments, setup subscriptions and allow users to edit subscriptions/payment options.
 
 - Full sign up/ sign in/ logout/ forget password/ password reset flow
 - Oauth with Google and Github
