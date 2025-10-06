@@ -53,8 +53,8 @@ export  async function POST( req: NextRequest) {
     const { voiceId, llmSettings } = body;
         
     const client = new ElevenLabsClient({
-    environment: "https://api.elevenlabs.io",
-    apiKey: process.env.ELEVENLABS_API_KEY,
+      environment: "https://api.elevenlabs.io",
+      apiKey: process.env.ELEVENLABS_API_KEY,
     });
 
     // Check if agent exists

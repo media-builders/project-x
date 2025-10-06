@@ -33,32 +33,8 @@ export default function LeadsTable() {
   const toggleOne = (id: string) =>
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
-  const handleCall = async() => {
-    
-    const picked = rows.filter((r) => selected.includes(r.id));
-    if (picked.length === 0) return;
-    
-    //1.
-    console.log("Checking or creating Twilio subaccount...");
-    const twilioRes = await fetch("/api/twilio_subaccount", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}), 
-    });
-
-    if (!twilioRes.ok) {
-      const errData = await twilioRes.json().catch(() => ({}));
-      alert(errData.error || `Twilio subaccount setup failed (status ${twilioRes.status})`);
-      return;
-    }
-
-    const twilioData = await twilioRes.json();
-
-    //Ensure we have the subaccount SID and API key (or auth token)
-    const { subAccountSid, apiKeySid, apiKeySecret } = twilioData;
-    console.log("Twilio subaccount ready:", subAccountSid);
-
-    //2.
+  //ELEVENLABS AGENT SETUP
+  const elevenlabsSetup = async() => {
     try {
       console.log("Creating/retrieving ElevenLabs agent...");
 
@@ -84,16 +60,75 @@ export default function LeadsTable() {
         return;
       }
 
-      // Display agent info and selected leads
+      // Display agent info 
       alert(
-        `Agent: ${data.agent.name} (ID: ${data.agent.id})\n\nCalling ${picked.length} lead${picked.length === 1 ? "" : "s"}:\n` +
-          picked.map((p) => `${p.first} ${p.last} — ${p.phone}`).join("\n")
+        `${data.agent.name} has been successfully setup in ElevenLabs.`
       );
     } catch (err) {
       console.error(err);
       alert("Failed to create/retrieve agent");
     }
   };
+  
+  //TWILIO SUBACCOUNT SETUP
+  const twilioSetup = async() => {
+    console.log("Checking or creating Twilio subaccount...");
+    const twilioRes = await fetch("/api/twilio_subaccount", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}), 
+    });
+
+    if (!twilioRes.ok) {
+      const errData = await twilioRes.json().catch(() => ({}));
+      alert(errData.error || `Twilio subaccount setup failed (status ${twilioRes.status})`);
+      return;
+    }
+
+    const twilioData = await twilioRes.json();
+
+    //Ensure we have the subaccount SID and API key (or auth token)
+    const { subAccountSid, apiKeySid, apiKeySecret } = twilioData;
+    console.log("Twilio subaccount ready:", subAccountSid);
+  };
+
+  //ELEVENLABS AGENT MAKING OUTBOUND CALL THROUGH TWILIO
+  const makeOutboundCall = async() => {
+    const picked = rows.filter((r) => selected.includes(r.id));
+    if (picked.length === 0) return;
+
+    try {
+    console.log("Initiating outbound call via ElevenLabs + Twilio...");
+
+    // Send selected leads to API; API uses predefined toNumber for testing
+    const res = await fetch("/api/outbound-calls", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        leads: picked, // API will ignore the phone numbers for now
+      }),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      alert(errData.error || `Call API failed with status ${res.status}`);
+      return;
+    }
+
+    const data = await res.json();
+    console.log("Call response:", data);
+
+    alert(
+      `Call initiated!\n\nMode: ${data.mode}\nFrom: ${data.from_number}\nTo (predefined for testing): ${data.called_number}`
+    );
+  } catch (err) {
+    console.error(err);
+    alert("Failed to make outbound call");
+  }
+
+  }
 
   // 1) Load saved leads from DB on mount
   const loadFromDb = useCallback(async () => {
@@ -166,10 +201,24 @@ export default function LeadsTable() {
           <button
             type="button"
             className="btn btn-primary"
-            onClick={handleCall}
+            onClick={elevenlabsSetup}
+          >
+            Elevenlabs Agent{selected.length > 1 ? "s" : ""}
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={twilioSetup}
+          >
+            Twilio Setup{selected.length > 1 ? "s" : ""}
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={makeOutboundCall}
             disabled={selected.length === 0}
           >
-            Call Lead{selected.length > 1 ? "s" : ""}
+            Elevenlabs Agent Call via Twilio{selected.length > 1 ? "s" : ""}
           </button>
         </div>
       </div>
