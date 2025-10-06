@@ -1,14 +1,3 @@
-# NextJs SaaS Starter Template
-
-<img width="1122" alt="image" src="https://github.com/user-attachments/assets/63e761c4-aece-47c2-a320-f1cc18bf916b">
-
-<img width="920" alt="image" src="https://github.com/user-attachments/assets/55384d22-cd09-46e4-b92d-e535b7d948fd">
-<img width="1115" alt="image" src="https://github.com/user-attachments/assets/9ec724e6-d46f-4849-a790-efca329d1102">
-<img width="1115" alt="image" src="https://github.com/user-attachments/assets/c5c1a61b-7ff3-49fd-9dea-8104026dd1e6">
-<img width="1141" alt="image" src="https://github.com/user-attachments/assets/06559a5a-ca19-40bb-bf00-d3d2cbd94ee1">
-
-
-This is the ultimate [Next.js](https://nextjs.org/) SAAS starter kit that includes a landing page, integrations with Supabase auth(Oauth, forget password, etc), PostgresDB with DrizzleORM and Stripe to collect payments, setup subscriptions and allow users to edit subscriptions/payment options.
 
 - Full sign up/ sign in/ logout/ forget password/ password reset flow
 - Oauth with Google and Github
