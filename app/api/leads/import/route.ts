@@ -2,7 +2,8 @@
 // app/api/leads/import/route.ts
 
 import { NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/server";
+import { createServerClient } from "@supabase/ssr"; 
+import { cookies } from "next/headers";
 import { db } from "@/utils/db/db";
 import { usersTable } from "@/utils/db/schema";
 import { eq } from "drizzle-orm";
@@ -28,7 +29,28 @@ function formatPhone(phone: string) {
 export async function POST() {
     try {
         //Get logged-in user
-        const supabase = createClient();
+        const cookieStore = cookies();
+        const supabase = createServerClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            {
+                cookies: {
+                    get(name) {
+                        return cookieStore.get(name)?.value;
+                    },
+                    set(name, value, options) {
+                        try {
+                        cookieStore.set({ name, value, ...options });
+                        } catch {}
+                    },
+                    remove(name, options) {
+                        try {
+                        cookieStore.set({ name, value: "", ...options });
+                        } catch {}
+                    },
+                },
+            }
+        );
         const { 
             data: {user},
             error: authErr,
@@ -39,10 +61,13 @@ export async function POST() {
         }
 
         //Fetch saved CRM API key
+        if (!user.email) {
+            return NextResponse.json({ error: "User email not found" }, { status: 400 });
+        }
         const userRow = await db
             .select()
             .from(usersTable)
-            .where(eq(usersTable.id, user.id))
+            .where(eq(usersTable.email, user.email))
             .limit(1);
         const crmKey = userRow[0]?.crm_api_key;
 
@@ -55,7 +80,10 @@ export async function POST() {
         }
         
         //Fetch leads from FUB using API key
+
+        console.log("Fetching leads with key:", crmKey);
         const leads = await fetchFUBLeads(crmKey);
+        console.log("Leads fetched:", leads?.length);
 
         //Save leads into SUPABASE
         const rows = leads.map((p) => ({
