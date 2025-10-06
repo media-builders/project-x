@@ -32,6 +32,7 @@ export const userAgentsTable = pgTable("user_agents", {
     agent_id: text("agent_id").notNull(),
     created_at: timestamp("created_at").defaultNow().notNull(),
     twilio_number: text("twilio_number").unique(),
+    agent_phone_number_id: text("agent_phone_number_id").unique(),
 })
 
 export type InsertUserAgent = typeof userAgentsTable.$inferInsert;
@@ -47,3 +48,5 @@ export const userTwilioSubaccountTable = pgTable("user_twilioSubAccounts", {
 
 export type InsertUserSubaccount = typeof userTwilioSubaccountTable.$inferInsert;
 export type SelectUserSubaccount = typeof userTwilioSubaccountTable.$inferSelect;
+
+
