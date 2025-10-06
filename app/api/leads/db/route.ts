@@ -1,4 +1,3 @@
-// SAVES USER'S CRM API KEY INTO SUPABASE
 // app/api/leads/save-crm-key/route.ts
 
 import { NextResponse } from "next/server";
@@ -11,39 +10,29 @@ export async function POST(req: Request) {
   try {
     const { crmApiKey } = await req.json();
 
-    // Fetch the logged in user from Supabase
     const supabase = createClient();
     const {
       data: { user },
+      error: authError,
     } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Debug log: confirm which user we’re updating
-    console.log("[SAVE CRM KEY] Attempting update for user ID:", user.id);
+    // DEBUG: Ensure we're logging the user ID that we’re trying to match
+    console.log("Authenticated user ID:", user.id);
 
-    // Update user's CRM API key in the DB and return the updated row(s)
-    const result = await db
+    const updateResult = await db
       .update(usersTable)
       .set({ crm_api_key: crmApiKey })
-      .where(eq(usersTable.id, user.id))
-      .returning();
+      .where(eq(usersTable.id, user.id));
 
-    // If no row was updated, user ID didn’t match any row in users_table
-    if (result.length === 0) {
-      console.warn("[SAVE CRM KEY] No user found in users_table for ID:", user.id);
-      return NextResponse.json(
-        { error: "No user record found in users_table for this account" },
-        { status: 404 }
-      );
-    }
+    console.log("CRM Key Update Result:", updateResult);
 
-    console.log("[SAVE CRM KEY] CRM key successfully saved for user:", user.id);
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error("[CRM KEY SAVE ERROR]", err);
+    console.error("Error updating CRM Key:", err);
     return NextResponse.json(
       { error: "Failed to save CRM API Key" },
       { status: 500 }
