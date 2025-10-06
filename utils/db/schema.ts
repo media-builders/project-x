@@ -31,6 +31,7 @@ export const userAgentsTable = pgTable("user_agents", {
     user_id: text("user_id").primaryKey(),
     agent_id: text("agent_id").notNull(),
     created_at: timestamp("created_at").defaultNow().notNull(),
+    twilio_number: text("twilio_number").unique(),
 })
 
 export type InsertUserAgent = typeof userAgentsTable.$inferInsert;

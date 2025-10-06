@@ -23,14 +23,13 @@ import { createServerClient } from "@supabase/ssr";
 
 //MAIN ACCOUNT THAT CONTAINS SUBACCOUNTS
 const twilioClient = new Twilio(
-    process.env.TWILIO_ACCOUNT_SID,
-    process.env.TWILIO_AUTH_TOKEN
+    process.env.TWILIO_ACCOUNT_SID!,
+    process.env.TWILIO_AUTH_TOKEN!
 );
 
 export async function POST( req: NextRequest) {
-    //check for subaccount
     try {
-        //Logged-in user's info
+        //Logged-in user's info first
         const supabase = createServerClient(
                 process.env.NEXT_PUBLIC_SUPABASE_URL!,
                 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -49,15 +48,12 @@ export async function POST( req: NextRequest) {
             },}
         );
 
+        //User Authentication
         const { data: {user}, error: authErr, } = await supabase.auth.getUser();
-        
-        if (authErr || !user) {
+        if (authErr || !user)
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
-        if (!user.email) {
-                return NextResponse.json({ error: "User email missing" }, { status: 400 });
-        }
+        if (!user.email)
+                return NextResponse.json({ error: "User email missing" }, { status: 400 });   
 
         const dbUser = await db
         .select()
@@ -72,61 +68,69 @@ export async function POST( req: NextRequest) {
         const userId = dbUser[0].id;
 
         //Check for Subaccount
-        let subaccount = await db.select()
+        const existingSubaccount = await db.select()
             .from(userTwilioSubaccountTable)
             .where(eq(userTwilioSubaccountTable.user_id, userId))
-            .limit(1)
-            .then(res => res[0]);
+            .limit(1);
 
-        if(!subaccount) {
-            //Create new subaccount
-            const newSubaccount = await twilioClient.api.v2010.accounts.create({
-                friendlyName: `${userFirstName}'s Subaccount`
+        //subaccount exists
+        if(existingSubaccount.length > 0) {
+            return NextResponse.json({
+                message: "Twilio subaccount already exists.",
+                subaccount: existingSubaccount[0]
             });
-            console.log("Subaccount Created:", newSubaccount.sid);
-
-            const subClient = new Twilio(newSubaccount.sid, newSubaccount.authToken);
-            //Generate API key for subaccount
-            const apiKey = await subClient.newKeys.create({
-                friendlyName: `${userFirstName}-apiKey`,
-            });
-            console.log("✅ API Key created:", apiKey.sid);
-
-            const apiKeySid = apiKey.sid;
-            const apiKeySecret = apiKey.secret;
-
-            //Fetch phone number
-            const availableNumbers = await subClient
-                .availablePhoneNumbers("CA")
-                .local.list({ limit: 1 });
-            if (!availableNumbers.length) {
-                return NextResponse.json({ error: "No available phone numbers" }, { status: 500 });
-            }
-            const phoneNumber = availableNumbers[0].phoneNumber;
-            console.log(`Purchased phone number ${phoneNumber} for subaccount ${newSubaccount.sid}`);
-
-            //Purchase phone number
-            await subClient.incomingPhoneNumbers.create({
-                phoneNumber
-            });
-
-            //Store subaccount details and phone number
-            [subaccount] = await db.insert(userTwilioSubaccountTable)
-                .values({
-                    user_id: userId,
-                    subaccount_sid: newSubaccount.sid,
-                    subaccount_auth_token: apiKey.secret, // optionally encrypt
-                    phone_number: phoneNumber,
-
-                }).returning();
         }
+        
+        const newSubaccount = await twilioClient.api.v2010.accounts.create({
+                    friendlyName: `${userFirstName}'s Subaccount`
+        });
+        console.log("Subaccount Created:", newSubaccount.sid);
+
+        const subClient = new Twilio(newSubaccount.sid, newSubaccount.authToken);
+
+        //Generate API key for subaccount
+        const apiKey = await subClient.newKeys.create({
+            friendlyName: `${userFirstName}-apiKey`,
+        });
+        console.log("API Key created:", apiKey.sid);
+
+        const apiKeySid = apiKey.sid;
+        const apiKeySecret = apiKey.secret;
+
+        //Fetch phone number
+        const availableNumbers = await subClient
+            .availablePhoneNumbers("CA")
+            .local.list({ limit: 1 });
+
+        if (!availableNumbers.length) {
+            return NextResponse.json({ error: "No available phone numbers" }, { status: 500 });
+        }
+        const phoneNumber = availableNumbers[0].phoneNumber;
+        console.log(`Purchased phone number ${phoneNumber} for subaccount ${newSubaccount.sid}`);
+
+        //Purchase phone number
+        await subClient.incomingPhoneNumbers.create({ phoneNumber });
+
+        //Store subaccount details and phone number
+        const [subaccount] = await db.insert(userTwilioSubaccountTable)
+            .values({
+                user_id: userId,
+                subaccount_sid: newSubaccount.sid,
+                subaccount_auth_token: apiKey.secret, // optionally encrypt
+                phone_number: phoneNumber,
+
+            }).returning();
 
         return NextResponse.json({
-            message: "Twilio subaccount ready",
-            subaccount
+            message: "Twilio subaccount has been created!",
+            subaccount,
         });
+
     } catch (err: any) {
-        console.error(err);
-        return NextResponse.json({ error: err.message }, { status: 500});
+        console.error("Could not create a subaccount!", err);
+        return NextResponse.json(
+            { error: err.message || "Something went wrong while creating your account."}, 
+            { status: 500});
     }
+            
 }

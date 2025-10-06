@@ -33,32 +33,12 @@ export default function LeadsTable() {
   const toggleOne = (id: string) =>
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
-  const handleCall = async() => {
+  //ELEVENLABS AGENT SETUP
+  const elevenlabsSetup = async() => {
     
     const picked = rows.filter((r) => selected.includes(r.id));
     if (picked.length === 0) return;
-    
-    //1.
-    console.log("Checking or creating Twilio subaccount...");
-    const twilioRes = await fetch("/api/twilio_subaccount", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}), 
-    });
 
-    if (!twilioRes.ok) {
-      const errData = await twilioRes.json().catch(() => ({}));
-      alert(errData.error || `Twilio subaccount setup failed (status ${twilioRes.status})`);
-      return;
-    }
-
-    const twilioData = await twilioRes.json();
-
-    //Ensure we have the subaccount SID and API key (or auth token)
-    const { subAccountSid, apiKeySid, apiKeySecret } = twilioData;
-    console.log("Twilio subaccount ready:", subAccountSid);
-
-    //2.
     try {
       console.log("Creating/retrieving ElevenLabs agent...");
 
@@ -94,6 +74,35 @@ export default function LeadsTable() {
       alert("Failed to create/retrieve agent");
     }
   };
+  
+  //TWILIO SUBACCOUNT SETUP
+  const twilioSetup = async() => {
+    console.log("Checking or creating Twilio subaccount...");
+    const twilioRes = await fetch("/api/twilio_subaccount", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}), 
+    });
+
+    if (!twilioRes.ok) {
+      const errData = await twilioRes.json().catch(() => ({}));
+      alert(errData.error || `Twilio subaccount setup failed (status ${twilioRes.status})`);
+      return;
+    }
+
+    const twilioData = await twilioRes.json();
+
+    //Ensure we have the subaccount SID and API key (or auth token)
+    const { subAccountSid, apiKeySid, apiKeySecret } = twilioData;
+    console.log("Twilio subaccount ready:", subAccountSid);
+  };
+
+  //ELEVENLABS AGENT MAKING OUTBOUND CALL THROUGH TWILIO
+  const makeOutboundCall = async() => {
+    const picked = rows.filter((r) => selected.includes(r.id));
+    if (picked.length === 0) return;
+    
+  }
 
   // 1) Load saved leads from DB on mount
   const loadFromDb = useCallback(async () => {
@@ -166,10 +175,24 @@ export default function LeadsTable() {
           <button
             type="button"
             className="btn btn-primary"
-            onClick={handleCall}
+            onClick={elevenlabsSetup}
+          >
+            Elevenlabs Agent{selected.length > 1 ? "s" : ""}
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={twilioSetup}
+          >
+            Twilio Setup{selected.length > 1 ? "s" : ""}
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={makeOutboundCall}
             disabled={selected.length === 0}
           >
-            Call Lead{selected.length > 1 ? "s" : ""}
+            Elevenlabs Agent Call via Twilio{selected.length > 1 ? "s" : ""}
           </button>
         </div>
       </div>
