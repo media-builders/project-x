@@ -1,56 +1,51 @@
-// TO FETCH SAVED LEADS FOR EACH USER FROM SUPABASE
-// app/api/leads/db/route.ts
+// SAVES USER'S CRM API KEY INTO SUPABASE
+// app/api/leads/save-crm-key/route.ts
 
 import { NextResponse } from "next/server";
+import { db } from "@/utils/db/db";
+import { usersTable } from "@/utils/db/schema";
+import { eq } from "drizzle-orm";
 import { createClient } from "@/utils/supabase/server";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+export async function POST(req: Request) {
+  try {
+    const { crmApiKey } = await req.json();
 
-type LeadRow = {
-  id: string;        // uuid in DB
-  user_id: string;
-  fub_id: number | null;
-  first: string;
-  last: string;
-  email: string | null;
-  phone: string | null;
-  created_at: string;
-  updated_at: string;
-};
+    // Fetches the logged in user from Supabase
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-// This returns the shape the table already expects
-type LeadOut = {
-  id: string;          // use DB uuid as stable row id
-  first: string;
-  last: string;
-  email: string;
-  phone: string;
-};
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-export async function GET() {
-  const supabase = createClient();
-  const { data: auth, error: authErr } = await supabase.auth.getUser();
-  if (authErr || !auth?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // Debug log: confirm user.id and crm key
+    console.log("Saving CRM key for user:", user.id);
+
+    // Attempt to update CRM key for current user
+    const updateResult = await db
+      .update(usersTable)
+      .set({ crm_api_key: crmApiKey })
+      .where(eq(usersTable.id, user.id))
+      .returning();
+
+    // If no row was updated, something went wrong
+    if (updateResult.length === 0) {
+      console.warn("[CRM API Key] No user record found to update:", user.id);
+      return NextResponse.json(
+        { error: "User not found in users_table" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("[CRM KEY SAVE ERROR]", err);
+    return NextResponse.json(
+      { error: "Failed to save CRM API Key" },
+      { status: 500 }
+    );
   }
-
-  const { data, error } = await supabase
-    .from("leads")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  const people: LeadOut[] = (data as LeadRow[]).map((r) => ({
-    id: r.id,                          // DB uuid
-    first: r.first ?? "",
-    last: r.last ?? "",
-    email: r.email ?? "",
-    phone: r.phone ?? "",
-  }));
-
-  return NextResponse.json({ people }, { status: 200 });
 }
