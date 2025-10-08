@@ -1,112 +1,132 @@
+# 🧠 AI-Powered Real Estate CRM Automation Platform
 
-- Full sign up/ sign in/ logout/ forget password/ password reset flow
-- Oauth with Google and Github
-- Utilize Stripe Pricing Table and Stripe Checkout to setup customer billing
-- Integration with Stripe Customer Portal to allow users to manage billing settings
-- Protected routes under /dashboard
-- Drizzle ORM/Postgres integration
-- Tailwind CSS/shadcn
-- Stripe webhooks/ API hook to get customer current plan
+An intelligent CRM automation web app for Real Estate agents built with **Next.js**, **Supabase**, and **Drizzle ORM**, integrating **ElevenLabs conversational AI agents**, **Twilio**, and **Follow Up Boss** CRM to streamline lead management and client communication.
 
-## Getting Started
+---
 
-As we will be setting up both dev and prod environments, simply use `.env.local` to develop locally and `.env` for production environments
+## 🚀 Features (MVP - Iteration 1)
 
-### Setup Supabase
-1. Create a new project on [Supabase](https://app.supabase.io/)
-2. ADD `SUPABASE_URL` and `SUPABASE_ANON_KEY` to your .env file
-3. 
-![image](https://github.com/user-attachments/assets/c8eb5236-96f1-4824-9998-3c54a4bcce12)
-4. Add `NEXT_PUBLIC_WEBSITE_URL` to let Supabase know where to redirect the user after the Oauth flow(if using oauth).
+This version represents the **first iteration (MVP)** of the platform that focuses on building the **core functionality** that connects CRM, AI voice automation, and call routing.
 
-#### Setup Google OAUTH Social Auth
-You can easily set up social auth with this template. First navigate to google cloud and create a new project. All code is written. You just need to add the `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET` to your `.env` file.
+- **CRM Lead Import:**  
+  Securely import contacts from the Follow Up Boss CRM using your API key.
+- **AI Voice Agents (ElevenLabs):**  
+  Automatically create and assign a personalized ElevenLabs conversational AI agent for each user.
+- **Twilio Integration:**  
+  Automatically generate Twilio subaccounts per user to enable isolated and secure call routing.
+- **AI-Powered Outbound Calls:**  
+  Make voice calls through your ElevenLabs agent using Twilio by combining real-time AI voice with telephony infrastructure.
+- **Lead Management Dashboard:**  
+  View, select, and manage leads in an intuitive React-based UI.
+- **Secure Authentication & Storage:**  
+  Powered by Supabase authentication and Postgres, using Drizzle ORM for database operations.
 
-1. Follow these [instructions](https://supabase.com/docs/guides/auth/social-login/auth-google?queryGroups=environment&environment=server) to set up Google OAuth.
+---
 
-#### Setup Github OAUTH Social Auth
-You can easily set up social auth with this template. First navigate to google cloud and create a new project. All code is written. You just need to add the `GITHUB_OAUTH_CLIENT_ID` and `GITHUB_OAUTH_CLIENT_SECRET` to your `.env` file.
+## 🧠 How It Works
 
-1. Follow these [instructions](https://supabase.com/docs/guides/auth/social-login/auth-github?queryGroups=environment&environment=server) to set up Github OAuth.
+1. User signs in via Supabase authentication.  
+2. User enters their **CRM API key** in the settings panel.  
+3. The app imports leads from **Follow Up Boss** and stores them in **PostgreSQL**.  
+4. When the user clicks “**ElevenLabs Agent**”, a personalized AI agent is created via the **ElevenLabs API**.  
+5. “**Twilio Setup**” creates a Twilio subaccount to manage the user’s call flow.  
+6. The user can select leads and initiate **AI-driven outbound calls** handled by ElevenLabs through Twilio.  
 
-### Setup Postgres DB
-You can use any Postgres db with this boilerplate code. Feel free to use [Vercel's Marketplace](https://vercel.com/marketplace) to browse through a collection of first-party services to add to your Vercel project.
+---
 
-Add `DATABASE_URL` to `.env` file e.g `postgresql://${USER}:${PASSWORD}@xxxx.us-east-2.aws.neon.tech/saas-template?sslmode=require`
-### Setup OAuth with Social Providers
+## 🏗️ Tech Stack
 
-#### Setup redirect url
-1. Go to Supabase dashboard
-2. Go to Authentication > Url Configuration
-3. Place production url into "Site URL".
-<img width="1093" alt="image" src="https://github.com/user-attachments/assets/c10a5233-ad47-4005-b9ae-ad80fc626022">
+| Layer | Technology |
+|-------|-------------|
+| **Frontend** | Next.js (React, TypeScript) |
+| **Backend** | Next.js API Routes |
+| **Database** | Supabase (PostgreSQL) |
+| **ORM** | Drizzle ORM |
+| **AI Voice** | ElevenLabs Conversational AI API |
+| **Telephony** | Twilio Voice API |
+| **CRM Integration** | Follow Up Boss API |
+
+---
+
+## 🔄 Phased Agile Development Approach
+
+This project adopts a phased agile methodology, where each release builds upon the previous one to deliver incremental functionality and continuous product improvement.
+
+### ✅ **Current Phase (Iteration 1 - MVP)**
+- Core integrations with **Follow Up Boss**, **ElevenLabs**, and **Twilio**  
+- Lead import and management UI  
+- Individual agent setup and Twilio subaccount creation  
+- AI-powered outbound call initiation  
+- Persistent user settings via Supabase
+
+### 🧭 **Next Phase (Iteration 2 - Upcoming Features)**
+
+The next major iteration will focus on improving user experience, automation, and analytics.
+#### 🔹 **1. Onboarding Wizard**
+- A guided multi-step onboarding flow that simplifies initial setup.  
+- Combines:  
+  - Saving the CRM API key  
+  - ElevenLabs agent setup  
+  - Twilio subaccount configuration  
+- Streamlines user activation with visual feedback and automated background processes.
+
+#### 🔹 **2. Batch Calling**
+- Enable users to trigger **batch calls** through the ElevenLabs batch endpoint.  
+- Supports sequential or parallel outbound calling for selected leads.  
+- Adds progress tracking and error handling in the dashboard UI.
+
+#### 🔹 **3. Call History & Transcripts**
+- Introduce a **Call History page** to display:  
+  - Outbound call logs  
+  - Conversation transcripts  
+  - Agent notes and summaries  
+  - Lead response context and timestamps  
+- Data stored in Supabase using Drizzle ORM schema for conversations.
+
+#### 🔹 **4. Enhanced Analytics (Future Extension)**
+- Post-call metrics such as success rate, call duration, and sentiment tracking.  
+- Dashboard visualizations for team-level insights.
+
+## 🧰 Tools & Integrations
+
+- 🧩 **Supabase** — Authentication, Postgres database hosting  
+- 🧠 **ElevenLabs API** — Conversational voice AI generation  
+- ☎️ **Twilio API** — Voice call automation  
+- 🔗 **Follow Up Boss API** — CRM contact import  
+- 🧱 **Drizzle ORM** — Type-safe database schema and migrations  
+- ⚡ **Next.js (App Router)** — API endpoints and frontend integration
+
+---
+
+## 🔒 Security & Data Isolation
+
+- Each user has isolated **Twilio subaccounts** and **ElevenLabs agents**.  
+- Authentication and session management handled through Supabase.  
+- Row-Level Security (RLS) can be configured in Supabase for strict per-user data access.  
+
+---
+
+## 👩‍💻 Development Philosophy
+
+This project follows an **phased agile development model** focused on:
+- Rapid prototyping and validation  
+- Continuous integration of user feedback  
+- Delivering functional increments over perfection  
+- Scalable architecture enabling new features with minimal refactoring  
+
+---
+
+## 👤 Author
+
+**Nadeem Imani**
+🔗 [LinkedIn](https://www.linkedin.com/in/nadeem-imani)
+
+**Rania Alvi**  
+📍 Software Engineer | Full-Stack Development  
+🔗 [LinkedIn](https://www.linkedin.com/in/alvirania)  
+💻 [GitHub](https://github.com/alvirania)
 
 
 
-### Setup Stripe
-
-In order to collect payments and setup subscriptions for your users, we will be making use of [Stripe Checkout](https://stripe.com/payments/checkout) and [Stripe Pricing Tables](https://docs.stripe.com/payments/checkout/pricing-table) and [Stripe Webhooks](https://docs.stripe.com/webhooks)
-
-1. [Register for Stripe](https://dashboard.stripe.com/register)
-2. get your `STRIPE_SECRET_KEY` key and add it to `.env`. Stripe has both a Test and Production API key. Once you verify your business on Stripe, you will be able to get access to production mode in Stripe which would come with a production API key. But until then, we can use [Stripe's Test Mode](https://docs.stripe.com/test-mode) to build our app
-
-![image](https://github.com/user-attachments/assets/01da4beb-ae1d-45df-9de8-ca5e2b2c3470)
-
-4. Open up `stripeSetup.ts` and change your product information
-5. run `npm run stripe:setup` to setup your Stripe product
-6. [Create a new Pricing Table](https://dashboard.stripe.com/test/pricing-tables) and add your newly created products
-7. When creating your new Pricing Table, set the *Confirmation Page* to *Don't show confirmation page*. Add [YOUR_PUBLIC_URL/subscribe/success](YOUR_PUBLIC_URL/subscribe/success) as the value(use [http://localhost:3000/subscribe/success](http://localhost:3000/subscribe/success) for local development). This will redirect the user to your main dashboard when they have completed their checkout. For prod, this will be your public url
-
-![image](https://github.com/user-attachments/assets/af8e9dda-3297-4e04-baa0-de7eac2a1579)
 
 
-8. Add `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` and `NEXT_PUBLIC_STRIPE_PRICING_TABLE_ID` to `.env` 
-![image](https://github.com/user-attachments/assets/3b1a53d3-d2d4-4523-9e0e-87b63d9108a8)
-
-Your pricing table should now be set up
-
-### Setup Database
-This boilerplate uses Drizzle ORM to interact with a PostgresDb. 
-
-Before we start, please ensure that you have `DATABASE_URL` set.
-
-To create the necessary tables to start, run `npm run db:migrate`
-
-#### To alter or add a table
-1. navigate to `/utils/db/schema.ts`
-2. Edit/add a table
-3. run `npm run db:generate` to generate migration files
-4. run `npm run db:migrate` to apply migration
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-### Setup Stripe for Local Development
-To receive webhook events from Stripe while developing locally, follow these steps:
-
-1. **Install the Stripe CLI**  
-Download and install the [Stripe CLI](https://docs.stripe.com/stripe-cli) if you haven’t already. This tool allows your local server to receive webhook events from Stripe.
-
-2. **Start the webhook listener**  
-Run the following command to forward Stripe events to your local server:
-
-```bash
-npm run stripe:listen
-```
-
-This command starts the Stripe CLI in listening mode and forwards incoming webhook events to `http://localhost:3000/webhook/stripe`. 
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
