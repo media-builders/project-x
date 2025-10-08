@@ -83,12 +83,16 @@ export default function LeadsTable() {
       const errData = await twilioRes.json().catch(() => ({}));
       alert(errData.error || `Twilio subaccount setup failed (status ${twilioRes.status})`);
       return;
+    } else {
+      alert(
+        `Your Twilio has been successfully setup.`
+      );
     }
 
     const twilioData = await twilioRes.json();
 
     //Ensure we have the subaccount SID and API key (or auth token)
-    const { subAccountSid, apiKeySid, apiKeySecret } = twilioData;
+    const { subAccountSid } = twilioData;
     console.log("Twilio subaccount ready:", subAccountSid);
   };
 

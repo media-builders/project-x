@@ -1,19 +1,10 @@
-/**
- * THE PURPOSE OF THIS API
- * 1. Authenticate User
- * 2. Fetch user's elevenlabs agent
- * 3. Import twilio phone number into elevenlabs
- * 4. Make an outbound call
- */
-
 import { NextRequest, NextResponse } from "next/server";
 import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 import { createServerClient } from "@supabase/ssr";
-import { usersTable, userAgentsTable } from "@/utils/db/schema";
+import { usersTable, userAgentsTable, userTwilioSubaccountTable } from "@/utils/db/schema";
 import { eq } from "drizzle-orm";
 import Twilio from "twilio";
 import { db } from "@/utils/db/db";
-
  
 export async function POST(req: NextRequest) {
     try {
@@ -45,10 +36,10 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "User email missing" }, { status: 400 });
         
         const dbUser = await db
-        .select()
-        .from(usersTable)
-        .where(eq(usersTable.email, user.email))
-        .limit(1);
+            .select()
+            .from(usersTable)
+            .where(eq(usersTable.email, user.email))
+            .limit(1);
     
         if (!dbUser.length)
             return NextResponse.json({ error: "User not found in DB" }, { status: 404 });
@@ -80,30 +71,54 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "No phone number provided." }, { status: 400 });
         /********************************************************************************************/
 
-        /**
-         * FETCH USER'S TWILIO PHONE NUMBER
-         * Currently using the main twilio account sid and auth token 
-         * Twilio's trial Account limitation is preventing
-         * phone number registration, hence using main account
-         * Will implement fetching user's sid+token once trial account
-         * limitations are removed.
-         */
-        const TWILIO_SID = process.env.TWILIO_ACCOUNT_SID!;
-        const TWILIO_AUTH = process.env.TWILIO_AUTH_TOKEN!; 
-        const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY!;
+        //Fetch user's subaccount details     
+        const subaccount = await db
+            .select()
+            .from(userTwilioSubaccountTable)
+            .where(eq(userTwilioSubaccountTable.user_id, userId))
+            .limit(1);
 
-        const twilioClient = Twilio(TWILIO_SID, TWILIO_AUTH);
-        const incomingNumbers = await twilioClient.incomingPhoneNumbers.list({ limit: 1 });
-        if (!incomingNumbers.length)
-            return NextResponse.json({ error: "No phone number found."}, { status: 400});
-        twilioPhoneNumber = incomingNumbers[0].phoneNumber;
-        console.log("Your twilio phone number: ", twilioPhoneNumber);
+        if (!subaccount.length) {
+            return NextResponse.json(
+                { error: "No twilio subaccount found for this user."},
+                { status: 400 }
+            );
+        }
+
+        const { subaccount_sid, subaccount_auth_token, phone_number } = subaccount[0];
+        const twilioClient = Twilio(subaccount_sid, subaccount_auth_token);
+        console.log(`Twilio subaccount: ${subaccount_sid}`);
+        /********************************************************************************************/
+
+        //Fetching phone number
+        if (!twilioPhoneNumber) {
+            console.log("Fetching Twilio phone number...");
+            const incomingNumbers = await twilioClient.incomingPhoneNumbers.list({ limit: 1 });
+            
+            if (!incomingNumbers.length)
+                return NextResponse.json({ error: "No phone number found."}, { status: 400});
+            
+            twilioPhoneNumber = incomingNumbers[0].phoneNumber;
+            console.log("Your twilio phone number is: ", twilioPhoneNumber);
+
+            await db
+                .update(userAgentsTable)
+                .set({ twilio_number: twilioPhoneNumber })
+                .where(eq(userAgentsTable.user_id, userId));
+            console.log("Twilio number saved!");
+        } 
         /********************************************************************************************/
 
         //Import into Elevenlabs if not already imported
+        const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY!;
         if (!agentPhoneNumberId) {
+            //debugging purposes
+            console.log("Sending to ElevenLabs import:", {
+                account_sid: subaccount_sid,
+                phone_number: twilioPhoneNumber,
+            });
             const importRes = await fetch(
-                "https://api.elevenlabs.io/v1/convai/twilio/phone-numbers/import", 
+                "https://api.elevenlabs.io/v1/convai/phone-numbers", 
                 {
                     method: "POST",
                     headers: {
@@ -111,14 +126,17 @@ export async function POST(req: NextRequest) {
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
-                        account_sid: TWILIO_SID,
-                        auth_token: TWILIO_AUTH,
                         phone_number: twilioPhoneNumber,
-                    })
+                        label: `${user.email}'s Twilio Number`,
+                        sid: subaccount_sid,
+                        token: subaccount_auth_token, 
+                        provider: "twilio", 
+                    }),
                 }
             );
             
             const importData = await importRes.json();
+            console.log("ElevenLabs import response:", importData);
             if (!importRes.ok) {
                 console.error("ElevenLabs import unsuccessful: ", importData);
                 return NextResponse.json(
@@ -126,7 +144,7 @@ export async function POST(req: NextRequest) {
                     { status: 500 }
                 );
             }
-            agentPhoneNumberId = importData.id;
+            agentPhoneNumberId = importData.phone_number_id;
 
             await db
             .update(userAgentsTable)
@@ -136,7 +154,7 @@ export async function POST(req: NextRequest) {
              })
             .where(eq(userAgentsTable.user_id, userId));
 
-            console.log("Imported phone number has been saved!");
+            console.log("Import successful!");
         }
         /********************************************************************************************/
 
