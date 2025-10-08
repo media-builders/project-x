@@ -207,14 +207,14 @@ export default function LeadsTable() {
             className="btn btn-primary"
             onClick={elevenlabsSetup}
           >
-            Elevenlabs Agent{selected.length > 1 ? "s" : ""}
+            Agent Setup{selected.length > 1 ? "s" : ""}
           </button>
           <button
             type="button"
             className="btn btn-primary"
             onClick={twilioSetup}
           >
-            Twilio Setup{selected.length > 1 ? "s" : ""}
+            Phone Setup{selected.length > 1 ? "s" : ""}
           </button>
           <button
             type="button"
@@ -222,7 +222,7 @@ export default function LeadsTable() {
             onClick={makeOutboundCall}
             disabled={selected.length === 0}
           >
-            Elevenlabs Agent Call via Twilio{selected.length > 1 ? "s" : ""}
+            Call{selected.length > 1 ? "s" : ""}
           </button>
         </div>
       </div>
@@ -230,10 +230,9 @@ export default function LeadsTable() {
       {/* Table */}
       <div className="table-viewport">
         <div className="table-card">
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
-            <h2 className="table-title" style={{ margin: 0 }}>Leads</h2>
+          <div>
             {selected.length > 0 && (
-              <span style={{ fontSize: "0.875rem", fontStyle: "italic", fontWeight: 300 }}>
+              <span>
                 {selected.length} Contact{selected.length > 1 ? "s" : ""} selected
               </span>
             )}

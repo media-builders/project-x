@@ -73,10 +73,16 @@ export  async function POST( req: NextRequest) {
             llmSettings: llmSettings || undefined,
             conversationConfig: {
             // Required fields — you can adjust these as needed
-            maxHistoryTokens: 5000, // maximum context size
-            initialSystemPrompt: " ", // default prompt
-  },
-        } as any); 
+              maxHistoryTokens: 5000, // maximum context size
+              agent: {
+                first_message: "Hi! How can I help you today?",
+                language: "en",
+                prompt: {
+                    prompt: "You are an expert travel assistant. Always provide clear, structured recommendations with pros and cons."
+                }
+              },
+            }
+          } as any); 
 
         //Fetch Agent Info
         const fullAgent = await client.conversationalAi.agents.get(createResponse.agentId);

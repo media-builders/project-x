@@ -105,8 +105,6 @@ body{
 /* ============ LAYOUT PANELS ============ */
 .dashboard{
   min-height: 100vh;
-  padding: 24px;
-  gap: 24px;
   background: transparent;           /* let page gradient show */
   border: none;
   display: flex;
@@ -116,7 +114,6 @@ body{
   flex: 0 0 260px;
   background: var(--navy-1);
   border: 1px solid var(--hairline);
-  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-outer);
   padding: 18px 10px;
 }
@@ -125,7 +122,6 @@ body{
   flex: 1 1 auto;
   background: var(--surface);
   border: 1px solid var(--hairline);
-  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-outer);
   padding: 22px 22px 28px;
   overflow: hidden;
@@ -198,7 +194,7 @@ body{
 
 /* Header row block with darker bg like the mock */
 .contact-table thead th.header-cell{
-  background: var(--hdr-bg);
+  background: var(--navy-2);
   color: var(--txt-2);
   font-weight: 600;
   text-transform: uppercase;
@@ -207,6 +203,9 @@ body{
   text-align: left;
   padding: 12px 14px;
   border-bottom: 1px solid var(--hairline);
+  position: sticky;
+  top: 0;
+  z-index: 2; 
 }
 
 /* Data cells: flat rows with hairline separators */
@@ -238,7 +237,7 @@ body{
 
 /* Responsive tweaks */
 @media (max-width: 1024px){
-  .dashboard{ padding: 16px; gap: 16px; }
+  .dashboard{ padding: ; gap:; }
   .dashboard-menu{ flex-basis: 230px; }
 }
 @media (max-width: 760px){
@@ -253,6 +252,13 @@ body{
   justify-content: space-between;  /* left: Import/Export/Sync, right: Call Lead */
   gap: 12px;
   margin-bottom: 14px;
+}
+
+.table-viewport {
+  max-height: 500px;     /* Fixed height */
+  overflow-y: auto;      /* Vertical scroll */
+  overflow-x: hidden;    /* Hide horizontal scroll unless needed */
+  border: 1px solid var(--hairline);
 }
 
 .table-actions{
