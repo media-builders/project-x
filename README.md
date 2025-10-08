@@ -116,13 +116,14 @@ This project follows an **phased agile development model** focused on:
 
 ---
 
-## 👤 Author
+## 👤 Authors
 
 **Nadeem Imani**
+
 🔗 [LinkedIn](https://www.linkedin.com/in/nadeem-imani)
 
 **Rania Alvi**  
-📍 Software Engineer | Full-Stack Development  
+
 🔗 [LinkedIn](https://www.linkedin.com/in/alvirania)  
 💻 [GitHub](https://github.com/alvirania)
 
