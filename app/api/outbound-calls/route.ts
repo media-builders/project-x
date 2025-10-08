@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
         if (!dbUser.length)
             return NextResponse.json({ error: "User not found in DB" }, { status: 404 });
         const userId = dbUser[0].id;
+        const userName = dbUser[0].name;
         /********************************************************************************************/
         
         //Fetching User's ElevenLabs Agent
@@ -127,7 +128,7 @@ export async function POST(req: NextRequest) {
                     },
                     body: JSON.stringify({
                         phone_number: twilioPhoneNumber,
-                        label: `${user.email}'s Twilio Number`,
+                        label: `${userName}'s Twilio Number`,
                         sid: subaccount_sid,
                         token: subaccount_auth_token, 
                         provider: "twilio", 
@@ -146,6 +147,7 @@ export async function POST(req: NextRequest) {
             }
             agentPhoneNumberId = importData.phone_number_id;
 
+            /**Updating table with info */
             await db
             .update(userAgentsTable)
             .set({ 
@@ -155,9 +157,37 @@ export async function POST(req: NextRequest) {
             .where(eq(userAgentsTable.user_id, userId));
 
             console.log("Import successful!");
+            
+            /**Assigning the agent to the imported phone number */
+            const assignRes = await fetch(
+                `https://api.elevenlabs.io/v1/convai/phone-numbers/${agentPhoneNumberId}`,
+                {
+                    method: "PATCH",
+                    headers: {
+                    "xi-api-key": ELEVENLABS_API_KEY,
+                    "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                    agent_id: agentId,
+                    }),
+                }
+            );
+
+            const assignData = await assignRes.json();
+            console.log("Assign response:", assignData);
+
+            if (!assignRes.ok) {
+                console.error("Failed to assign phone number:", assignData);
+                return NextResponse.json(
+                    { error: assignData.error || "Failed to assign phone number to agent." },
+                    { status: 500 }
+                );
+            }
+
+            console.log("Phone number successfully assigned to agent!");
         }
         /********************************************************************************************/
-
+        
         //Making Call via Elevenlabs
         const elClient = new ElevenLabsClient({ apiKey: ELEVENLABS_API_KEY });
         console.log(`Calling ${toNumber} (mode: ${TEST_MODE ? "TEST": "LIVE"})`);
