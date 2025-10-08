@@ -40,9 +40,9 @@ export type SelectUserAgent = typeof userAgentsTable.$inferSelect;
 
 export const userTwilioSubaccountTable = pgTable("user_twilioSubAccounts", {
     user_id: text('user_id').primaryKey(),
-    subaccount_sid: text('subaccount_sid').notNull().primaryKey(),
+    subaccount_sid: text('subaccount_sid').notNull(),
     subaccount_auth_token: text('subaccount_auth_token').notNull(),
-    phone_number: text('phone_number'),
+    phone_number: text('phone_number').notNull(),
     created_at: timestamp("created_at").defaultNow().notNull(),
 })
 

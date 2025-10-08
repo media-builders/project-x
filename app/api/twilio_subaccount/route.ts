@@ -1,19 +1,3 @@
-/**
- * WHEN CALL IS CLICKED:
- * 1. Create ElevenLabs Agent if it doesnt already exist
- * 2. Create Twilio subaccount if it doesnt already exist
- * ******************************************************
- * THE PURPOSE OF THIS API
- * (1) Create subaccount
- * (2) Store Subaccount SID into users_table
- * (3) Fetch an available phone number
- * (4) Save Twilio phone number into users_table
- * 
- * 
- * (5) Make a call
- * (6) Log twilio call into the eleven labs agent
- */
-
 import { NextRequest, NextResponse } from "next/server";
 import { Twilio } from 'twilio';
 import { db } from "@/utils/db/db";
@@ -75,10 +59,12 @@ export async function POST( req: NextRequest) {
 
         //subaccount exists
         if(existingSubaccount.length > 0) {
+            console.log("Account already exists");
             return NextResponse.json({
                 message: "Twilio subaccount already exists.",
                 subaccount: existingSubaccount[0]
             });
+            
         }
         
         const newSubaccount = await twilioClient.api.v2010.accounts.create({
@@ -87,15 +73,6 @@ export async function POST( req: NextRequest) {
         console.log("Subaccount Created:", newSubaccount.sid);
 
         const subClient = new Twilio(newSubaccount.sid, newSubaccount.authToken);
-
-        //Generate API key for subaccount
-        const apiKey = await subClient.newKeys.create({
-            friendlyName: `${userFirstName}-apiKey`,
-        });
-        console.log("API Key created:", apiKey.sid);
-
-        const apiKeySid = apiKey.sid;
-        const apiKeySecret = apiKey.secret;
 
         //Fetch phone number
         const availableNumbers = await subClient
@@ -116,7 +93,7 @@ export async function POST( req: NextRequest) {
             .values({
                 user_id: userId,
                 subaccount_sid: newSubaccount.sid,
-                subaccount_auth_token: apiKey.secret, // optionally encrypt
+                subaccount_auth_token: newSubaccount.authToken,
                 phone_number: phoneNumber,
 
             }).returning();
