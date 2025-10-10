@@ -2,7 +2,6 @@ import { Bell, Menu, Search } from "lucide-react"
 import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import Image from 'next/image'
 import { createClient } from '@/utils/supabase/server'
 import DashboardHeaderProfileDropdown from "./DashboardHeaderProfileDropdown"
@@ -38,18 +37,6 @@ export default async function DashboardHeader() {
                     <span className="sr-only">Toggle Menu</span>
                 </Button>
                 <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-                    <div className="w-full flex-1 md:w-auto md:flex-none">
-                        <form>
-                            <div className="relative">
-                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    type="search"
-                                    placeholder="Search..."
-                                    className="pl-8 sm:w-[300px] md:w-[200px] lg:w-[300px]"
-                                />
-                            </div>
-                        </form>
-                    </div>
                     <DashboardHeaderProfileDropdown />
                 </div>
             </div>

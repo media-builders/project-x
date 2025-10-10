@@ -34,7 +34,7 @@ export default async function UserGreeting() {
       : rawName;
 
   return (
-    <h1 className="text-2xl md:text-2xl lg:text-2xl font-semibold font-sans text-gray-900 pl-6 md:pl-10 lg:pl-12">
+    <h1 className="">
       Hello {firstName}! Welcome to BrokerNest
     </h1>
   );

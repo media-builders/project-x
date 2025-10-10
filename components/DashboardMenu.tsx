@@ -3,7 +3,6 @@
 "use client";
 
 import {useState} from 'react';
-import LeadsTable from "@/components/Leads";
 import SettingsPanel from "@/components/SettingsPanel";
 
 
