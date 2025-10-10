@@ -11,7 +11,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
     title: "BrokerNest.ai",
-    description: "AI CRM Dialer",
+    description: "AI Dialer",
 };
 
 export default async function DashboardLayout({
