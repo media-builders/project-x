@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import SetupButtons from "@/components/setup/SetupButtons";
 
 export default function SettingsPanel({ onClose }: {onClose: () => void }) {
     const[CRMKey, setCRMKey] = useState("");
@@ -35,32 +36,43 @@ export default function SettingsPanel({ onClose }: {onClose: () => void }) {
         <h2 className="text-xl font-bold mb-4 text-center">Settings</h2>
         
         <div className = "flex flex-col gap-3">
-          <label className = "text-sm font-medium">CRM API Key </label>      
-          <input
-            type="text"
-            value={CRMKey}
-            onChange={(e) => setCRMKey(e.target.value)}
-            placeholder="Enter your CRM API Key"
-            className="border rounded-md px-3 py-2 text-black focus:outline-none focus:ring focus:ring-blue-300"
-          />
+          <div>
+            <label className = "text-sm font-medium">CRM API Key </label>      
+            <input
+              type="text"
+              value={CRMKey}
+              onChange={(e) => setCRMKey(e.target.value)}
+              placeholder="Enter your CRM API Key"
+              className="border rounded-md px-3 py-2 text-black focus:outline-none focus:ring focus:ring-blue-300"
+            />
+
+            <button
+              onClick={handleSave}
+              className="btn btn-primary px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700"
+            >
+            Save API Key
+            </button>
+
+            {saved && <p className="text-green-400 font-medium ">API Key Saved!</p>}
+          </div>
 
           <button
-            onClick={handleSave}
-            className="btn btn-primary px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700"
-          >
-          Save API Key
+            onClick={onClose}
+            className = "mt-6 px-4 py-2 rounded-md bg-gray-600 hover:bg-gray-700">
+            Close
           </button>
-
-          {saved && <p className="text-green-400 font-medium ">API Key Saved!</p>}
+        </div>
+        <div className="mt-6">
+          <SetupButtons
+            onImported={() => {
+              console.log("Leads reloaded after import");
+            }}
+          />
         </div>
 
-        <button
-          onClick={onClose}
-          className = "mt-6 px-4 py-2 rounded-md bg-gray-600 hover:bg-gray-700">
-          Close
-        </button>
-
       </div>
+
+      
     </div>
   );
 }
