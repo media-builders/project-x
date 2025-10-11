@@ -11,6 +11,7 @@ export default async function UserGreeting() {
   const supabase = createClient();
 
   const { data, error } = await supabase.auth.getUser();
+
   if (error || !data?.user) {
     redirect("/login");
   }
@@ -34,7 +35,7 @@ export default async function UserGreeting() {
       : rawName;
 
   return (
-    <h1 className="">
+    <h1 className="text-xl font-semibold text-[var(--txt-1)] mb-4">
       Hello {firstName}! Welcome to BrokerNest
     </h1>
   );

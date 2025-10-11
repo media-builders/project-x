@@ -40,7 +40,12 @@
     "stripe": "^16.9.0",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
-    "twilio": "^5.10.2"
+    "twilio": "^5.10.2",
+    "@fullcalendar/react": "^6.1.14",
+    "@fullcalendar/core": "^6.1.14",
+    "@fullcalendar/daygrid": "^6.1.14",
+    "@fullcalendar/timegrid": "^6.1.14",
+    "@fullcalendar/interaction": "^6.1.14"
   },
   "devDependencies": {
     "@types/node": "^20.17.8",
