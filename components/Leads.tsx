@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import CallButton from "@/components/setup/CallButton";
+import { Search, ChevronUp, ChevronDown, Plus } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import LeadProfile from "@/components/LeadProfile";
 
 type Lead = {
-  id: string;   // in UI: DB uuid when loaded from DB; temporary for imported array
+  id: string;
   first: string;
   last: string;
   email: string;
@@ -11,145 +16,80 @@ type Lead = {
   featured?: boolean;
 };
 
-export default function LeadsTable() {
-  // Demo seed; replaced by DB on mount (if any rows exist)
-  const initialRows: Lead[] = useMemo(
-    () => [
-      
-    ],
-    []
-  );
+type SortKey = "first" | "last" | "email" | "phone";
 
-  const [rows, setRows] = useState<Lead[]>(initialRows);
+export default function LeadsTable() {
+  const [rows, setRows] = useState<Lead[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
-  const [importing, setImporting] = useState(false);
   const [loadingDb, setLoadingDb] = useState(true);
+  const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState<Record<SortKey, string[]>>({
+    first: [],
+    last: [],
+    email: [],
+    phone: [],
+  });
+
+  const [sortBy, setSortBy] = useState<SortKey>("first");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [openFilter, setOpenFilter] = useState<SortKey | null>(null);
+
+  // filter dropdown refs
+  const firstRef = useRef<HTMLDivElement | null>(null);
+  const lastRef = useRef<HTMLDivElement | null>(null);
+  const emailRef = useRef<HTMLDivElement | null>(null);
+  const phoneRef = useRef<HTMLDivElement | null>(null);
+  const filterRefs: Record<SortKey, React.RefObject<HTMLDivElement>> = {
+    first: firstRef,
+    last: lastRef,
+    email: emailRef,
+    phone: phoneRef,
+  };
+
+  // close filter dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (openFilter && filterRefs[openFilter].current) {
+        if (!filterRefs[openFilter].current!.contains(e.target as Node)) {
+          setOpenFilter(null);
+        }
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [openFilter]);
 
   const allSelected = selected.length === rows.length && rows.length > 0;
 
-  const toggleAll = () =>
+  // select / deselect all
+  const toggleAll = () => {
     setSelected((prev) => (prev.length === rows.length ? [] : rows.map((r) => r.id)));
-
-  const toggleOne = (id: string) =>
-    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-
-  //ELEVENLABS AGENT SETUP
-  const elevenlabsSetup = async() => {
-    try {
-      console.log("Creating/retrieving ElevenLabs agent...");
-
-      const res = await fetch("/api/elevenlabs-agent", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          // voiceId or llmSettings if you want, otherwise leave empty
-        }),
-      });
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        alert(errData.error || `Agent API failed with status ${res.status}`);
-        return;
-      }
-
-      const data = await res.json();
-      if (!data.agent) {
-        alert("Agent not returned from API");
-        return;
-      }
-
-      // Display agent info 
-      alert(
-        `${data.agent.name} has been successfully setup in ElevenLabs.`
-      );
-    } catch (err) {
-      console.error(err);
-      alert("Failed to create/retrieve agent");
-    }
-  };
-  
-  //TWILIO SUBACCOUNT SETUP
-  const twilioSetup = async() => {
-    console.log("Checking or creating Twilio subaccount...");
-    const twilioRes = await fetch("/api/twilio_subaccount", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}), 
-    });
-
-    if (!twilioRes.ok) {
-      const errData = await twilioRes.json().catch(() => ({}));
-      alert(errData.error || `Twilio subaccount setup failed (status ${twilioRes.status})`);
-      return;
-    } else {
-      alert(
-        `Your Twilio has been successfully setup.`
-      );
-    }
-
-    const twilioData = await twilioRes.json();
-
-    //Ensure we have the subaccount SID and API key (or auth token)
-    const { subAccountSid } = twilioData;
-    console.log("Twilio subaccount ready:", subAccountSid);
   };
 
-  //ELEVENLABS AGENT MAKING OUTBOUND CALL THROUGH TWILIO
-  const makeOutboundCall = async() => {
-    const picked = rows.filter((r) => selected.includes(r.id));
-    if (picked.length === 0) return;
-
-    try {
-    console.log("Initiating outbound call via ElevenLabs + Twilio...");
-
-    // Send selected leads to API; API uses predefined toNumber for testing
-    const res = await fetch("/api/outbound-calls", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        leads: picked, // API will ignore the phone numbers for now
-      }),
+  // select / deselect one
+  const toggleOne = (id: string) => {
+    setSelected((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((x) => x !== id);
+      } else {
+        return [...prev, id];
+      }
     });
+  };
 
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      alert(errData.error || `Call API failed with status ${res.status}`);
-      return;
-    }
-
-    const data = await res.json();
-    console.log("Call response:", data);
-
-    alert(
-      `Call initiated!\n\nMode: ${data.mode}\nFrom: ${data.from_number}\nTo (predefined for testing): ${data.called_number}`
-    );
-  } catch (err) {
-    console.error(err);
-    alert("Failed to make outbound call");
-  }
-
-  }
-
-  // 1) Load saved leads from DB on mount
+  // Load leads from DB
   const loadFromDb = useCallback(async () => {
     try {
       setLoadingDb(true);
       const res = await fetch("/api/leads/db");
       if (!res.ok) throw new Error(`DB load failed (${res.status})`);
       const data: { people: Lead[] } = await res.json();
-      //
-      console.log("Imported from API:", data.people.length, "contacts");
-      if (Array.isArray(data.people) && data.people.length > 0) {
+      if (Array.isArray(data.people)) {
         setRows(data.people);
         setSelected([]);
       }
     } catch (e) {
       console.error(e);
-      // keep demo seed if DB is empty or error
     } finally {
       setLoadingDb(false);
     }
@@ -159,131 +99,205 @@ export default function LeadsTable() {
     loadFromDb();
   }, [loadFromDb]);
 
-  // 2) Import from FUB -> save -> refresh from DB (so UI shows appended union)
-  const handleImport = useCallback(async () => {
-    try {
-      setImporting(true);
-      const res = await fetch("/api/leads/import", {method: "POST"});
-      
-      //Error message alert
-      if (res.status === 400) {
-        const data = await res.json().catch(() => ({}));
-        alert(data.error || "No CRM API Key found. Please enter your CRM API Key in Settings, press Save, then click IMPORT.")
-        return;
-      }
+  const selectedLeads = rows.filter((r) => selected.includes(r.id));
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || `Import failed (${res.status})`);
-      }
+  // Filter helper
+  const applyFilters = (
+    inputRows: Lead[],
+    activeFilters: Record<SortKey, string[]>,
+    skipCol?: SortKey
+  ) => {
+    return inputRows.filter((r) =>
+      (["first", "last", "email", "phone"] as SortKey[]).every((col) => {
+        if (col === skipCol) return true;
+        const val = (r[col] || "").toString().trim();
+        const active = activeFilters[col];
+        if (active.length === 0) return true;
 
-      const data: { ok: boolean; count: number } = await res.json();
-      if (data.ok) {
-        console.log(`Successfully imported ${data.count} leads.`);
-        await loadFromDb();
+        if (col === "phone") {
+          const digits = val.replace(/\D/g, "");
+          const prefix = digits.substring(0, 3);
+          return active.includes(prefix);
+        } else {
+          return active.some((f) => val.toLowerCase().startsWith(f.toLowerCase()));
+        }
+      })
+    );
+  };
+
+  // Search + filter application
+  const searchedRows = rows.filter((r) => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return (
+      r.first.toLowerCase().includes(q) ||
+      r.last.toLowerCase().includes(q) ||
+      r.email.toLowerCase().includes(q) ||
+      r.phone.toLowerCase().includes(q)
+    );
+  });
+
+  const filteredRows = applyFilters(searchedRows, filters).sort((a, b) => {
+    const fieldA = a[sortBy]?.toLowerCase?.() ?? "";
+    const fieldB = b[sortBy]?.toLowerCase?.() ?? "";
+    if (fieldA < fieldB) return sortOrder === "asc" ? -1 : 1;
+    if (fieldA > fieldB) return sortOrder === "asc" ? 1 : -1;
+    return 0;
+  });
+
+  // Dynamic filter options
+  const getAvailableFilterOptions = (col: SortKey): string[] => {
+    const relevantRows = applyFilters(searchedRows, filters, col);
+    const options = new Set<string>();
+    relevantRows.forEach((row) => {
+      const val = (row[col] || "").toString().trim();
+      if (!val) return;
+      if (col === "phone") {
+        const digits = val.replace(/\D/g, "");
+        if (digits.length >= 3) options.add(digits.substring(0, 3));
+      } else {
+        options.add(val[0].toUpperCase());
       }
-    } catch (e: any) {
-        console.error(e);
-        alert(`Import failed. ${e.message ?? ""}`);
-      } finally {
-        setImporting(false);
+    });
+    const arr = Array.from(options);
+    return col === "phone" ? arr.sort((a, b) => Number(a) - Number(b)) : arr.sort();
+  };
+
+  // Sorting toggle
+  const toggleSort = (col: SortKey) => {
+    if (sortBy === col) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(col);
+      setSortOrder("asc");
+    }
+  };
+
+  // Filter toggle
+  const toggleFilter = (col: SortKey, value: string) => {
+    setFilters((prev) => {
+      const active = prev[col] || [];
+      if (active.includes(value)) {
+        return { ...prev, [col]: active.filter((f) => f !== value) };
+      } else {
+        return { ...prev, [col]: [...active, value] };
       }
-  }, [loadFromDb]);
+    });
+  };
 
   return (
-    <div className="dashboard-window">
+    <div className="">
+      {/* Lead Profile (multi-lead support) */}
+      <LeadProfile leads={selectedLeads} />
+
       {/* Toolbar */}
-      <div className="table-toolbar" role="toolbar" aria-label="Leads actions">
-        <div className="table-actions">
-          <button type="button" className="btn btn-ghost" onClick={handleImport} disabled={importing}>
-            {importing ? "Importing…" : "Import"}
-          </button>
-          <button type="button" className="btn btn-ghost">Export</button>
-          <button type="button" className="btn btn-ghost">Sync</button>
-        </div>
-        <div className="secondary-actions">
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={elevenlabsSetup}
-          >
-            Agent Setup{selected.length > 1 ? "s" : ""}
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={twilioSetup}
-          >
-            Phone Setup{selected.length > 1 ? "s" : ""}
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={makeOutboundCall}
-            disabled={selected.length === 0}
-          >
-            Call{selected.length > 1 ? "s" : ""}
-          </button>
+      <div className="flex items-center justify-between mb-4">
+        <form className="flex-1 max-w-sm">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search leads..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-8 w-full"
+            />
+          </div>
+        </form>
+        <div className="flex items-center space-x-4">
+          <CallButton selectedLeads={selectedLeads} />
+          {selected.length > 0 && <span>{selected.length} selected</span>}
         </div>
       </div>
 
       {/* Table */}
       <div className="table-viewport">
-        <div className="table-card">
-          <div>
-            {selected.length > 0 && (
-              <span>
-                {selected.length} Contact{selected.length > 1 ? "s" : ""} selected
-              </span>
-            )}
-          </div>
-
+        <div className="table-card relative">
           <table className="contact-table">
-            <caption className="sr-only">Lead contacts</caption>
             <thead>
               <tr>
-                <th scope="col" className="header-cell checkbox-cell">
-                  <input type="checkbox" aria-label="Select all leads" checked={allSelected} onChange={toggleAll} />
+                <th className="checkbox-cell">
+                  <input type="checkbox" checked={allSelected} onChange={toggleAll} />
                 </th>
-                <th scope="col" className="header-cell">First Name</th>
-                <th scope="col" className="header-cell">Last Name</th>
-                <th scope="col" className="header-cell">Email</th>
-                <th scope="col" className="header-cell">Phone Number</th>
+                {(["first", "last", "email", "phone"] as SortKey[]).map((col) => (
+                  <th key={col} className="relative header-cell">
+                    <div className="flex items-center cursor-pointer" onClick={() => toggleSort(col)}>
+                      {col === "first" && "First Name"}
+                      {col === "last" && "Last Name"}
+                      {col === "email" && "Email"}
+                      {col === "phone" && "Phone"}
+                      {sortBy === col &&
+                        (sortOrder === "asc" ? (
+                          <ChevronUp className="ml-1 h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="ml-1 h-4 w-4" />
+                        ))}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenFilter(openFilter === col ? null : col);
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+
+                    {openFilter === col && (
+                      <div
+                        ref={filterRefs[col]}
+                        className="absolute z-10 bg-white text-black shadow p-2 mt-1 rounded w-32 max-h-48 overflow-y-auto"
+                      >
+                        {getAvailableFilterOptions(col).map((option) => (
+                          <label key={option} className="flex items-center space-x-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={filters[col].includes(option)}
+                              onChange={() => toggleFilter(col, option)}
+                            />
+                            <span>{option}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </th>
+                ))}
               </tr>
             </thead>
-
             <tbody>
-              {rows.map((r) => {
-                const isChecked = selected.includes(r.id);
-                return (
-                  <tr key={r.id} className={`row ${r.featured ? "is-featured" : ""}`}>
-                    <td className="data-cell checkbox-cell">
-                      <input
-                        type="checkbox"
-                        aria-label={`Select ${r.first} ${r.last}`}
-                        checked={isChecked}
-                        onChange={() => toggleOne(r.id)}
-                      />
-                    </td>
-                    <td className="data-cell" data-label="First Name">{r.first}</td>
-                    <td className="data-cell" data-label="Last Name">{r.last}</td>
-                    <td className="data-cell" data-label="Email">{r.email}</td>
-                    <td className="data-cell" data-label="Phone Number">{r.phone}</td>
-                  </tr>
-                );
-              })}
-
-              {rows.length === 0 && !loadingDb && (
+              {filteredRows.map((r) => (
+                <tr
+                  key={r.id}
+                  className={`cursor-pointer ${
+                    selected.includes(r.id) ? "bg-[rgba(73,179,255,0.1)]" : ""
+                  }`}
+                  onClick={() => toggleOne(r.id)}
+                >
+                  <td className="data-cell">
+                    <input
+                      type="checkbox"
+                      checked={selected.includes(r.id)}
+                      onChange={() => toggleOne(r.id)}
+                      onClick={(e) => e.stopPropagation()} // prevents double toggle
+                    />
+                  </td>
+                  <td className="data-cell">{r.first}</td>
+                  <td className="data-cell">{r.last}</td>
+                  <td className="data-cell">{r.email}</td>
+                  <td className="data-cell">{r.phone}</td>
+                </tr>
+              ))}
+              {filteredRows.length === 0 && !loadingDb && (
                 <tr>
-                  <td className="data-cell" colSpan={5} style={{ textAlign: "center", color: "var(--txt-2, #a9b8d9)" }}>
-                    No leads yet. Click <strong>Import</strong> to load data.
+                  <td colSpan={5} className="text-center data-cell">
+                    No matching leads
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
-
-          <div className="table-footer-space" />
         </div>
       </div>
     </div>

@@ -113,16 +113,12 @@ body{
 .dashboard-menu{
   flex: 0 0 260px;
   background: var(--navy-1);
-  border: 1px solid var(--hairline);
-  box-shadow: var(--shadow-outer);
   padding: 18px 10px;
 }
 
 .dashboard-window{
   flex: 1 1 auto;
   background: var(--surface);
-  border: 1px solid var(--hairline);
-  box-shadow: var(--shadow-outer);
   padding: 22px 22px 28px;
   overflow: hidden;
   color: var(--txt-1);
@@ -255,7 +251,7 @@ body{
 }
 
 .table-viewport {
-  max-height: 500px;     /* Fixed height */
+  height: 500px;     /* Fixed height */
   overflow-y: auto;      /* Vertical scroll */
   overflow-x: hidden;    /* Hide horizontal scroll unless needed */
   border: 1px solid var(--hairline);
