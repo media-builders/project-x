@@ -4,37 +4,9 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-  }
-
-  .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    --card: 222.2 84% 6%;
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
@@ -44,320 +16,685 @@
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 200 100% 55%;
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --radius: 0.35rem;
   }
-}
 
-@layer base {
-  * {
-    @apply border-border;
-  }
   body {
     @apply bg-background text-foreground;
+    font-family: "Inter", system-ui, sans-serif;
+    background: radial-gradient(circle at 25% 15%, #0e1527, #070b14 80%);
+    color: #e9efff;
   }
 }
- /* ===============================
-   Navy / Blue Dashboard Theme
+
+/* ===============================
+   VIDCONF Glass Dashboard Theme
    =============================== */
 
-/* Palette + tokens */
-:root{
-  --sky-1: #d8e6ff;                    /* page glow */
-  --sky-2: #c5d8ff;
-
-  --navy-1: #0c1526;                   /* sidebar base */
-  --navy-2: #0f1f3d;                   /* panel top */
-  --navy-3: #122749;                   /* panel bottom */
-
+:root {
+  --navy-1: #080c14; /* Sidebar base */
+  --navy-2: #0c1323; /* Top panel gradient start */
+  --navy-3: #101a30; /* Bottom gradient */
   --surface: linear-gradient(180deg, var(--navy-2), var(--navy-3));
-  --hdr-bg: rgba(255,255,255,.065);    /* table header background */
-  --row-hover: rgba(255,255,255,.045); /* table row hover */
-  --hairline: rgba(255,255,255,.12);   /* inner borders */
-  --hairline-2: rgba(255,255,255,.18); /* hover/active borders */
 
-  --txt-1: #e9f1ff;                    /* primary text */
-  --txt-2: #a9b8d9;                    /* secondary text */
-  --txt-3: #7f93bd;                    /* muted */
+  --hdr-bg: rgba(255, 255, 255, 0.04);
+  --row-hover: rgba(255, 255, 255, 0.06);
+  --hairline: rgba(255, 255, 255, 0.07);
+  --hairline-2: rgba(255, 255, 255, 0.15);
 
-  --accent: #49b3ff;                   /* active cyan */
-  --radius-lg: 18px;
-  --shadow-outer: 0 22px 50px rgba(16,27,55,.45);
+  --txt-1: #eef3ff;
+  --txt-2: #a6b3d0;
+  --txt-3: #6c7da5;
+
+  --accent: #46aaff; /* blue glow */
+  --accent-warm: #ff9f43; /* warm glow */
+  --radius-lg: 6px;
 }
 
-/* Page background like the mock (soft blue glow) */
-body{
-  background:
-    radial-gradient(1100px 520px at 35% -8%, var(--sky-1), transparent 60%),
-    linear-gradient(180deg, var(--sky-1), var(--sky-2));
-}
-
-/* ============ LAYOUT PANELS ============ */
-.dashboard{
+/* -------- Layout Panels -------- */
+.dashboard {
   min-height: 100vh;
-  background: transparent;           /* let page gradient show */
-  border: none;
+  background: radial-gradient(1000px 500px at 25% 10%, #111a2e, #070b14 90%);
   display: flex;
 }
 
-.dashboard-menu{
-  flex: 0 0 260px;
-  background: var(--navy-1);
-  padding: 18px 10px;
+.dashboard-menu {
+  flex: 0 0 250px;
+  background: rgba(12, 18, 35, 0.7);
+  backdrop-filter: blur(12px);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.03);
 }
 
-.dashboard-window{
+.dashboard-window {
   flex: 1 1 auto;
   background: var(--surface);
-  padding: 22px 22px 28px;
-  overflow: hidden;
   color: var(--txt-1);
+  padding: 26px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
 }
 
-/* Optional panel section title inside main area */
-.table-title{
-  color: var(--txt-3);
-  text-transform: uppercase;
-  letter-spacing: .12em;
-  font-size: 12px;
-  margin: 0 0 14px;
-}
-
-/* ============ SIDEBAR MENU ============ */
-.menu-list{
+/* -------- Sidebar Menu -------- */
+.menu-list,
+.submenu-list {
   list-style: none;
   margin: 0;
-  padding: 6px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
 }
 
-.menu-item{
+.menu-item,
+.submenu-item {
   position: relative;
-  color: var(--txt-1);
-  border-radius: 10px;                /* subtle rounding like mock */
-  padding: 10px 12px 10px 16px;
+  color: var(--txt-2);
+  padding: 10px 14px;
   font-size: 14px;
-  letter-spacing: .02em;
+  letter-spacing: 0.02em;
   display: flex;
   align-items: center;
   cursor: pointer;
   user-select: none;
-  transition: background .18s ease, border-color .18s ease, color .18s ease;
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.menu-item:hover{
-  background: rgba(255,255,255,.06);
+.menu-item:hover,
+.submenu-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--txt-1);
 }
 
-.menu-item.is-active{
-  background: rgba(255,255,255,.10);
-  color: #cfe9ff;
-  border: 1px solid var(--hairline-2);
+/* --- Active Menu (Soft, Slow Rainbow Gradient + Gentle Pulse) --- */
+.menu-item.is-active,
+.submenu-item.is-active {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 80, 80, 0.4),
+    rgba(255, 140, 60, 0.4),
+    rgba(255, 220, 100, 0.4),
+    rgba(100, 255, 180, 0.4),
+    rgba(80, 150, 255, 0.4),
+    rgba(140, 100, 255, 0.4),
+    rgba(220, 100, 255, 0.4),
+    rgba(255, 80, 80, 0.4)
+  );
+  background-size: 400% 400%;
+  color: #fff;
+  box-shadow: 0 0 12px rgba(73, 179, 255, 0.25);
+  animation:
+    rainbowScroll 120s linear infinite,
+    softPulse 10s ease-in-out infinite;
+  transition: filter 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* left cyan indicator for active item */
-.menu-item.is-active::before{
+/* Disable parent highlight when submenu active */
+.menu-item.has-active-submenu.is-active {
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--txt-2) !important;
+}
+
+/* Continuous one-way rainbow scroll */
+@keyframes rainbowScroll {
+  from { background-position: 0% 50%; }
+  to   { background-position: 400% 50%; }
+}
+
+/* Gentle curved pulse */
+@keyframes softPulse {
+  0%, 100% {
+    filter: brightness(1);
+    box-shadow: 0 0 10px rgba(73, 179, 255, 0.25);
+  }
+  40% {
+    filter: brightness(1.08);
+    box-shadow: 0 0 18px rgba(73, 179, 255, 0.35);
+  }
+  60% {
+    filter: brightness(1.18);
+    box-shadow: 0 0 26px rgba(73, 179, 255, 0.45);
+  }
+}
+
+/* Submenu active indicator styling */
+.submenu-item.is-active {
+  
+}
+
+.menu-item.is-active::before,
+.submenu-item.is-active::before {
   content: "";
   position: absolute;
-  left: -6px; top: 8px; bottom: 8px;
-  width: 3px; border-radius: 3px;
-  background: linear-gradient(180deg, #6bdcff, var(--accent));
+  left: -4px;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  background: linear-gradient(180deg, var(--accent-warm), var(--accent));
 }
 
-/* ============ TABLE (flat rows, header bar) ============ */
-
-/* Drop previous pill styling, go back to classic collapsed table */
-.contact-table{
+/* -------- Table Styles -------- */
+.contact-table {
   width: 100%;
-  border-collapse: collapse !important;
-  table-layout: fixed;
-  margin: 8px 0 0;
+  border-collapse: collapse;
   color: var(--txt-1);
-  font-size: 14px;
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 6px;
 }
 
-/* Header row block with darker bg like the mock */
-.contact-table thead th.header-cell{
-  background: var(--navy-2);
+.contact-table thead th.header-cell {
+  background: rgba(255, 255, 255, 0.04);
   color: var(--txt-2);
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: .12em;
-  font-size: 12px;
-  text-align: left;
+  letter-spacing: 0.08em;
+  font-size: 11.5px;
   padding: 12px 14px;
   border-bottom: 1px solid var(--hairline);
+}
+
+.contact-table tbody td.data-cell {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--hairline);
+  transition: background 0.2s ease;
+}
+
+.contact-table tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* -------- Toolbar -------- */
+.table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+/* -------- Scrollable Table Viewport (Fixed Height + Sticky Header) -------- */
+.table-viewport {
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: rgba(255, 255, 255, 0.03);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  max-height: 500px;
+  position: relative;
+}
+
+/* Ensure thead remains fixed inside scroll container */
+.contact-table thead th.header-cell {
   position: sticky;
   top: 0;
-  z-index: 2; 
+  z-index: 10;
+  background: rgba(20, 28, 46, 0.95);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 
-/* Data cells: flat rows with hairline separators */
-.contact-table tbody td.data-cell{
-  padding: 14px;
-  border-bottom: 1px solid var(--hairline);
-  color: var(--txt-1);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* Keep the select-all checkbox column sticky */
+.contact-table thead th.header-cell:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 11;
+  background: rgba(20, 28, 46, 0.95);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 
-/* Row hover: subtle tint (no lift, no pill) */
-.contact-table tbody tr:hover td{
-  background: var(--row-hover);
-  border-bottom-color: var(--hairline-2);
+/* Keep first column (checkboxes) sticky in body */
+.contact-table tbody td.checkbox-cell {
+  position: sticky;
+  left: 0;
+  background: rgba(12, 18, 35, 0.9);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  z-index: 5;
 }
 
-/* Remove zebra stripes, borders from earlier CSS */
-.contact-table tr:nth-child(even) .data-cell{
-  background: transparent !important;
-  border-color: var(--hairline);
+/* Optional: prevent horizontal scrollbar unless needed */
+.contact-table {
+  width: 100%;
+  table-layout: fixed;
 }
 
-/* Spacing at table bottom like pagination bar space in the mock */
-.dashboard-window .table-footer-space{
-  height: 24px;
-}
-
-/* Responsive tweaks */
-@media (max-width: 1024px){
-  .dashboard{ padding: ; gap:; }
-  .dashboard-menu{ flex-basis: 230px; }
-}
-@media (max-width: 760px){
-  .dashboard{ flex-direction: column; }
-  .dashboard-menu{ flex-basis: auto; width: 100%; }
-}
-
-/* ======= Toolbar layout (matches flat navy dashboard) ======= */
-.table-toolbar{
-  display: flex;
-  align-items: center;
-  justify-content: space-between;  /* left: Import/Export/Sync, right: Call Lead */
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
+/* -------- Hide scrollbar while keeping scroll functional -------- */
 .table-viewport {
-  height: 500px;     /* Fixed height */
-  overflow-y: auto;      /* Vertical scroll */
-  overflow-x: hidden;    /* Hide horizontal scroll unless needed */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+.table-viewport::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+
+/* -------- Actions -------- */
+.table-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.secondary-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* -------- Buttons -------- */
+.btn {
   border: 1px solid var(--hairline);
-}
-
-.table-actions{
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.secondary-actions{
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* ======= Buttons (ghost + primary) ======= */
-.btn{
-  appearance: none;
-  border: 1px solid var(--hairline, rgba(255,255,255,.12));
-  background: transparent;
-  color: var(--txt-1, #e9f1ff);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--txt-1);
+  font-weight: 500;
   font-size: 13px;
-  font-weight: 600;
-  letter-spacing: .02em;
-  padding: 10px 14px;
-  border-radius: 10px;
-  line-height: 1;
-  cursor: pointer;
-  transition: background .18s ease, border-color .18s ease, color .18s ease, transform .12s ease;
+  padding: 8px 12px;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
 }
 
-.btn:focus{
-  outline: 2px solid rgba(73,179,255,.35);
-  outline-offset: 2px;
+.btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--hairline-2);
 }
 
-/* Ghost buttons for Import/Export/Sync */
-.btn-ghost{
-  background: rgba(255,255,255,.06);
-  border-color: var(--hairline, rgba(255,255,255,.12));
-  color: var(--txt-2, #a9b8d9);
-}
-.btn-ghost:hover{
-  background: rgba(255,255,255,.10);
-  border-color: var(--hairline-2, rgba(255,255,255,.18));
-  color: var(--txt-1, #e9f1ff);
+.btn-ghost {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--txt-2);
 }
 
-/* Primary action for Call Lead */
-.btn-primary{
-  background: linear-gradient(180deg, #5bc9ff, #49b3ff);
-  border-color: rgba(73,179,255,.55);
-  color: #07182d;
-  box-shadow: 0 6px 18px rgba(73,179,255,.28), inset 0 1px 0 rgba(255,255,255,.25);
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--txt-1);
 }
-.btn-primary:hover{
-  filter: brightness(1.05);
+
+.btn-primary {
+  background: linear-gradient(135deg, #46aaff, #00e0ff);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #06101f;
+  box-shadow: 0 4px 20px rgba(73, 179, 255, 0.35);
+}
+
+.btn-primary:hover {
   transform: translateY(-1px);
-}
-.btn-primary:active{
-  transform: translateY(0);
+  filter: brightness(1.08);
 }
 
-/* Keep toolbar snug with panel edges when you fused menu+window */
-.dashboard-window .table-toolbar{
-  margin-top: 2px;
+.btn.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
-/* Make sure buttons don’t wrap too early on smaller screens */
-@media (max-width: 640px){
-  .table-toolbar{
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .secondary-actions{
-    justify-content: flex-end;
-  }
-}
-
-/* Narrow checkbox column and consistent styling */
-.checkbox-cell{
+/* -------- Checkbox Cell -------- */
+.checkbox-cell {
   width: 44px;
   text-align: center;
   padding-left: 8px !important;
   padding-right: 8px !important;
 }
 
-/* Use the dashboard accent for checkboxes (supported in modern browsers) */
-.contact-table input[type="checkbox"]{
+/* -------- Checkbox Styling -------- */
+.contact-table input[type="checkbox"] {
   width: 16px;
   height: 16px;
   cursor: pointer;
-  accent-color: var(--accent, #49b3ff);
+  accent-color: var(--accent);
 }
 
-/* When Call button is disabled */
-.btn.btn-primary:disabled{
-  opacity: .6;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
+/* -------- Responsive -------- */
+@media (max-width: 1024px) {
+  .dashboard {
+    padding: 0;
+  }
+  .dashboard-menu {
+    flex-basis: 230px;
+  }
 }
 
-/* Optional: align mobile stacking labels when checkboxes are present */
-@media (max-width: 640px){
-  .checkbox-cell{ width: auto; }
+@media (max-width: 760px) {
+  .dashboard {
+    flex-direction: column;
+  }
+  .dashboard-menu {
+    width: 100%;
+    flex-basis: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .table-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .secondary-actions {
+    justify-content: flex-end;
+  }
+  .checkbox-cell {
+    width: auto;
+  }
+}
+
+/* ===============================
+   FORM BUILDER (VIDCONF COMPACT)
+   =============================== */
+
+.form-builder {
+  background: rgba(12, 18, 35, 0.7);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(10px);
+  box-shadow: inset 0 0 8px rgba(255, 255, 255, 0.02);
+  color: var(--txt-1);
+  padding: 16px; /* reduced from 24px */
+}
+
+.form-builder h2 {
+  font-size: 18px; /* smaller */
+  font-weight: 600;
+  color: var(--txt-1);
+  margin-bottom: 6px; /* tighter */
+}
+
+.form-builder p {
+  color: var(--txt-3);
+  font-size: 13px;
+  margin-bottom: 14px; /* tighter */
+}
+
+.builder-panel {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  padding: 12px 16px; /* reduced padding */
+  margin-bottom: 14px; /* reduced margin */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.builder-panel h3 {
+  font-size: 13px;
+  color: var(--txt-2);
+  margin-bottom: 6px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
+
+.builder-section {
+  display: grid;
+  gap: 10px; /* tighter gaps */
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  align-items: center;
+}
+
+.builder-input {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  color: var(--txt-1);
+  font-size: 13px;
+  padding: 4px 6px; /* smaller */
+  width: 100%;
+  height: 32px;
+}
+
+.builder-input[type="color"] {
+  height: 28px;
+  padding: 0;
+  cursor: pointer;
+}
+
+.builder-input:focus {
+  outline: 1px solid var(--accent);
+  box-shadow: 0 0 6px rgba(70, 170, 255, 0.4);
+}
+
+.builder-checkbox {
+  accent-color: var(--accent);
+  transform: scale(0.9); /* compact checkboxes */
+}
+
+.builder-textarea {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--hairline);
+  color: var(--txt-2);
+  font-size: 13px;
+  padding: 8px;
+  width: 100%;
+  border-radius: var(--radius);
+  resize: none;
+}
+
+input[type="range"] {
+  height: 4px;
+  margin-top: 2px;
+  margin-bottom: 6px;
+}
+
+.builder-button {
+  background: linear-gradient(135deg, #46aaff, #00e0ff);
+  color: #06101f;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  margin-top: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: transform 0.2s ease, filter 0.2s ease;
+  box-shadow: 0 3px 14px rgba(73, 179, 255, 0.3);
+}
+
+.builder-button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+}
+
+.builder-preview {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* --- Optional Compact Mode Toggle --- */
+.form-builder.compact .builder-panel {
+  padding: 10px 14px;
+  margin-bottom: 10px;
+}
+.form-builder.compact .builder-input {
+  padding: 3px 5px;
+  font-size: 12.5px;
+}
+.form-builder.compact .builder-section {
+  gap: 8px;
+}
+.form-builder.compact h2 {
+  font-size: 17px;
+  margin-bottom: 4px;
+}
+
+/* ===============================
+   FORM CARD (VIDCONF STYLE)
+   =============================== */
+
+.lead-form-card {
+  background: rgba(14, 21, 39, 0.85);
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  padding: 36px; /* slightly reduced */
+  max-width: 520px;
+  margin: 0 auto;
+  box-shadow:
+    0 4px 18px rgba(0, 0, 0, 0.45),
+    inset 0 0 10px rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(12px);
+  color: var(--txt-1);
+}
+
+.lead-form-card h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--txt-1);
+  margin-bottom: 18px;
+  letter-spacing: 0.02em;
+}
+
+.lead-form-card label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--txt-2);
+  margin-bottom: 4px;
+  display: block;
+}
+
+.lead-form-card input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  color: var(--txt-1);
+  font-size: 13px;
+  width: 100%;
+  padding: 8px 10px;
+  transition: all 0.2s ease;
+  margin-bottom: 14px;
+}
+
+.lead-form-card input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 6px rgba(70, 170, 255, 0.4);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.lead-form-button {
+  display: block;
+  width: 100%;
+  background: linear-gradient(135deg, #46aaff, #00e0ff);
+  color: #06101f;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 18px rgba(73, 179, 255, 0.3);
+}
+
+.lead-form-button:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.lead-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 20px;
+}
+
+@media (max-width: 600px) {
+  .lead-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===============================
+   CALL SCHEDULER COMPONENT
+   =============================== */
+
+.call-scheduler {
+  composes: lead-form-card;
+  padding: 28px;
+  max-width: 540px;
+}
+
+.call-scheduler .step-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.call-scheduler .progress-bar {
+  height: 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+
+.call-scheduler .progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #46aaff, #00e0ff);
+  border-radius: 4px;
+  width: 75%; /* step 3 of 4 */
+  transition: width 0.3s ease;
+}
+
+.call-scheduler h2 {
+  font-size: 18px;
+  color: var(--txt-1);
+  font-weight: 600;
+}
+
+.call-scheduler p.step-text {
+  font-size: 13px;
+  color: var(--txt-3);
+  margin-bottom: 12px;
+}
+
+.call-scheduler .day-selector {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.call-scheduler .day-btn {
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  padding: 6px 10px;
+  font-size: 13px;
+  color: var(--txt-2);
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.call-scheduler .day-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--txt-1);
+}
+
+.call-scheduler .day-btn.is-active {
+  background: linear-gradient(135deg, #46aaff, #00e0ff);
+  color: #06101f;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 12px rgba(73, 179, 255, 0.35);
+}
+
+.call-scheduler .builder-input {
+  width: 100%;
+  height: 36px;
+  font-size: 13px;
+}
+
+.call-scheduler select.builder-input {
+  color: var(--txt-2);
+}
+
+.call-scheduler .footer-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 18px;
 }

@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import CallButton from "@/components/setup/CallButton";
+import CallButton from "@/components/settings/setup/CallButton";
 import { Search, ChevronUp, ChevronDown, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import LeadProfile from "@/components/LeadProfile";
+import LeadProfile from "@/components/leads/LeadProfile";
 
 type Lead = {
   id: string;
@@ -187,6 +187,13 @@ export default function LeadsTable() {
 
   return (
     <div className="">
+      <div className="pb-4 border-b border-gray-800 mb-5">
+        <h2 className="text-xl font-semibold text-white/90">Lead Caller</h2>
+        <p className="text-sm text-gray-400">
+          Call and manage your leads.
+        </p>
+      </div>
+
       {/* Lead Profile (multi-lead support) */}
       <LeadProfile leads={selectedLeads} />
 

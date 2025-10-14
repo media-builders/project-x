@@ -184,7 +184,7 @@ const Calendar: React.FC = () => {
   //  Render
   // ------------------------------------------------------------
   return (
-    <div className="rounded-2xl border border-gray-800 bg-[#0b132b] p-6 shadow-xl text-white">
+    <div className="">
       <div className="pb-4 border-b border-gray-800 mb-5">
         <h2 className="text-xl font-semibold text-white/90">Calendar</h2>
         <p className="text-sm text-gray-400">

@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import templatesData from "@/components/dialer/templates";
+import templatesData from "@/components/agents/templates";
 
 // === Type Definitions ===
 type Template = {
@@ -303,14 +303,13 @@ export default function DialerSettings() {
 
   // === UI ===
   return (
-    <div className="text-white space-y-6">
+    <div className="">
       {/* === Header (Match Integrations Layout) === */}
-      <div>
-        <h2 className="text-3xl font-bold inline-block mr-4">Agents</h2>
-        <span className="text-gray-400 text-lg">
+      <div className="pb-4 border-b border-gray-800 mb-5">
+        <h2 className="text-xl font-semibold text-white/90">Agents</h2>
+        <p className="text-sm text-gray-400">
           Manage voice agents and their behaviors.
-        </span>
-        <hr className="border-gray-800 mt-3" />
+        </p>
       </div>
 
       {/* === Agent Gallery Grid === */}
@@ -368,9 +367,9 @@ export default function DialerSettings() {
 
       {/* === Selected Agent Settings Below === */}
       {activeAgent && (
-        <div className="mt-8 border border-gray-700 bg-gray-900/70 rounded-xl p-6 space-y-6">
+        <div className="space-y-6">
           <h3 className="text-2xl font-bold text-blue-300 border-b border-gray-700 pb-2">
-            Settings for {activeAgent.name}
+            {activeAgent.name}
           </h3>
 
           {/* === General Settings === */}
@@ -467,10 +466,10 @@ export default function DialerSettings() {
           </div>
 
           {/* === Advanced Section === */}
-          <section className="pt-2 border-t border-gray-700">
+          <section className="">
             <button
               onClick={() => setShowAdvanced(!showAdvanced)}
-              className="w-full flex justify-between items-center bg-gray-900 border border-gray-700 rounded-md px-4 py-3 text-left hover:bg-gray-800 transition"
+              className="w-full flex justify-between items-center bg-gray-900 rounded-md px-4 py-3 text-left hover:bg-gray-800 transition"
             >
               <span className="font-semibold text-blue-400">Advanced Settings</span>
               <span className="text-gray-400 text-sm">
@@ -485,7 +484,7 @@ export default function DialerSettings() {
                   : "max-h-0 opacity-0"
               }`}
             >
-              <div className="p-4 bg-gradient-to-b from-gray-900/60 to-gray-800 rounded-lg border border-gray-700 space-y-6">
+              <div className="space-y-6">
                 {/* === Parameters === */}
                 <div className="space-y-3">
                   <h5 className="font-semibold text-blue-400 border-b border-gray-700 pb-1">
@@ -495,7 +494,7 @@ export default function DialerSettings() {
                     <select
                       value={selectedParam}
                       onChange={(e) => setSelectedParam(e.target.value)}
-                      className="flex-1 bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-sm"
+                      className="flex-1 bg-gray-800 rounded-md px-3 py-2 text-sm"
                     >
                       <option value="">Add new parameter...</option>
                       {AVAILABLE_PARAMETERS.map((p) => (
@@ -510,7 +509,7 @@ export default function DialerSettings() {
                   {activeAgent.parameters.map((p) => (
                     <div
                       key={p.key}
-                      className="flex items-center gap-3 bg-gray-900 border border-gray-700 rounded-md p-3"
+                      className="flex items-center gap-3 bg-gray-900 p-3"
                     >
                       <div className="flex-1">
                         <label className="block text-xs text-gray-400">

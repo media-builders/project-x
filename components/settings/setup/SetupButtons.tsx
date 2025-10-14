@@ -1,8 +1,8 @@
 "use client";
 
-import AgentSetupButton from "@/components/setup/AgentSetupButton";
-import TwilioSetupButton from "@/components/setup/TwilioSetupButton";
-import ImportButton from "@/components/setup/ImportButton";
+import AgentSetupButton from "@/components/settings/setup/AgentSetupButton";
+import TwilioSetupButton from "@/components/settings/setup/TwilioSetupButton";
+import ImportButton from "@/components/settings/setup/ImportButton";
 
 type SetupButtonsProps = {
   onImported?: () => Promise<void> | void;

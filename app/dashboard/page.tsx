@@ -1,32 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import LeadsTable from "@/components/Leads";
-import DashboardMenu from "@/components/DashboardMenu";
-import DialerSettings from "@/components/dialer/DialerSettings";
-import Calendar from "@/components/calendar/Calendar";
-import Integrations from "@/components/Integrations";
+import DashboardMenu from "@/components/dashboard/DashboardMenu";
+import DashboardWindow from "@/components/dashboard/DashboardWindow";
 
 export default function Dashboard() {
-  // Maintain tab state for all dashboard sections
-  const [activeTab, setActiveTab] = useState("leads"); // "leads" | "dialer" | "calendar" | "integrations"
+  const [activeTab, setActiveTab] = useState("leads-a");
+
+  const handleTabChange = (tab: string) => {
+    if (tab === "leads") {
+      setActiveTab("leads-a");
+    } else {
+      setActiveTab(tab);
+    }
+  };
 
   return (
-    <main className="flex-1">
-      <div className="dashboard">
-        {/* Sidebar / Top Menu */}
-        <DashboardMenu activeTab={activeTab} onChangeTab={setActiveTab} />
-
-        {/* Dynamic content area */}
-        <div className="dashboard-window">
-          <div>
-            {activeTab === "leads" && <LeadsTable />}
-            {activeTab === "dialer" && <DialerSettings />}
-            {activeTab === "calendar" && <Calendar />}
-            {activeTab === "integrations" && <Integrations />}
-          </div>
-        </div>
-      </div>
-    </main>
+    <div className="dashboard flex">
+      <div></div>
+      <DashboardMenu activeTab={activeTab} onTabChange={handleTabChange} />
+      <DashboardWindow activeTab={activeTab} />
+    </div>
   );
 }
