@@ -1,6 +1,6 @@
 import SubscribeTopBar from "@/components/SubscribeTopBar";
 
-import StripePricingTable from "@/components/StripePricingTable";
+import StripePricingTable from "@/components/frontend/StripePricingTable";
 import Image from "next/image"
 import { createClient } from '@/utils/supabase/server'
 import { createStripeCheckoutSession } from "@/utils/stripe/api";

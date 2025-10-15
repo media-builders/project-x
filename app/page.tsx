@@ -5,6 +5,20 @@ import Link from "next/link"
 import { Star, Check, Coins, UserCheck, Database } from "lucide-react"
 import Stripe from 'stripe'
 
+import HeroSection from "@/components/frontend/HeroSection"
+import IntroSection from "@/components/frontend/IntroSection"
+import ROIStatsSection from "@/components/frontend/ROIStatsSection"
+import BeforeAfterSection from "@/components/frontend/BeforeAfterSection"
+import VSLSection from "@/components/frontend/VSLSection"
+import TestCallSection from "@/components/frontend/TestCallSection"
+import IntegrationSection from "@/components/frontend/IntegrationSection"
+import StatsSection from "@/components/frontend/StatsSection"
+import ROICalculator from "@/components/frontend/ROICalculator"
+import TestimonialsSection from "@/components/frontend/TestimonialsSection"
+import FAQSection from "@/components/frontend/FAQSection"
+import SecuritySection from "@/components/frontend/SecuritySection"
+
+
 // Types
 interface StripeProduct {
   id: string;
@@ -63,6 +77,56 @@ export default async function LandingPage() {
           </Link>
         </Button>
       </header>
+      <main className="flex-1">
+        <HeroSection />
+        <IntroSection />
+        <BeforeAfterSection />
+        <IntegrationSection />
+        <StatsSection />
+        <SecuritySection />
+        <VSLSection />
+        <TestCallSection />
+        <section className="pricing-section" id="pricing">
+          <div className="pricing-container">
+            <h2 className="pricing-title">Pricing Plans</h2>
+            <p className="pricing-subtitle">Choose the perfect plan for your needs</p>
+            <div className="pricing-grid">
+              {products.map((product) => (
+                <Card key={product.id} className="pricing-card">
+                  <CardHeader className="pricing-card-header">
+                    <CardTitle className="pricing-card-name">{product.name}</CardTitle>
+                    <CardDescription className="pricing-card-desc">{product.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="pricing-card-content">
+                    <p className="pricing-amount">
+                      {product.price.unit_amount
+                        ? `$${(product.price.unit_amount / 100).toFixed(2)}/${product.price.recurring?.interval}`
+                        : "Custom"}
+                    </p>
+                    <ul className="pricing-features">
+                      {product.features?.map((feature, index) => (
+                        <li key={index} className="pricing-feature-item">
+                          <Check className="check-icon" />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                  <CardFooter className="pricing-card-footer">
+                    <Link href={`/signup?plan=${product.id}`} className="pricing-link">
+                      <Button className="pricing-button">Start Free Trial</Button>
+                    </Link>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+        <ROIStatsSection />
+        <ROICalculator />
+        <TestimonialsSection />
+        <FAQSection />
+      </main>
       <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
         <p className="text-xs text-muted-foreground">©BrokerNest.ai All rights reserved.</p>
         <nav className="sm:ml-auto flex gap-4 sm:gap-6">
