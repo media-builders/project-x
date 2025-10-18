@@ -1,3 +1,5 @@
+// app/api/outbound-calls/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
 import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 import { createServerClient } from "@supabase/ssr";
@@ -68,6 +70,7 @@ export async function POST(req: NextRequest) {
         const TEST_MODE = process.env.TEST_MODE === "true";
         const TEST_PHONE_NUMBER = process.env.TEST_PHONE_NUMBER || "";
         const toNumber = TEST_MODE ? TEST_PHONE_NUMBER : leads?.[0]?.phone;
+        /**const toNumber = leads?.[0]?.phone;
         if (!toNumber) 
             return NextResponse.json({ error: "No phone number provided." }, { status: 400 });
         /********************************************************************************************/
@@ -190,7 +193,7 @@ export async function POST(req: NextRequest) {
         
         //Making Call via Elevenlabs
         const elClient = new ElevenLabsClient({ apiKey: ELEVENLABS_API_KEY });
-        console.log(`Calling ${toNumber} (mode: ${TEST_MODE ? "TEST": "LIVE"})`);
+        console.log(`Calling ${leads[0].name}"})`);
 
         if (!agentPhoneNumberId)
             return NextResponse.json({ error: "No Twilio phone number found or imported." }, { status: 400 });
@@ -203,7 +206,6 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({
             status: "initiated",
-            mode: TEST_MODE ? "TEST" : "LIVE",
             called_number: toNumber,
             from_number: twilioPhoneNumber,
             agent_id: agentId,

@@ -15,9 +15,19 @@ type LeadRow = {
   last: string;
   email: string | null;
   phone: string | null;
+  stage: string | null;
   created_at: string;
   updated_at: string;
 };
+
+// format phone no  as xxx-xxx-xxxx 
+function fmtPhone(s: string | null | undefined) {
+  const digits = (s || "").replace(/\D/g, "");
+  if (!digits) return "";
+  const ten = digits.slice(-10); // use last 10 digits
+  if (ten.length !== 10) return ""; // not enough digits to format
+  return `${ten.slice(0,3)}-${ten.slice(3,6)}-${ten.slice(6)}`;
+}
 
 // This returns the shape the table already expects
 type LeadOut = {
@@ -26,6 +36,7 @@ type LeadOut = {
   last: string;
   email: string;
   phone: string;
+  stage: string | null;
 };
 
 export async function GET() {
@@ -37,7 +48,8 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from("leads")
-    .select("*")
+    .select("id, first, last, email, phone, stage, created_at") // 
+    .eq("user_id", auth.user.id)                                 // return only the caller's leads
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -49,7 +61,8 @@ export async function GET() {
     first: r.first ?? "",
     last: r.last ?? "",
     email: r.email ?? "",
-    phone: r.phone ?? "",
+    phone: fmtPhone(r.phone),
+    stage: r.stage ?? null,
   }));
 
   return NextResponse.json({ people }, { status: 200 });

@@ -137,7 +137,20 @@ export async function signInWithGoogle() {
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
+            scopes: [
+                "https://www.googleapis.com/auth/drive",
+                "https://www.googleapis.com/auth/gmail.readonly",
+                "https://www.googleapis.com/auth/gmail.modify",
+                "https://www.googleapis.com/auth/gmail.send",
+                "https://www.googleapis.com/auth/gmail.compose",
+                "https://www.googleapis.com/auth/gmail.labels",
+                "https://www.googleapis.com/auth/calendar"
+            ].join(" "),
             redirectTo: `${PUBLIC_URL}/auth/callback`,
+            queryParams: {
+                access_type: 'offline',
+                prompt: 'consent',
+            },
         },
     })
 

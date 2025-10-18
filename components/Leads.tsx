@@ -6,6 +6,7 @@ import { Search, ChevronUp, ChevronDown, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import LeadProfile from "@/components/LeadProfile";
+import ImportButton from "@/components/setup/ImportButton";
 
 type Lead = {
   id: string;
@@ -13,7 +14,7 @@ type Lead = {
   last: string;
   email: string;
   phone: string;
-  featured?: boolean;
+  stage?: string | null;
 };
 
 type SortKey = "first" | "last" | "email" | "phone";
@@ -205,6 +206,7 @@ export default function LeadsTable() {
           </div>
         </form>
         <div className="flex items-center space-x-4">
+          <ImportButton onImported={loadFromDb} />
           <CallButton selectedLeads={selectedLeads} />
           {selected.length > 0 && <span>{selected.length} selected</span>}
         </div>
@@ -264,6 +266,7 @@ export default function LeadsTable() {
                     )}
                   </th>
                 ))}
+                <th className="header-cell">Stage</th>
               </tr>
             </thead>
             <tbody>
@@ -287,6 +290,15 @@ export default function LeadsTable() {
                   <td className="data-cell">{r.last}</td>
                   <td className="data-cell">{r.email}</td>
                   <td className="data-cell">{r.phone}</td>
+                  <td className="data-cell">
+                    {r.stage ? (
+                      <span className="inline-block rounded-full px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700">
+                        {r.stage}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </td>
                 </tr>
               ))}
               {filteredRows.length === 0 && !loadingDb && (

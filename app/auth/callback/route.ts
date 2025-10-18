@@ -20,6 +20,12 @@ export async function GET(request: Request) {
                 data: { user },
             } = await supabase.auth.getUser()
 
+            // ✅ ADDED: log full Supabase session (includes access & refresh tokens)
+            const { data: sessionData } = await supabase.auth.getSession()
+            if (process.env.NODE_ENV === 'development') {
+                console.log("🔐 Supabase session tokens:", JSON.stringify(sessionData, null, 2))
+            }
+
             // check to see if user already exists in db
             const checkUserInDB = await db.select().from(usersTable).where(eq(usersTable.email, user!.email!))
             const isUserInDB = checkUserInDB.length > 0 ? true : false
@@ -27,8 +33,15 @@ export async function GET(request: Request) {
                 // create Stripe customers
                 const stripeID = await createStripeCustomer(user!.id, user!.email!, user!.user_metadata.full_name)
                 // Create record in DB
-                await db.insert(usersTable).values({ id: user!.id, name: user!.user_metadata.full_name, email: user!.email!, stripe_id: stripeID, plan: 'none' })
+                await db.insert(usersTable).values({
+                    id: user!.id,
+                    name: user!.user_metadata.full_name,
+                    email: user!.email!,
+                    stripe_id: stripeID,
+                    plan: 'none'
+                })
             }
+
 
             const forwardedHost = request.headers.get('x-forwarded-host') // original origin before load balancer
             const isLocalEnv = process.env.NODE_ENV === 'development'

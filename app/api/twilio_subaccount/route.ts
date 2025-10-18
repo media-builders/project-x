@@ -11,6 +11,8 @@ const twilioClient = new Twilio(
     process.env.TWILIO_AUTH_TOKEN!
 );
 
+const AREA_CODE = 365;
+
 export async function POST( req: NextRequest) {
     try {
         //Logged-in user's info first
@@ -77,12 +79,17 @@ export async function POST( req: NextRequest) {
         //Fetch phone number
         const availableNumbers = await subClient
             .availablePhoneNumbers("CA")
-            .local.list({ limit: 1 });
+            .local.list({ 
+                areaCode: AREA_CODE, 
+                voiceEnabled: true,
+                smsEnabled: true, 
+                limit: 5,
+             });
 
         if (!availableNumbers.length) {
-            return NextResponse.json({ error: "No available phone numbers" }, { status: 500 });
+            return NextResponse.json({ error: "No local phone numbers available." }, { status: 409 });
         }
-        const phoneNumber = availableNumbers[0].phoneNumber;
+        const phoneNumber = availableNumbers[0].phoneNumber!;
         console.log(`Purchased phone number ${phoneNumber} for subaccount ${newSubaccount.sid}`);
 
         //Purchase phone number

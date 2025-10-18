@@ -1,114 +1,172 @@
-// REDUNDANT FOR NOW UNTIL EXPORT IS IMPLEMENTED
-// app/api/leads/import/route.ts
-
-import { NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr"; 
-import { cookies } from "next/headers";
+import { NextRequest, NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 import { db } from "@/utils/db/db";
-import { usersTable } from "@/utils/db/schema";
-import { eq } from "drizzle-orm";
-import { fetchFUBLeads } from "@/utils/fub";
+import { usersTable, leadsTable } from "@/utils/db/schema";
+import { eq, and } from "drizzle-orm";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+const s = (x: unknown) => (typeof x === "string" ? x : "");
 
-//FORMATTING FIRST & LAST NAMES
-function formatName(name: string) {
-  if (!name) return "";
-  return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+// helpers to pull primary/first values from arrays
+function primaryFrom(arr: any[] | undefined, key: "value"): string {
+  if (!Array.isArray(arr) || arr.length === 0) return "";
+  const primary = arr.find((e) => e?.isPrimary && s(e[key]));
+  return s(primary?.[key]) || s(arr[0]?.[key]) || "";
 }
 
-//FORMATTING PHONE NUMBERS
-function formatPhone(phone: string) {
-    if (!phone) return null;
-    const digits = phone.replace(/\D/g, "");
-    if (digits.length !== 10) return phone;
-    return `${digits.slice(0,3)}-${digits.slice(3,6)}-${digits.slice(6)}`;
+// build Authorization header
+function authHeader(rawKey: string) {
+  const basic = Buffer.from(`${rawKey.trim()}:`).toString("base64");
+  return `Basic ${basic}`;
 }
 
-export async function POST() {
+export async function POST(req: NextRequest) {
+  try {
+    let stages: string[] | undefined = undefined;
     try {
-        //Get logged-in user
-        const cookieStore = cookies();
-        const supabase = createServerClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            {
-                cookies: {
-                    get(name) {
-                        return cookieStore.get(name)?.value;
-                    },
-                    set(name, value, options) {
-                        try {
-                        cookieStore.set({ name, value, ...options });
-                        } catch {}
-                    },
-                    remove(name, options) {
-                        try {
-                        cookieStore.set({ name, value: "", ...options });
-                        } catch {}
-                    },
-                },
-            }
-        );
-        const { 
-            data: {user},
-            error: authErr,
-        } = await supabase.auth.getUser();
-        // no one is logged in
-        if (authErr || !user) {
-            return NextResponse.json({error: "Unauthorized" }, {status: 401});
-        }
+      const body = await req.json();
+      stages = Array.isArray(body?.stages) ? body.stages : undefined;
+    } catch {
+      // no JSON body -> fine, treat as import all
+    }
+    const wanted = (stages ?? []).map((x) => x.toLowerCase());
 
-        //Fetch saved CRM API key
-        if (!user.email) {
-            return NextResponse.json({ error: "User email not found" }, { status: 400 });
-        }
-        const userRow = await db
-            .select()
-            .from(usersTable)
-            .where(eq(usersTable.email, user.email))
-            .limit(1);
-        const crmKey = userRow[0]?.crm_api_key;
-
-        //Error message if no API key is saved
-        if (!crmKey){
-            return NextResponse.json(
-                { error: "No API key found. Please enter an API key in the Settings tab before importing again."},
-                { status: 400}
-            );
-        }
-        
-        //Fetch leads from FUB using API key
-
-        console.log("Fetching leads with key:", crmKey);
-        const leads = await fetchFUBLeads(crmKey);
-        console.log("Leads fetched:", leads?.length);
-
-        //Save leads into SUPABASE
-        const rows = leads.map((p) => ({
-            user_id: user.id,
-            fub_id: Number.isFinite(Number(p.id)) ? Number(p.id) : null,
-            first: formatName(p.first),
-            last: formatName(p.last),
-            email: p.email?.trim() || null,
-            phone: formatPhone(p.phone),
-        }));
-
-        //No duplicate entries
-        // Use the supabase client to upsert (insert-or-update) by user_id + fub_id
-        const { error: upsertErr } = await supabase
-            .from("leads")
-            .upsert(rows, { onConflict: "user_id,fub_id" });
-        if (upsertErr) {
-            return NextResponse.json({ error: upsertErr.message }, { status: 500 });
-        }
-
-        return NextResponse.json({ ok: true, count: rows.length }, { status: 200 });
-    } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.message ?? "Failed to import leads" },
-      { status: 500 }
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll: () => req.cookies.getAll().map(c => ({ name: c.name, value: c.value })),
+          setAll: (cookiesToSet) => {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              req.cookies.set({ name, value, ...options });
+            });
+          },
+        },
+      }
     );
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const { 0: profile } = await db
+      .select({ crm_api_key: usersTable.crm_api_key })
+      .from(usersTable)
+      .where(eq(usersTable.id, user.id))
+      .limit(1);
+
+    const apiKey = profile?.crm_api_key?.trim();
+    if (!apiKey) {
+      return NextResponse.json({ error: "No CRM API Key saved" }, { status: 400 });
+    }
+
+    // fetch stages once -> map id->name
+    const stagesRes = await fetch("https://api.followupboss.com/v1/stages", {
+      headers: { 
+        Authorization: authHeader(apiKey), 
+        Accept: "application/json" 
+      },
+      method: "GET",
+    });
+    const stageMap = new Map<number, string>();
+    if (stagesRes.ok) {
+      const stagesJson = await stagesRes.json();
+      (stagesJson?.stages || []).forEach((st: any) => {
+        if (st?.id != null && typeof st?.name === "string") {
+          stageMap.set(Number(st.id), st.name);
+        }
+      });
+    } else {
+      console.warn("FUB /stages failed:", stagesRes.status);
+    }
+
+    // Fetch people from FUB
+    // If your FUB plan supports query filtering by stage, you can append query params.
+    const basic = Buffer.from(`${apiKey}:`).toString("base64");
+    const res = await fetch("https://api.followupboss.com/v1/people", {
+      headers: {
+        Authorization: `Basic ${basic}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      method: "GET",
+    });
+
+    if (res.status === 401) {
+      // Return a helpful message when auth fails
+      const msg = await res.text().catch(() => "");
+      return NextResponse.json(
+        {
+          error:
+            "FollowUpBoss authentication failed (401). Ensure your API key is correct and the Authorization header is Basic base64('<API_KEY>:').",
+          detail: msg,
+        },
+        { status: 502 }
+      );
+    }
+
+    if (!res.ok) {
+      const msg = await res.text().catch(() => "");
+      return NextResponse.json({ error: `FUB error ${res.status}: ${msg}` }, { status: 502 });
+    }
+
+    const body = await res.json();
+    const people: any[] = Array.isArray(body?.people) ? body.people : body?.items || [];
+
+    let count = 0;
+    for (const p of people) {
+      const fubId = typeof p?.id === "number" ? p.id : null;
+
+      const first = s(p?.firstName) || s(p?.first_name);
+      const last  = s(p?.lastName)  || s(p?.last_name);
+      const email = primaryFrom(p?.emails, "value"); 
+      const phone = primaryFrom(p?.phones, "value"); 
+
+      // resolve stage
+      let stage: string | null = null;
+      if (typeof p?.stage === "string" && p.stage.trim()) {
+        stage = p.stage.trim();
+      } else if (p?.stageId != null) {
+        const nm = stageMap.get(Number(p.stageId));
+        stage = nm ?? null;
+      }
+
+      //if user selected stage filters, skip people whose stage doesn’t match
+      if (wanted.length) {
+        const stLower = (stage || "").toLowerCase();
+        if (!stLower || !wanted.includes(stLower)) continue;
+      }
+
+      if (!first && !last) continue;
+
+      // [UPSERT-ish] check by (user_id, fub_id)
+      const existing = await db.select().from(leadsTable)
+        .where(and(eq(leadsTable.user_id, user.id), eq(leadsTable.fub_id, fubId as any)))
+        .limit(1);
+
+      if (existing.length) {
+        await db.update(leadsTable)
+          .set({ first, last, email, phone, stage, updated_at: new Date() })
+          .where(eq(leadsTable.id, existing[0].id));
+      } else {
+        await db.insert(leadsTable).values({
+          id: crypto.randomUUID(),
+          user_id: user.id,
+          fub_id: fubId,
+          first,
+          last,
+          email,
+          phone,
+          stage,
+          created_at: new Date(),
+          updated_at: new Date(),
+        });
+      }
+      count++;
+    }
+
+    return NextResponse.json({ ok: true, count }, { status: 200 });
+  } catch (e: any) {
+    console.error(e);
+    return NextResponse.json({ error: e?.message ?? "Import failed" }, { status: 500 });
   }
 }
