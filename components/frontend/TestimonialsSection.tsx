@@ -23,12 +23,13 @@ const testimonials = [
 
 export default function TestimonialsSection() {
   return (
-    <section className="testimonials-section">
-      <div className="testimonials-container">
-        <h2 className="testimonials-title">What Our Customers Say</h2>
-        <div className="testimonials-grid">
+    <section id="testimonials"className="testimonials">
+      <div className="section-container">
+        <h2 className="section-title">What Our Customers Say</h2>
+        <p className="section-subtitle">Learn about the meaning of success for our customers and daily users.</p>
+        <div className="section-grid">
           {testimonials.map((t, i) => (
-            <div className="testimonial-card" key={i}>
+            <div className="card" key={i}>
               <div className="testimonial-stars">
                 {[...Array(5)].map((_, j) => (
                   <Star key={j} className="star-icon" />
@@ -39,6 +40,9 @@ export default function TestimonialsSection() {
             </div>
           ))}
         </div>
+        <p className="section-footer">
+          Leave a review.
+        </p>
       </div>
     </section>
   )

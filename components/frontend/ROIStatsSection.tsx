@@ -55,18 +55,18 @@ const roiData = [
 
 export default function ROIStatsSection() {
   return (
-    <section className="roi-section alt" id="roi-stats">
-      <div className="roi-wrapper">
-        <h2 className="roi-title">A Simple System That Pays For Itself</h2>
-        <p className="roi-subtitle">
+    <section className="roi-stats" id="roi-stats">
+      <div className="section-container">
+        <h2 className="section-title">A Simple System That Pays For Itself</h2>
+        <p className="section-subtitle">
           Proven by data. Backed by results. Real estate teams using automation consistently see higher conversions and lower costs.
         </p>
 
-        <div className="roi-container roi-grid">
+        <div className="section-grid">
           {roiData.map((item, idx) => (
-            <div key={idx} className="roi-card">
-              <div className="roi-card-header">
-                <h3 className="roi-card-title">{item.title}</h3>
+            <div key={idx} className="card">
+              <div className="card-header">
+                <h3 className="card-title">{item.title}</h3>
               </div>
               <div className="roi-chart">
                 <ResponsiveContainer width="100%" height={120}>
@@ -117,13 +117,13 @@ export default function ROIStatsSection() {
                   }
                 </ResponsiveContainer>
               </div>
-              <p className="roi-card-desc">{item.description}</p>
-              <span className="roi-card-source">{item.source}</span>
+              <p className="card-desc">{item.description}</p>
+              <span className="card-source">{item.source}</span>
             </div>
           ))}
         </div>
 
-        <p className="roi-footer">
+        <p className="section-footer">
           Every uncalled lead costs more than ad spend — it costs commissions and referrals. BrokerNest ensures every lead is contacted, qualified, and scheduled automatically.
         </p>
       </div>

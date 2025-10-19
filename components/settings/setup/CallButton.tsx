@@ -35,7 +35,10 @@ export default function CallButton({ selectedLeads }: { selectedLeads: Lead[] })
 
       const data = await res.json();
       alert(
-        `Call initiated!\n\nMode: ${data.mode}\nFrom: ${data.from_number}\nTo (predefined): ${data.called_number}`
+        `${data.agent_number} — Calling Lead\n` +
+        `${data.lead_name}\n` +
+        `${data.lead_email}\n` +
+        `${data.lead_number}`
       );
     } catch (err) {
       console.error(err);

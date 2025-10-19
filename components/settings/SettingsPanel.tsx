@@ -5,6 +5,11 @@ import Image from "next/image";
 import SetupButtons from "@/components/settings/setup/SetupButtons";
 import SetupWizard from "@/components/settings/setup/SetupWizard"; // ✅ import the wizard
 import FUBLogo from "@/public/images/fub/FUB Logo RGB_Knockout.png";
+import DriveFiles from "@/components/DriveFiles";
+import GmailClient from "@/components/GmailClient";
+import OverlayTest from "@/components/OverlayTest";
+
+
 
 export default function SettingsPanel() {
   const [CRMKey, setCRMKey] = useState("");
@@ -54,7 +59,7 @@ export default function SettingsPanel() {
       </div>
 
       {/* CRM API Key form */}
-      <div className="flex flex-col gap-4 max-w-md">
+      {/* <div className="flex flex-col gap-4 max-w-md">
         <div className="">
           <Image
             src={FUBLogo}
@@ -101,7 +106,7 @@ export default function SettingsPanel() {
             console.log("Leads reloaded after import");
           }}
         />
-      </div>
+      </div> */}
 
       {/* ✅ Modal Overlay for Setup Wizard */}
       {showWizard && (
@@ -122,6 +127,27 @@ export default function SettingsPanel() {
           </div>
         </div>
       )}
+
+      <div className="mt-10 space-y-10">
+        {/* <section>
+          <h1 className="text-2xl font-bold mb-4">Drive Dashboard</h1>
+          <DriveFiles />
+        </section>
+
+        <section>
+          <h1 className="text-2xl font-bold mb-4">Gmail Inbox</h1>
+          <GmailClient />
+        </section> */}
+
+        <section>
+          <h1 className="text-2xl font-bold mb-4">Overlay Test</h1>
+          <OverlayTest />;
+        </section>
+      </div>
+
+      
+
+
     </div>
   );
 }

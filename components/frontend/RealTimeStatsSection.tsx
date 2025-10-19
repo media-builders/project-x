@@ -77,7 +77,7 @@ export default function StatsSection() {
   }, [])
 
   return (
-    <section className="landing-section alt glass" id="stats">
+    <section className="stats" id="stats">
       <div className="section-container">
         <h2 className="section-title">Real-Time Statistics Dashboard</h2>
         <p className="section-subtitle">
@@ -85,14 +85,14 @@ export default function StatsSection() {
           calls made to meetings booked and response speeds.
         </p>
 
-        <div className="stats-grid">
+        <div className="section-grid">
           {stats.map((stat, i) => {
             const isResponse = stat.label.includes("Response")
 
             return (
-              <div className="stat-card glass" key={i}>
+              <div className="card" key={i}>
                 {/* === Header === */}
-                <div className="stat-header">
+                <div className="card-header">
                   <h3 className="stat-label">{stat.label}</h3>
                   <p className="stat-value" style={{ color: stat.color }}>
                     {isResponse
@@ -156,6 +156,9 @@ export default function StatsSection() {
             )
           })}
         </div>
+        <p className="section-footer">
+          Numbers mean results.
+        </p>
       </div>
     </section>
   )

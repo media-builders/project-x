@@ -29,9 +29,9 @@ export default function FAQSection() {
   const [open, setOpen] = useState<number | null>(null)
 
   return (
-    <section className="faq-section">
-      <div className="faq-container">
-        <h2 className="faq-title">Frequently Asked Questions</h2>
+    <section className="faq">
+      <div className="section-container">
+        <h2 className="section-title">Frequently Asked Questions</h2>
 
         <div className="faq-grid">
           {faqs.map((f, i) => (
@@ -56,7 +56,7 @@ export default function FAQSection() {
           ))}
         </div>
 
-        <p className="faq-footer">
+        <p className="section-footer">
           Have another question? Email{" "}
           <a href="mailto:hello@brokernest.ai" className="faq-link">
             hello@brokernest.ai

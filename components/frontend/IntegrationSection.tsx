@@ -2,32 +2,32 @@
 import Image from "next/image"
 
 const crms = [
-  "/logos/hubspot.png",
-  "/logos/salesforce.png",
-  "/logos/followupboss.png",
-  "/logos/realgeeks.png",
-  "/logos/kvcore.png",
+  "/images/fub/FUB Logo Mark RGB_Fub Logo Mark Main.png",
+  "/images/kvcore/logo858.png",
+  "/images/hubspot/hubspot-1.svg",
+  "/images/salesforce/Salesforce.com_logo.svg",
+  "/images/zoho/Zoho Logo RGB_Main.png",
 ]
 
 export default function IntegrationSection() {
   return (
-    <section className="landing-section alt" id="integration">
-      <div className="section-container text-center">
+    <section className="integrations" id="integrations">
+      <div className="section-container">
         <h2 className="section-title">Seamless Integration</h2>
-        <p className="section-subtitle max-w-2xl mx-auto">
+        <p className="section-subtitle">
           BrokerNest connects directly with your CRM — automating the entire workflow from 
           lead import to call transcript export. Your systems stay clean, synced, and always organized.
         </p>
 
         {/* Scrolling CRM Logos */}
-        <div className="marquee glass my-10">
+        <div className="marquee">
           <div className="marquee-track">
             {crms.concat(crms).map((src, i) => (
               <Image
                 key={i}
                 src={src}
                 alt="CRM Logo"
-                width={120}
+                width={75}
                 height={60}
                 className="logo"
               />
@@ -44,7 +44,7 @@ export default function IntegrationSection() {
           <div className="node">Calendar</div>
         </div>
 
-        <p className="section-subtitle mt-10">
+        <p className="section-footer">
           Full automation, real-time updates, and effortless data flow between all your tools.
         </p>
       </div>

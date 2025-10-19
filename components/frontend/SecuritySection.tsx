@@ -26,27 +26,25 @@ export default function SecuritySection() {
   ]
 
   return (
-    <section id="security" className="security-section">
-      <div className="security-container">
-        <h2 className="security-title">Enterprise Security</h2>
-        <p className="security-subtitle">
-          BrokerNest is protected by enterprise-grade security standards — so your data and
-          reputation remain safe.
+    <section id="security" className="security">
+      <div className="section-container">
+        <h2 className="section-title">Enterprise Security</h2>
+        <p className="section-subtitle">BrokerNest is protected by enterprise-grade security standards — so your data and reputation remain safe.
         </p>
 
-        <div className="security-grid">
+        <div className="section-grid">
           {features.map((f, i) => (
-            <div key={i} className="security-card">
+            <div key={i} className="card">
               <div className="security-icon">
                 <f.icon className="h-10 w-10 text-sky-400" />
               </div>
-              <h4 className="security-card-title">{f.title}</h4>
-              <p className="security-card-desc">{f.desc}</p>
+              <h4 className="card-title">{f.title}</h4>
+              <p className="card-desc">{f.desc}</p>
             </div>
           ))}
         </div>
 
-        <p className="security-footer">
+        <p className="section-footer">
           BrokerNest ensures that your automation never compromises what you’ve built.
         </p>
       </div>

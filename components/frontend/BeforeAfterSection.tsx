@@ -11,13 +11,14 @@ export default function BeforeAfterSection() {
   ]
 
   return (
-    <section className="landing-section alt comparison">
+    <section className="landing-section alt comparison floating-pulse">
       <div className="section-container">
         <h2 className="section-title">
           Replace Manual Follow-Up with BrokerNest
         </h2>
+        <p className="section-subtitle">The difference of BrokerNest</p>
 
-        <div className="before-after-table glass">
+        <div className="before-after-table">
           <div className="table-head">
             <div className="cell label strong">Aspect</div>
             <div className="cell before strong">Before BrokerNest</div>
@@ -33,7 +34,7 @@ export default function BeforeAfterSection() {
           ))}
         </div>
 
-        <p className="section-subtitle mt-10">
+        <p className="section-footer">
           You and your team shouldn’t be chasing leads — you should be closing more deals. 
           <br />BrokerNest makes that possible.
         </p>

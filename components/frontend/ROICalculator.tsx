@@ -64,15 +64,15 @@ export default function ROICalculator() {
   }, [progress, projectedRecoveredRevenue, commissionPerDeal, projectedRecoveredDeals]);
 
   return (
-    <section className="roi-section-alt" id="roi-calc">
-      <div className="roi-container-alt">
-        <h2 className="roi-title-alt">Interactive ROI Calculator</h2>
-        <p className="roi-subtitle-alt">Discover your untapped revenue potential.</p>
+    <section className="roi-calculator" id="roi-calculator">
+      <div className="section-container">
+        <h2 className="section-title">Interactive ROI Calculator</h2>
+        <p className="section-subtitle">Discover your untapped revenue potential.</p>
 
-        <div className="roi-grid-alt">
+        <div className="section-grid">
           {/* Input side */}
-          <div className="roi-card-alt">
-            <h3 className="roi-card-title">Adjust Your Numbers</h3>
+          <div className="card">
+            <h3 className="card-title">Adjust Your Numbers</h3>
             <InputSlider
               label="Average Sale Price"
               id="avgSale"
@@ -114,8 +114,8 @@ export default function ROICalculator() {
           </div>
 
           {/* Output side */}
-          <div className="roi-card-alt result">
-            <h3 className="roi-card-title">Projected ROI Results</h3>
+          <div className="card result">
+            <h3 className="card-title">Projected ROI Results</h3>
 
             <div className="result-line">
               <span className="label">Commission per Deal</span>
@@ -166,6 +166,9 @@ export default function ROICalculator() {
             </div>
           </div>
         </div>
+        <p className="section-footer">
+          Numbers mean results.
+        </p>
       </div>
     </section>
   );

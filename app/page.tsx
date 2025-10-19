@@ -12,11 +12,13 @@ import BeforeAfterSection from "@/components/frontend/BeforeAfterSection"
 import VSLSection from "@/components/frontend/VSLSection"
 import TestCallSection from "@/components/frontend/TestCallSection"
 import IntegrationSection from "@/components/frontend/IntegrationSection"
-import StatsSection from "@/components/frontend/StatsSection"
+import StatsSection from "@/components/frontend/RealTimeStatsSection"
 import ROICalculator from "@/components/frontend/ROICalculator"
 import TestimonialsSection from "@/components/frontend/TestimonialsSection"
 import FAQSection from "@/components/frontend/FAQSection"
 import SecuritySection from "@/components/frontend/SecuritySection"
+import Wave from "@/components/frontend/graphics/Wave"
+
 
 
 // Types
@@ -55,29 +57,32 @@ export default async function LandingPage() {
 
   return (
     <div className="flex flex-col min-h-[100dvh]">
-      <header className="px-4 lg:px-6 h-16 flex items-center  bg-white border-b fixed border-b-slate-200 w-full">
-        <Link className="flex items-center justify-center" href="#">
-          <Image src="/logo.png" alt="logo" width={50} height={50} />
-          <span className="sr-only">BrokerNest.ai</span>
-        </Link>
-        <nav className="ml-auto flex gap-4 sm:gap-6">
-          <a className="text-sm font-medium hover:underline underline-offset-4" href="#features">
-            Features
-          </a>
-          <a className="text-sm font-medium hover:underline underline-offset-4" href="#testimonials">
-            Testimonials
-          </a>
-          <a className="text-sm font-medium hover:underline underline-offset-4" href="#pricing">
-            Pricing
-          </a>
-        </nav>
-        <Button className="mx-2 md:mx-4 lg:mx-6 xl:mx-10" >
-          <Link className="text-sm font-medium hover:underline underline-offset-4" href="/login">
-            Get Started
+      <header className="">
+        <div className="header-container gradient">
+          <Link className="" href="#">
+            <Image src="/images/brokernest/SVG/BrokerNest - Logo - WhiteLogo.svg" alt="logo" width={35} height={35} />
+            <span className="sr-only">BrokerNest.ai</span>
           </Link>
-        </Button>
+          <nav className="">
+            <a className="" href="#features">
+              Features
+            </a>
+            <a className="" href="#testimonials">
+              Testimonials
+            </a>
+            <a className="" href="#pricing">
+              Pricing
+            </a>
+          </nav>
+          <Button className="nav-login-button" >
+            <Link className="" href="/login">
+              Get Started
+            </Link>
+          </Button>
+        </div>
       </header>
-      <main className="flex-1">
+      <main className="">
+        <Wave />
         <HeroSection />
         <IntroSection />
         <BeforeAfterSection />
@@ -86,16 +91,16 @@ export default async function LandingPage() {
         <SecuritySection />
         <VSLSection />
         <TestCallSection />
-        <section className="pricing-section" id="pricing">
-          <div className="pricing-container">
-            <h2 className="pricing-title">Pricing Plans</h2>
-            <p className="pricing-subtitle">Choose the perfect plan for your needs</p>
-            <div className="pricing-grid">
+        <section className="pricing" id="pricing">
+          <div className="section-container">
+            <h2 className="section-title">Pricing Plans</h2>
+            <p className="section-subtitle">Choose the perfect plan for your needs</p>
+            <div className="section-grid">
               {products.map((product) => (
-                <Card key={product.id} className="pricing-card">
-                  <CardHeader className="pricing-card-header">
-                    <CardTitle className="pricing-card-name">{product.name}</CardTitle>
-                    <CardDescription className="pricing-card-desc">{product.description}</CardDescription>
+                <Card key={product.id} className="card">
+                  <CardHeader className="card-header">
+                    <CardTitle className="card-name">{product.name}</CardTitle>
+                    <CardDescription className="card-desc">{product.description}</CardDescription>
                   </CardHeader>
                   <CardContent className="pricing-card-content">
                     <p className="pricing-amount">
@@ -120,6 +125,9 @@ export default async function LandingPage() {
                 </Card>
               ))}
             </div>
+            <p className="section-footer">
+              Numbers mean results.
+            </p>
           </div>
         </section>
         <ROIStatsSection />

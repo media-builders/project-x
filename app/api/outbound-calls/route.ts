@@ -62,13 +62,17 @@ export async function POST(req: NextRequest) {
         let twilioPhoneNumber = userAgent[0].twilio_number;
         /********************************************************************************************/
 
-        //CALLING TEST MODE - Delete later//
-        // You can enter your phone number into the TEST_PHONE_NUMBER env variable
-        // This is the number you will get a call on
-        const TEST_MODE = process.env.TEST_MODE === "true";
-        const TEST_PHONE_NUMBER = process.env.TEST_PHONE_NUMBER || "";
-        const toNumber = TEST_MODE ? TEST_PHONE_NUMBER : leads?.[0]?.phone;
-        if (!toNumber) 
+        // ✅ Extract the lead info
+        const lead = leads?.[0];
+        if (!lead) 
+            return NextResponse.json({ error: "No lead provided." }, { status: 400 });
+
+        const leadFirstName = lead.first || "";
+        const leadLastName = lead.last || "";
+        const leadEmail = lead.email || "";
+        const leadNumber = lead.phone;
+
+        if (!leadNumber) 
             return NextResponse.json({ error: "No phone number provided." }, { status: 400 });
         /********************************************************************************************/
 
@@ -190,7 +194,7 @@ export async function POST(req: NextRequest) {
         
         //Making Call via Elevenlabs
         const elClient = new ElevenLabsClient({ apiKey: ELEVENLABS_API_KEY });
-        console.log(`Calling ${toNumber} (mode: ${TEST_MODE ? "TEST": "LIVE"})`);
+        console.log(`Calling ${leadNumber}`);
 
         if (!agentPhoneNumberId)
             return NextResponse.json({ error: "No Twilio phone number found or imported." }, { status: 400 });
@@ -198,14 +202,24 @@ export async function POST(req: NextRequest) {
         const call = await elClient.conversationalAi.twilio.outboundCall({
             agentId: agentId,
             agentPhoneNumberId: agentPhoneNumberId,
-            toNumber: toNumber,
+            toNumber: leadNumber,
+            conversationInitiationClientData: { // ✅ required by API
+                dynamicVariables: {      
+                    user_id: userId,
+                    lead_fname: leadFirstName,
+                    lead_lname: leadLastName,
+                    lead_email: leadEmail,
+                    lead_number: leadNumber,
+                },
+            },
         });
 
         return NextResponse.json({
             status: "initiated",
-            mode: TEST_MODE ? "TEST" : "LIVE",
-            called_number: toNumber,
-            from_number: twilioPhoneNumber,
+            agent_number: twilioPhoneNumber,
+            lead_name: `${leadFirstName} ${leadLastName}`.trim(),
+            lead_email: leadEmail,
+            lead_number: leadNumber,
             agent_id: agentId,
             elevenlabs_response: call,
         });

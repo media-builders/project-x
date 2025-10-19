@@ -5,7 +5,7 @@ import LeadsTable from "@/components/leads/Leads";
 import CallSchedule from "@/components/leads/calls/schedule";
 import LeadCaptureFormSetup from "@/components/leads/LeadCaptureFormSetup";
 import DialerSettings from "@/components/agents/settings";
-import Calendar from "@/components/calendar/Calendar";
+import GoogleCalendar from "@/components/calendar/GoogleCalendar";
 import Integrations from "@/components/settings/Integrations";
 import SettingsPanel from "@/components/settings/SettingsPanel";
 
@@ -87,7 +87,7 @@ export default function DashboardWindow({ activeTab }: DashboardWindowProps) {
             transition={{ duration: 0.25, ease: "easeInOut" }}
             className="h-full"
           >
-            <Calendar />
+            <GoogleCalendar />
           </motion.div>
         )}
 

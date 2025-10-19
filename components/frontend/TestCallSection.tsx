@@ -12,17 +12,11 @@ export default function TestCallSection() {
   }
 
   return (
-    <section id="demo" className="testcall-section">
-      <div className="testcall-container">
-        {/* ==== Section Header ==== */}
-        <header className="testcall-header">
-          <h2 className="testcall-title">
-            Try BrokerNest AI
-          </h2>
-          <p className="testcall-subtitle">
-            Experience a Conversation with BrokerNest AI yourself or listen to a real AI follow-up call that books an appointment in under two minutes.
-          </p>
-        </header>
+    <section id="test-call" className="test-call">
+      <div className="section-container">
+        <h2 className="section-title">Try BrokerNest AI</h2>
+        <p className="section-subtitle">Experience a Conversation with BrokerNest AI yourself or listen to a real AI follow-up call that books an appointment in under two minutes.
+        </p>
 
         {/* ==== Steps ==== */}
         <ol className="testcall-steps">
@@ -32,9 +26,9 @@ export default function TestCallSection() {
         </ol>
 
         {/* ==== Two-Column Layout ==== */}
-        <div className="testcall-grid">
+        <div className="section-grid">
           {/* === Left: Form === */}
-          <form className="testcall-form" onSubmit={handleSubmit}>
+          <form className="card" onSubmit={handleSubmit}>
             <h3 className="form-title">Request a Test Call</h3>
 
             <div className="form-group">
@@ -64,7 +58,7 @@ export default function TestCallSection() {
           </form>
 
           {/* === Right: Audio Demo === */}
-          <div className="testcall-audio">
+          <div className="card">
             <div className="audio-header">
               <Image
                 src="/call-icon.svg"
@@ -96,6 +90,9 @@ export default function TestCallSection() {
             </audio>
           </div>
         </div>
+        <p className="section-footer">
+          Try it yourself.
+        </p>
       </div>
     </section>
   )

@@ -1,7 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import Logout from "@/components/Logout";
+import BNLogo from "@/public/images/brokernest/SVG/BrokerNest - Logo - WhiteLogo.svg";
 
 interface DashboardMenuProps {
   activeTab: string;
@@ -42,6 +44,21 @@ export default function DashboardMenu({ activeTab, onTabChange }: DashboardMenuP
 
   return (
     <div className="dashboard-menu">
+      <div className="bn-badge gradient">
+        <div className="bn-logo">
+            <Image
+              src={BNLogo}
+              alt="BrokerNest.ai Logo"
+              width={40}
+              height={40}
+              priority
+              className="object-contain"
+            />
+        </div>
+        <div className="bn-title">
+          <h1>BrokerNest</h1>
+        </div>
+      </div>
       <ul className="menu-list">
         {/* Leads */}
         <li
