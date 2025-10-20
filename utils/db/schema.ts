@@ -52,7 +52,7 @@ export type SelectUserSubaccount = typeof userTwilioSubaccountTable.$inferSelect
 
 
 export const callLogsTable = pgTable("call_logs", {
-  id: text('id').primaryKey(),                     
+  conversation_id: text("conversation_id").primaryKey(),                     
   user_id: uuid('user_id').notNull(),              
   agent_id: text('agent_id').notNull(),            
   status: text('status').notNull(),

@@ -83,7 +83,7 @@ export default function ImportButton({ onImported }: ImportButtonProps) {
         disabled={importing}
         title="Import by Stage"
       >
-        {importing ? "Importing…" : `Import (${stages.length || 0} stages)`} {/* [NEW] */}
+        {importing ? "Importing…" : `Import (${stages.length || 0} stages)`}
       </button>
 
       {/* [NEW] dropdown */}

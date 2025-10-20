@@ -5,14 +5,12 @@ import { db } from "@/utils/db/db";
 import { userAgentsTable } from "@/utils/db/schema";
 import { eq } from "drizzle-orm";
 
-// ===== ENV / CONSTANTS =====
 const XI_API_KEY = process.env.ELEVENLABS_API_KEY!;
 const ELEVEN_BASE = "https://api.elevenlabs.io/v1/convai";
 const TEMPLATE_AGENT_ID = process.env.ELEVENLABS_TEMPLATE_AGENT_ID;
 const TEMPLATE_AGENT_NAME =
   process.env.ELEVENLABS_TEMPLATE_AGENT_NAME ?? "Sam — Real Estate Outbound Caller";
 
-// ===== Supabase helper (SSR cookie adapter) =====
 function supaFromRequest(req: NextRequest) {
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -31,7 +29,6 @@ function supaFromRequest(req: NextRequest) {
   );
 }
 
-// Normalize GET /agents/{id} so we always return { agent: {...} }
 async function getAgentById(id: string) {
   const res = await fetch(`${ELEVEN_BASE}/agents/${id}`, {
     headers: { "xi-api-key": XI_API_KEY },
@@ -63,7 +60,7 @@ async function listAgents() {
   return res.json(); // { agents: [...] }
 }
 
-// Defensive ID/name extraction (list responses can vary)
+// 
 function resolveAgentId(a: any): string | undefined {
   return (
     a?.id ??
@@ -91,7 +88,6 @@ function resolveAgentNameFromAny(o: any): string | undefined {
   return o.name ?? o?.agent?.name ?? o?.metadata?.name ?? undefined;
 }
 
-// ===== Naming helpers =====
 function toPossessive(name: string) {
   const n = (name || "").trim();
   if (!n) return "Agent";

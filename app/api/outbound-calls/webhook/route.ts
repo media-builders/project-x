@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/utils/db/db";
 import { callLogsTable } from "@/utils/db/schema";
+import { eq } from "drizzle-orm";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,7 +28,7 @@ function extractDyn(evt: any) {
       evt?.metadata?.dynamic_variables
     ) || {};
 
-  const matchedPath =
+  /**const matchedPath =
     (evt?.conversationInitiationClientData?.dynamicVariables && "conversationInitiationClientData.dynamicVariables") ||
     (evt?.conversation_initiation_client_data?.dynamic_variables && "conversation_initiation_client_data.dynamic_variables") ||
     (evt?.data?.conversationInitiationClientData?.dynamicVariables && "data.conversationInitiationClientData.dynamicVariables") ||
@@ -36,26 +37,71 @@ function extractDyn(evt: any) {
     (evt?.conversation?.client_data?.dynamicVariables && "conversation.client_data.dynamicVariables") ||
     (evt?.client_data?.dynamic_variables && "client_data.dynamic_variables") ||
     (evt?.metadata?.dynamic_variables && "metadata.dynamic_variables") ||
-    "not_found";
+    "not_found";**/
 
-  return { dyn, matchedPath };
+  //return { dyn, matchedPath };
+  return dyn;
+}
+
+function extractELConversationId(evt: any, dyn: any) {
+    const conv = first<any>(evt?.conversation, evt?.data?.conversation);
+    const candidates = [
+      conv?.id,
+      evt?.data?.conversation?.id,
+      evt?.conversation_id,
+      evt?.data?.conversation_id,
+      evt?.conversation?.conversation_id,
+      dyn?.conversation_id, // if you ever pass it yourself (not typical)
+    ].filter((v) => typeof v === "string") as string[];
+
+    const found = candidates.find((c) => c.startsWith("conv_"));
+    const source =
+      (found === conv?.id && "conversation.id") ||
+      (found === evt?.data?.conversation?.id && "data.conversation.id") ||
+      (found === evt?.conversation_id && "conversation_id") ||
+      (found === evt?.data?.conversation_id && "data.conversation_id") ||
+      (found === evt?.conversation?.conversation_id && "conversation.conversation_id") ||
+      (found === dyn?.conversation_id && "dyn.conversation_id") ||
+      "not_found";
+
+  return { id: found ?? null, source };
 }
 
 export async function POST(req: NextRequest) {
   try {
     const evt = await req.json();
 
-    // Normalize common top-level shapes
     const type = first<string>(evt?.type, evt?.event_type, evt?.event) ?? "event";
     const conv = first<any>(evt?.conversation, evt?.data?.conversation, null);
     const agent = first<any>(evt?.agent, evt?.data?.agent, null);
+    const dyn = extractDyn(evt);
 
-    // Extract dynamic variables
-    const { dyn, matchedPath } = extractDyn(evt);
+    //const { dyn, matchedPath } = extractDyn(evt);
 
-    // IDs / Numbers
+    const { id: conversationId, source: convIdSource } = extractELConversationId(evt, dyn);
+
+    // We REQUIRE conv_...; if missing, accept but skip DB to avoid noise
+    if (!conversationId) {
+      console.warn("[Webhook] Missing ElevenLabs conversation id (conv_...) — skipping insert.", {
+        knownTopLevelKeys: Object.keys(evt || {}),
+      });
+      return NextResponse.json({ accepted: true }, { status: 202 });
+    }
+    
     const userId = first<string>(dyn.user_id, dyn.system_user_id);
-    const leadId = first<string>(dyn.lead_id);
+    if (!userId) {
+      console.warn("[Webhook] user_id unresolved — skipping insert", {
+        conv: conversationId,
+      });
+      return NextResponse.json({ accepted: true }, { status: 202 });
+    }
+
+    const agentId = first<string>(
+      dyn?.agent_id, 
+      agent?.id, 
+      evt?.data?.assigned_agent?.agent_id, 
+      evt?.assigned_agent?.agent_id
+    );
 
     const fromNumber = first<string>(
       dyn.from_number,
@@ -73,12 +119,6 @@ export async function POST(req: NextRequest) {
       evt?.to
     );
 
-    const agentId = first<string>(
-      dyn.agent_id,
-      agent?.id,
-      evt?.data?.assigned_agent?.agent_id,
-      evt?.assigned_agent?.agent_id
-    );
 
     // Transcript / analysis if present
     const transcript = first<any>(evt?.transcript, evt?.data?.transcript) ?? null;
@@ -91,41 +131,55 @@ export async function POST(req: NextRequest) {
       new Date();
 
     // Debug once (remove later if noisy)
-    console.log("[Webhook] dyn matched at:", matchedPath, " keys:", Object.keys(dyn || {}));
+    //console.log("[Webhook] dyn matched at:", matchedPath, " keys:", Object.keys(dyn || {}));
 
-    if (!userId) {
-      console.warn("[Webhook] user_id unresolved — skipping insert", {
-        conv: conv?.id ?? evt?.data?.conversation?.id,
-        agent: agentId,
-        from: fromNumber,
+    await db
+      .insert(callLogsTable)
+      .values({
+        conversation_id: conversationId, 
+        user_id: userId,
+        agent_id: agentId ?? "unknown",
+        status: type,
+        to_number: toNumber ?? null,
+        from_number: fromNumber ?? null,
+        started_at: startedAt,
+        ended_at:
+          (evt?.timestamps?.ended_at && new Date(evt.timestamps.ended_at)) ||
+          (evt?.data?.timestamps?.ended_at && new Date(evt.data.timestamps.ended_at)) ||
+          null,
+        duration_sec: first<number>(evt?.metrics?.duration_sec, evt?.data?.metrics?.duration_sec) ?? null,
+        cost_cents: first<number>(evt?.billing?.cost_cents, evt?.data?.billing?.cost_cents) ?? null,
+        transcript,
+        analysis,
+        metadata: {
+          elevenlabs_event: type,
+          raw_event_type: evt?.type ?? null,
+        },
+        dynamic_variables: dyn ?? null,
+      })
+      .onConflictDoUpdate({
+        target: callLogsTable.conversation_id,
+        set: {
+          status: type,
+          to_number: toNumber ?? null,
+          from_number: fromNumber ?? null,
+          ended_at:
+            (evt?.timestamps?.ended_at && new Date(evt.timestamps.ended_at)) ||
+            (evt?.data?.timestamps?.ended_at && new Date(evt.data.timestamps.ended_at)) ||
+            undefined,
+          duration_sec:
+            first<number>(evt?.metrics?.duration_sec, evt?.data?.metrics?.duration_sec) ?? undefined,
+          cost_cents:
+            first<number>(evt?.billing?.cost_cents, evt?.data?.billing?.cost_cents) ?? undefined,
+          transcript: transcript ?? undefined,
+          analysis: analysis ?? undefined,
+          metadata: {
+            elevenlabs_event: type,
+            raw_event_type: evt?.type ?? null,
+          },
+          dynamic_variables: dyn ?? undefined,
+        },
       });
-      return NextResponse.json({ accepted: true }, { status: 202 });
-    }
-
-    // Build the insert to match YOUR schema exactly
-    await db.insert(callLogsTable).values({
-      id: (conv?.id as string) ?? (globalThis.crypto?.randomUUID?.() ?? `call_${Date.now()}`),
-      user_id: userId,
-      agent_id: agentId ?? "unknown",
-      status: type,
-      to_number: toNumber ?? null,
-      from_number: fromNumber ?? null,
-      started_at: startedAt,
-      ended_at: null,
-      duration_sec: null,     // integer | null
-      cost_cents: null,       // integer | null — use cents, not cost_usd
-      transcript,             // jsonb | null
-      analysis,               // jsonb | null
-      metadata: {
-        elevenlabs_event: type,
-        conversation_id: conv?.id ?? null,
-        lead_id: leadId ?? null,
-        dynamic_variables_path: matchedPath,
-        raw_event_type: evt?.type ?? null,
-      },
-      dynamic_variables: dyn ?? null, // dedicated jsonb column in your schema
-      // created_at is defaulted by DB
-    });
 
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (e: any) {

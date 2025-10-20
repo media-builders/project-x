@@ -32,28 +32,9 @@ export default function AgentSetupButton() {
     }
   };
 
- const debugAgents = async () => {
-  const res = await fetch("/api/elevenlabs-agent/debug");
-  const data = await res.json();
-  const agents = Array.isArray(data.agents) ? data.agents : [];
-  if (!agents.length) return alert("No agents visible to this API key.");
-
-  const lines = agents.map((a: any, i: number) =>
-    `${i + 1}. ${a.name || "(no name)"}  —  ${a.id || "(id not found)"}`
-  );
-  alert(`Found ${agents.length} agent(s):\n\n${lines.join("\n")}`);
-};
-
-
-  
   return (
-    <div className="flex items-center gap-2">
       <button type="button" className="btn btn-primary" onClick={elevenlabsSetup}>
         Agent Setup
       </button>
-      <button type="button" className="btn btn-ghost" onClick={debugAgents}>
-          Debug Agents
-      </button>
-    </div>
   );
 }
