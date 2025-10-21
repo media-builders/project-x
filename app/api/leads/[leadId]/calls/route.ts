@@ -20,6 +20,14 @@ const toInt = (x: unknown): number | null => {
   return Number.isFinite(n) ? Math.floor(n) : null;
 };
 
+const fmtMMSS = (sec: number | null): string => {
+  if (sec == null) return "00:00";
+  const s = Math.max(0, Math.floor(sec));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}`;
+};
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { leadId: string } }
@@ -54,12 +62,15 @@ export async function GET(
       "conversation_id, user_id, started_at, ended_at, duration_sec, transcript, dynamic_variables"
     )
     .eq("user_id", uid)
-    .contains("dynamic_variables", { lead_id: leadId })
+    .filter("dynamic_variables->>lead_id", "eq", leadId)
     .order("started_at", { ascending: false });
 
   if (error) {
     return NextResponse.json(
-      { error: error.message, code: (error as any).code, details: (error as any).details, hint: (error as any).hint },
+      { error: error.message, 
+        code: (error as any).code, 
+        details: (error as any).details, 
+        hint: (error as any).hint },
       { status: 500 }
     );
   }
@@ -68,31 +79,30 @@ export async function GET(
 
   const calls = rows.map((r) => {
     const dv = r.dynamic_variables || {};
-
-    // Prefer dynamic vars:
     const utcISO: string | null =
       (typeof dv.system__time_utc === "string" && dv.system__time_utc) ||
       r.started_at ||
       null;
 
-    let dur =
-      toInt(dv.system__call_duration_secs) ??               // 1) dynamic var
-      toInt(r.duration_sec);                                 // 2) column
-    if (dur == null && r.started_at && r.ended_at) {         // 3) compute
-      const s = Date.parse(r.started_at);
-      const e = Date.parse(r.ended_at);
-      if (Number.isFinite(s) && Number.isFinite(e) && e >= s) {
-        dur = Math.floor((e - s) / 1000);
-      }
-    }
+    const dur =
+      toInt(dv.system__call_duration_secs) ??
+      toInt(r.duration_sec) ??
+      (r.started_at && r.ended_at
+        ? Math.floor(
+            (Date.parse(r.ended_at) - Date.parse(r.started_at)) / 1000
+          )
+        : null);
 
     return {
-      id: r.conversation_id,         // keep UI simple
-      date_time_utc: utcISO,         // <-- explicitly return UTC timestamp
-      duration_seconds: dur ?? null, // <-- seconds as a number
+      id: r.conversation_id,
+      date_time_utc: utcISO,
+      duration_mmss: fmtMMSS(dur),
       transcript: r.transcript ?? null,
     };
   });
+
+  // Optional: tiny log in your dev console so you can see results in terminal
+  console.log("[calls]", { leadId, count: calls.length, first: calls[0] });
 
   return NextResponse.json({ calls });
 }

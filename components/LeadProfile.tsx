@@ -132,9 +132,13 @@ export default function LeadProfile({ leads }: LeadProfileProps) {
                             {fmtDateTime(log.date_time_utc)}
                           </td>
                           <td className="px-3 py-2 whitespace-pre-wrap break-words">
-                            {typeof log.transcript === "string"
+                            {Array.isArray(log.transcript)
                               ? log.transcript
-                              : JSON.stringify(log.transcript, null, 2)}
+                                  .map((m: any) => `${m.role}: ${m.message}`)
+                                  .join("\n")
+                              : typeof log.transcript === "string"
+                              ? log.transcript
+                              : "—"}
                           </td>
                           <td className="px-3 py-2 whitespace-nowrap">
                             {fmtDurationMMSS(log.duration_seconds)}
