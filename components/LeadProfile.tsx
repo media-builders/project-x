@@ -17,8 +17,37 @@ interface LeadProfileProps {
   leads: Lead[];
 }
 
+type CallLog = {
+  id: string;
+  date_time_utc: string | null;      
+  duration_seconds: number | null;  
+  transcript: unknown | null;
+};
+
+const fmtDateTime = (utcISO?: string | null) => {
+  if (!utcISO) return "—";
+  // Let the browser localize it nicely from the UTC ISO string:
+  const d = new Date(utcISO);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleString(); // locale-aware (your timezone)
+};
+
+const fmtDurationMMSS = (sec?: number | null) => {
+  if (sec == null) return "00:00";
+  const s = Math.max(0, Math.floor(sec));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}`;
+};
+
 export default function LeadProfile({ leads }: LeadProfileProps) {
   const [index, setIndex] = useState(0);
+  const [callLogs, setCallLogs] = useState<CallLog[] | null>(null);
+  const [loadingCalls, setLoadingCalls] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const hasLeads = leads && leads.length > 0;
+  const lead = hasLeads ? leads[index] : null;
 
   useEffect(() => {
     if (index >= leads.length) setIndex(0);
@@ -27,8 +56,23 @@ export default function LeadProfile({ leads }: LeadProfileProps) {
   const next = () => setIndex((i) => (i + 1) % leads.length);
   const prev = () => setIndex((i) => (i - 1 + leads.length) % leads.length);
 
-  const hasLeads = leads && leads.length > 0;
-  const lead = hasLeads ? leads[index] : null;
+    useEffect(() => {
+    if (!lead) return;
+    (async () => {
+      setLoadingCalls(true);
+      setError(null);
+      try {
+        const res = await fetch(`/api/leads/${lead.id}/calls`);
+        const payload = await res.json(); // parse once
+        if (!res.ok) throw new Error(payload?.error || `Failed (${res.status})`);
+        setCallLogs(payload?.calls ?? []);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoadingCalls(false);
+      }
+    })();
+  }, [lead]);
 
   return (
     <div className="bg-[var(--navy-2)] border border-[var(--hairline)] rounded-lg p-4 shadow-sm mb-6 transition-all duration-200">
@@ -62,6 +106,47 @@ export default function LeadProfile({ leads }: LeadProfileProps) {
           <p className="text-[var(--txt-2)]">
             📞 <span className="select-all">{lead?.phone}</span>
           </p>
+
+          <h3 className="text-base font-semibold text-[var(--txt-1)] mb-2">
+            Call History
+          </h3>
+
+          {loadingCalls ? (  
+            <p className="text-[var(--txt-3)] text-sm">Loading call history…</p>
+          ) : error ? (
+            <p className="text-red-400 text-sm">{error}</p>
+          ) : callLogs && callLogs.length > 0 ? (
+            <div className="overflow-x-auto border border-[var(--hairline)] rounded-lg">
+              <table className="min-w-full text-sm">
+                <thead className="bg-[var(--navy-3)] text-[var(--txt-1)]">
+                  <tr>
+                    <th className="text-left px-3 py-2">Date</th>
+                    <th className="text-left px-3 py-2">Transcript</th>
+                    <th className="text-left px-3 py-2">Duration</th>
+                  </tr>
+                </thead>
+                <tbody>
+                      {callLogs.map((log) => (
+                        <tr key={log.id} className="border-t border-[var(--hairline)] text-[var(--txt-2)] align-top">
+                          <td className="px-3 py-2 whitespace-nowrap">
+                            {fmtDateTime(log.date_time_utc)}
+                          </td>
+                          <td className="px-3 py-2 whitespace-pre-wrap break-words">
+                            {typeof log.transcript === "string"
+                              ? log.transcript
+                              : JSON.stringify(log.transcript, null, 2)}
+                          </td>
+                          <td className="px-3 py-2 whitespace-nowrap">
+                            {fmtDurationMMSS(log.duration_seconds)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+              </table>                    
+            </div>
+          ) : (
+            <p className="text-[var(--txt-3)] text-sm">No call history yet.</p>
+          )}
         </div>
       ) : (
         <div className="animate-fadeIn text-[var(--txt-3)] italic text-center py-6">

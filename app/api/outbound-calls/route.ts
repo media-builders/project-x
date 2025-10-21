@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 import { createServerClient } from "@supabase/ssr";
-import { usersTable, userAgentsTable, userTwilioSubaccountTable } from "@/utils/db/schema";
+import { usersTable, userAgentsTable, userTwilioSubaccountTable, callLogsTable } from "@/utils/db/schema";
 import { eq } from "drizzle-orm";
 import Twilio from "twilio";
 import { db } from "@/utils/db/db";
@@ -284,17 +284,51 @@ export async function POST(req: NextRequest) {
         conversationInitiationClientData,
     });
 
+    // Immediately record a pending row (idempotent)
+    try {
+      const conversationId = (call as any)?.conversationId as string | undefined;
+      const callSid = (call as any)?.callSid as string | undefined;
+
+      if (conversationId) {
+        await db
+          .insert(callLogsTable)
+          .values({
+            conversation_id: conversationId,
+            user_id: userId,
+            agent_id: agentId,
+            status: "call.started",
+            to_number: toNumber,
+            from_number: twilioPhoneNumber!,
+            started_at: new Date(),
+            // ended_at, duration_sec, cost_cents, transcript, analysis -> webhook will update
+            metadata: {
+              source: "outbound-route",
+              twilio_call_sid: callSid ?? null,
+            },
+            dynamic_variables: conversationInitiationClientData.dynamicVariables ?? null,
+          })
+          .onConflictDoNothing(); // won't error if webhook beats it
+      } else {
+        console.warn("[Outbound] No conv_ id in response; skipping initial insert.");
+      }
+    } catch (e) {
+      console.warn("[Outbound] Failed to insert initial call_log row:", e);
+    }
+
+
     console.log("[EL] Outbound call response:", call as any);
 
     return NextResponse.json(
     {
-        status: "initiated",
-        called_number: toNumber,
-        from_number: twilioPhoneNumber,
-        agent_id: agentId,
-        agent_phone_number_id: agentPhoneNumberId,
-        elevenlabs_response: call,
-        echo_dynamic_vars: conversationInitiationClientData.dynamicVariables,
+      status: "initiated",
+      called_number: toNumber,
+      from_number: twilioPhoneNumber,
+      agent_id: agentId,
+      agent_phone_number_id: agentPhoneNumberId,
+      elevenlabs_response: call,
+      conversation_id: (call as any)?.conversationId ?? null,
+      twilio_call_sid: (call as any)?.callSid ?? null,
+      echo_dynamic_vars: conversationInitiationClientData,
     },
         { status: 200 }
     );

@@ -1,2 +1,5 @@
 
- 
+1. Create a table showing call history of the leads (GPT: CALL HISTORY TABLE INTEGRATION)
+2. Create a show transcript pop-up page
+3. Implement call quotas
+4. Implement call queues
