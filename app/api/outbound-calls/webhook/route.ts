@@ -2,8 +2,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/utils/db/db";
-import { callLogsTable } from "@/utils/db/schema";
-import { eq } from "drizzle-orm";
+import { callLogsTable, leadsTable, callQueueTable } from "@/utils/db/schema";
+import { eq, and, asc } from "drizzle-orm";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,19 +27,6 @@ function extractDyn(evt: any) {
       evt?.client_data?.dynamic_variables,
       evt?.metadata?.dynamic_variables
     ) || {};
-
-  /**const matchedPath =
-    (evt?.conversationInitiationClientData?.dynamicVariables && "conversationInitiationClientData.dynamicVariables") ||
-    (evt?.conversation_initiation_client_data?.dynamic_variables && "conversation_initiation_client_data.dynamic_variables") ||
-    (evt?.data?.conversationInitiationClientData?.dynamicVariables && "data.conversationInitiationClientData.dynamicVariables") ||
-    (evt?.data?.conversation_initiation_client_data?.dynamic_variables && "data.conversation_initiation_client_data.dynamic_variables") ||
-    (evt?.conversation?.client_data?.dynamic_variables && "conversation.client_data.dynamic_variables") ||
-    (evt?.conversation?.client_data?.dynamicVariables && "conversation.client_data.dynamicVariables") ||
-    (evt?.client_data?.dynamic_variables && "client_data.dynamic_variables") ||
-    (evt?.metadata?.dynamic_variables && "metadata.dynamic_variables") ||
-    "not_found";**/
-
-  //return { dyn, matchedPath };
   return dyn;
 }
 
@@ -75,14 +62,11 @@ export async function POST(req: NextRequest) {
     const conv = first<any>(evt?.conversation, evt?.data?.conversation, null);
     const agent = first<any>(evt?.agent, evt?.data?.agent, null);
     const dyn = extractDyn(evt);
-
-    //const { dyn, matchedPath } = extractDyn(evt);
-
     const { id: conversationId, source: convIdSource } = extractELConversationId(evt, dyn);
 
-    // We REQUIRE conv_...; if missing, accept but skip DB to avoid noise
+    //
     if (!conversationId) {
-      console.warn("[Webhook] Missing ElevenLabs conversation id (conv_...) — skipping insert.", {
+      console.warn("[Webhook] Missing ElevenLabs conversation id  — skipping insert.", {
         knownTopLevelKeys: Object.keys(evt || {}),
       });
       return NextResponse.json({ accepted: true }, { status: 202 });
@@ -119,7 +103,6 @@ export async function POST(req: NextRequest) {
       evt?.to
     );
 
-
     // Transcript / analysis if present
     const transcript = first<any>(evt?.transcript, evt?.data?.transcript) ?? null;
     const analysis = first<any>(evt?.analysis, evt?.data?.analysis) ?? null;
@@ -129,9 +112,6 @@ export async function POST(req: NextRequest) {
       (evt?.timestamps?.started_at && new Date(evt.timestamps.started_at)) ||
       (evt?.data?.timestamps?.started_at && new Date(evt.data.timestamps.started_at)) ||
       new Date();
-
-    // Debug once (remove later if noisy)
-    //console.log("[Webhook] dyn matched at:", matchedPath, " keys:", Object.keys(dyn || {}));
 
     await db
       .insert(callLogsTable)
@@ -181,6 +161,53 @@ export async function POST(req: NextRequest) {
         },
       });
 
+    // Call Queue
+    if (type === "ended" && userId) {
+      console.log(`[Queue] Call ended for user ${userId}, checking next queued call...`);
+
+      // mark the previous in-progress item as completed
+      await db
+        .update(callQueueTable)
+        .set({ status: "completed" })
+        .where(and(eq(callQueueTable.user_id, userId), eq(callQueueTable.status, "in_progress")));
+
+      // find the next pending item
+      const next = await db.query.callQueueTable.findFirst({
+        where: and(eq(callQueueTable.user_id, userId), eq(callQueueTable.status, "pending")),
+        orderBy: asc(callQueueTable.position),
+      });
+
+      if (next) {
+        console.log("[Queue] Next queued call found:", next.lead_id);
+
+        // mark as in_progress
+        await db
+          .update(callQueueTable)
+          .set({ status: "in_progress" })
+          .where(eq(callQueueTable.id, next.id));
+
+        // fetch lead details
+        const nextLead = await db.query.leadsTable.findFirst({
+          where: eq(leadsTable.id, next.lead_id),
+        });
+
+        if (nextLead) {
+          console.log("[Queue] Initiating next call to:", nextLead.phone);
+          await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/outbound-calls`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              leads: [nextLead],
+              queueMode: true,
+            }),
+          });
+        } else {
+          console.warn("[Queue] Lead not found for next queued call:", next.lead_id);
+        }
+      } else {
+        console.log("[Queue] No more queued calls for user:", userId);
+      }
+    }
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (e: any) {
     console.error("[Webhook] error", e);

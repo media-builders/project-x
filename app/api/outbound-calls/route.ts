@@ -6,6 +6,8 @@ import { usersTable, userAgentsTable, userTwilioSubaccountTable, callLogsTable }
 import { eq } from "drizzle-orm";
 import Twilio from "twilio";
 import { db } from "@/utils/db/db";
+//import { PLAN_QUOTAS } from "@/utils/planQuota";
+//import { getUserUsedMinutes } from "@/utils/getUserUsage";
 
 type LeadIn = {
     id?: string;
@@ -16,17 +18,17 @@ type LeadIn = {
     email?: string;
 };
 
+const assertEnv = (name: string) => {
+  const value = process.env[name];
+  if (!value) throw new Error(`Missing required environment variable: ${name}`);
+  return value;
+};
+
 const toE164 = (raw: string, defaultCountry = "+1") => {
     const digits = (raw || "").replace(/\D/g, "");
     if (digits.length === 10) return `${defaultCountry}${digits}`; // NANP
     if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
     return raw?.startsWith("+") ? raw : (digits ? `+${digits}` : "");
-};
-
-const assertEnv = (name: string) => {
-    const v = process.env[name];
-    if (!v) throw new Error(`Missing environment variable: ${name}`);
-    return v;
 };
 
 export const runtime = "nodejs";
@@ -41,6 +43,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const leads: Array<{ phone?: string; name?: string }> = body?.leads || [];
 
+
     // Supabase auth
     const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON, {
       cookies: {
@@ -50,12 +53,14 @@ export async function POST(req: NextRequest) {
             value: cookie.value,
           })),
         setAll: (cookiesToSet) => {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            req.cookies.set({ name, value, ...options });
-          });
+          for (const { name, value, options } of cookiesToSet) {
+            req.cookies.set(name, value);
+          }
         },
       },
     });
+
+
 
     const { data: { user }, error: authErr } = await supabase.auth.getUser();
     if (authErr || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -74,6 +79,29 @@ export async function POST(req: NextRequest) {
     const userId = dbUser[0].id;
     const userName = dbUser[0].name ?? user.email;
 
+    /**Checking Plan Quota
+    const plan = dbUser[0].plan || "Basic";
+    const quota = PLAN_QUOTAS[plan] ?? 500;
+
+    // Calculate how many minutes used from call_logs
+    const used = await db
+      .select({ duration_sec: callLogsTable.duration_sec })
+      .from(callLogsTable)
+      .where(eq(callLogsTable.user_id, userId));
+
+    const totalMinutes = Math.floor(
+      used.reduce((sum, row) => sum + (Number(row.duration_sec) || 0), 0) / 60
+    );
+
+    if (totalMinutes >= quota) {
+      return NextResponse.json(
+        {
+          error: `Quota exceeded: ${totalMinutes}/${quota} minutes used. Please upgrade your plan.`,
+        },
+        { status: 403 }
+      );
+    }**/
+    
     // User's ElevenLabs agent
     const userAgentRows = await db
       .select()
@@ -88,9 +116,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const agentId = userAgentRows[0].agent_id;
-    let agentPhoneNumberId = userAgentRows[0].agent_phone_number_id || null;
-    let twilioPhoneNumber = userAgentRows[0].twilio_number || null;
+    const { agent_id: agentId } = userAgentRows[0];
+    let { agent_phone_number_id: agentPhoneNumberId, twilio_number: twilioPhoneNumber } = userAgentRows[0];
+    //let agentPhoneNumberId = userAgentRows[0].agent_phone_number_id || null;
+    //let twilioPhoneNumber = userAgentRows[0].twilio_number || null;
 
     // Twilio subaccount
     const subRows = await db
@@ -184,7 +213,7 @@ export async function POST(req: NextRequest) {
       {
         method: "PATCH",
         headers: {
-          "xi-api-key": ELEVENLABS_API_KEY,
+          "xi-api-key": ELEVENLABS_API_KEY!,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ agent_id: agentId }),
@@ -238,31 +267,21 @@ export async function POST(req: NextRequest) {
     const leadEmail = lead.email || "";
     const leadPhone = lead.phone || "";
 
+    const dynamicVars = {
+      user_id: userId,
+      lead_id: lead?.id ?? "",
+      agent_id: agentId,
+      to_number: toNumber,
+      from_number: twilioPhoneNumber!,
+      Lead_First_Name: firstName,
+      Lead_Last_Name: lastName,
+      Lead_Email: leadEmail,
+      Lead_Phone: leadPhone,
+      test_mode: TEST_MODE ? "true" : "false",
+    };
+
     const conversationInitiationClientData = {
-        dynamicVariables: {
-          user_id: userId,
-          lead_id: lead?.id ?? "",
-          agent_id:agentId,
-          to_number: toNumber,
-          from_number: twilioPhoneNumber!,
-          Lead_First_Name: firstName,
-          Lead_Last_Name: lastName,
-          Lead_Email: leadEmail,
-          Lead_Phone: leadPhone,
-          // add any other placeholders your prompt requires
-        },
-        dynamic_variables: {
-          user_id: userId,
-          lead_id: lead?.id ?? "",
-          agent_id: agentId,
-          to_number: toNumber,
-          from_number: twilioPhoneNumber!,
-          Lead_First_Name: firstName,
-          Lead_Last_Name: lastName,
-          Lead_Email: leadEmail,
-          Lead_Phone: leadPhone,
-          test_mode: TEST_MODE ? "true" : "false",
-        },
+      dynamicVariables: dynamicVars,
     }
 
     // ---- Place the call via ElevenLabs ----
@@ -284,7 +303,7 @@ export async function POST(req: NextRequest) {
         conversationInitiationClientData,
     });
 
-    // Immediately record a pending row (idempotent)
+    // Immediately record a pending row
     try {
       const conversationId = (call as any)?.conversationId as string | undefined;
       const callSid = (call as any)?.callSid as string | undefined;
@@ -300,12 +319,11 @@ export async function POST(req: NextRequest) {
             to_number: toNumber,
             from_number: twilioPhoneNumber!,
             started_at: new Date(),
-            // ended_at, duration_sec, cost_cents, transcript, analysis -> webhook will update
             metadata: {
               source: "outbound-route",
               twilio_call_sid: callSid ?? null,
             },
-            dynamic_variables: conversationInitiationClientData.dynamicVariables ?? null,
+            dynamic_variables: dynamicVars,
           })
           .onConflictDoNothing(); // won't error if webhook beats it
       } else {
@@ -323,12 +341,13 @@ export async function POST(req: NextRequest) {
       status: "initiated",
       called_number: toNumber,
       from_number: twilioPhoneNumber,
+      lead_name: `${firstName} ${lastName}`.trim() || "Unknown Lead",
       agent_id: agentId,
       agent_phone_number_id: agentPhoneNumberId,
       elevenlabs_response: call,
       conversation_id: (call as any)?.conversationId ?? null,
       twilio_call_sid: (call as any)?.callSid ?? null,
-      echo_dynamic_vars: conversationInitiationClientData,
+      echo_dynamic_vars: dynamicVars,
     },
         { status: 200 }
     );

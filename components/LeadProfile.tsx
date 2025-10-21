@@ -19,21 +19,22 @@ interface LeadProfileProps {
 
 type CallLog = {
   id: string;
-  date_time_utc: string | null;      
-  duration_seconds: number | null;  
+  date_time_utc: string | null;
+  duration_seconds: number | null;
   transcript: unknown | null;
+  started_at?: string | null;
+  ended_at?: string | null;
 };
 
 const fmtDateTime = (utcISO?: string | null) => {
   if (!utcISO) return "—";
-  // Let the browser localize it nicely from the UTC ISO string:
   const d = new Date(utcISO);
   if (isNaN(d.getTime())) return "—";
-  return d.toLocaleString(); // locale-aware (your timezone)
+  return d.toLocaleString(); // local timezone
 };
 
 const fmtDurationMMSS = (sec?: number | null) => {
-  if (sec == null) return "00:00";
+  if (sec == null || isNaN(sec)) return "00:00";
   const s = Math.max(0, Math.floor(sec));
   const m = Math.floor(s / 60);
   const r = s % 60;
@@ -56,14 +57,14 @@ export default function LeadProfile({ leads }: LeadProfileProps) {
   const next = () => setIndex((i) => (i + 1) % leads.length);
   const prev = () => setIndex((i) => (i - 1 + leads.length) % leads.length);
 
-    useEffect(() => {
+  useEffect(() => {
     if (!lead) return;
     (async () => {
       setLoadingCalls(true);
       setError(null);
       try {
         const res = await fetch(`/api/leads/${lead.id}/calls`);
-        const payload = await res.json(); // parse once
+        const payload = await res.json();
         if (!res.ok) throw new Error(payload?.error || `Failed (${res.status})`);
         setCallLogs(payload?.calls ?? []);
       } catch (err: any) {
@@ -111,7 +112,7 @@ export default function LeadProfile({ leads }: LeadProfileProps) {
             Call History
           </h3>
 
-          {loadingCalls ? (  
+          {loadingCalls ? (
             <p className="text-[var(--txt-3)] text-sm">Loading call history…</p>
           ) : error ? (
             <p className="text-red-400 text-sm">{error}</p>
@@ -126,27 +127,65 @@ export default function LeadProfile({ leads }: LeadProfileProps) {
                   </tr>
                 </thead>
                 <tbody>
-                      {callLogs.map((log) => (
-                        <tr key={log.id} className="border-t border-[var(--hairline)] text-[var(--txt-2)] align-top">
-                          <td className="px-3 py-2 whitespace-nowrap">
-                            {fmtDateTime(log.date_time_utc)}
-                          </td>
-                          <td className="px-3 py-2 whitespace-pre-wrap break-words">
-                            {Array.isArray(log.transcript)
-                              ? log.transcript
-                                  .map((m: any) => `${m.role}: ${m.message}`)
-                                  .join("\n")
-                              : typeof log.transcript === "string"
-                              ? log.transcript
-                              : "—"}
-                          </td>
-                          <td className="px-3 py-2 whitespace-nowrap">
-                            {fmtDurationMMSS(log.duration_seconds)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-              </table>                    
+                  {callLogs.map((log) => {
+                    // ✅ Compute duration properly
+                    let durationSec: number | null = null;
+                    if (
+                      typeof log.duration_seconds === "number" &&
+                      log.duration_seconds > 0
+                    ) {
+                      durationSec = log.duration_seconds;
+                    } else if (log.started_at && log.ended_at) {
+                      const start = new Date(log.started_at).getTime();
+                      const end = new Date(log.ended_at).getTime();
+                      if (!isNaN(start) && !isNaN(end) && end > start) {
+                        durationSec = Math.floor((end - start) / 1000);
+                      }
+                    }
+
+                    return (
+                      <tr
+                        key={log.id}
+                        className="border-t border-[var(--hairline)] text-[var(--txt-2)] align-top"
+                      >
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          {fmtDateTime(log.date_time_utc)}
+                        </td>
+
+                        {/* Transcript */}
+                        <td className="px-3 py-2 whitespace-pre-wrap break-words leading-relaxed">
+                          {Array.isArray(log.transcript) ? (
+                            log.transcript.map((m: any, i: number) => {
+                              const role = m.role?.toUpperCase() ?? "UNKNOWN";
+                              const color =
+                                role === "AGENT"
+                                  ? "text-blue-400"
+                                  : role === "USER"
+                                  ? "text-green-400"
+                                  : "text-gray-400";
+                              return (
+                                <div key={i}>
+                                  <strong className={color}>{role}:</strong>{" "}
+                                  {m.message}
+                                </div>
+                              );
+                            })
+                          ) : typeof log.transcript === "string" ? (
+                            <div>{log.transcript}</div>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+
+                        {/* Duration */}
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          {fmtDurationMMSS(durationSec)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           ) : (
             <p className="text-[var(--txt-3)] text-sm">No call history yet.</p>
