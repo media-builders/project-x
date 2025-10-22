@@ -10,6 +10,7 @@ type Lead = {
   last: string;
   email: string;
   phone: string;
+  stage?: string | null;
   featured?: boolean;
 };
 
@@ -61,6 +62,12 @@ export default function LeadProfile({ leads }: LeadProfileProps) {
           </p>
           <p className="text-[var(--txt-2)]">
             📞 <span className="select-all">{lead?.phone}</span>
+          </p>
+          <p className="text-[var(--txt-2)] mt-1">
+            Stage:{" "}
+            <span className="font-medium text-[var(--txt-1)]">
+              {lead?.stage?.trim() || "Unassigned"}
+            </span>
           </p>
         </div>
       ) : (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 
 export default function LeadCaptureFormSetup() {
@@ -35,7 +35,7 @@ export default function LeadCaptureFormSetup() {
 
   const [copied, setCopied] = useState(false);
 
-  // === FETCH APP USER ID (users_table.id) FROM SUPABASE VIA EMAIL ===
+  // === FETCH APP USER ID FROM SUPABASE ===
   useEffect(() => {
     (async () => {
       try {
@@ -51,7 +51,6 @@ export default function LeadCaptureFormSetup() {
           return;
         }
 
-        // Prefer your app's user id from users_table (matched by email)
         const email = authUser.email;
         if (email) {
           const { data: appUser, error: lookupErr } = await supabase
@@ -60,28 +59,21 @@ export default function LeadCaptureFormSetup() {
             .eq("email", email)
             .maybeSingle();
 
-          if (lookupErr) {
-            console.error("users_table lookup error:", lookupErr);
-          }
+          if (lookupErr) console.error("users_table lookup error:", lookupErr);
 
           if (appUser?.id) {
-            // ✅ Use your app's user id (users_table.id)
             setUserId(appUser.id);
             return;
           }
         }
 
-        // Fallback: use the auth UID only if no users_table match
-        console.warn(
-          "No users_table match by email; falling back to auth UID (may differ from app user id)."
-        );
+        console.warn("No users_table match; falling back to auth UID.");
         setUserId(authUser.id);
       } catch (err) {
         console.error("Supabase user resolution error:", err);
       }
     })();
   }, []);
-
 
   const handleStyleChange = (
     key: keyof typeof styles,
@@ -95,28 +87,29 @@ export default function LeadCaptureFormSetup() {
     .filter(([_, v]) => v)
     .map(([key]) => key);
 
-  // === FORM HTML GENERATION ===
-  const renderFormHTML = (inlineOnly = false): string | JSX.Element => {
-    const labels: Record<string, string> = {
-      fname: "First Name",
-      lname: "Last Name",
-      email: "Email Address",
-      phone: "Phone Number",
-    };
+  // === MEMOIZED renderFormHTML FUNCTION ===
+  const renderFormHTML = useCallback(
+    (inlineOnly = false): string | JSX.Element => {
+      const labels: Record<string, string> = {
+        fname: "First Name",
+        lname: "Last Name",
+        email: "Email Address",
+        phone: "Phone Number",
+      };
 
-    const formBackground =
-      styles.formBgType === "gradient"
-        ? `linear-gradient(135deg, ${styles.formGradientFrom}, ${styles.formGradientTo})`
-        : styles.formBg;
+      const formBackground =
+        styles.formBgType === "gradient"
+          ? `linear-gradient(135deg, ${styles.formGradientFrom}, ${styles.formGradientTo})`
+          : styles.formBg;
 
-    const buttonBackground =
-      styles.buttonBgType === "gradient"
-        ? `linear-gradient(135deg, ${styles.buttonGradientFrom}, ${styles.buttonGradientTo})`
-        : styles.buttonBg;
+      const buttonBackground =
+        styles.buttonBgType === "gradient"
+          ? `linear-gradient(135deg, ${styles.buttonGradientFrom}, ${styles.buttonGradientTo})`
+          : styles.buttonBg;
 
-    const inputHTML = fields
-      .map(
-        (f) => `
+      const inputHTML = fields
+        .map(
+          (f) => `
         <div style="display:flex;flex-direction:column;width:100%;gap:6px;">
           <label style="color:${styles.inputText};font-size:${styles.inputFontSize}px;">
             ${labels[f]}
@@ -130,10 +123,10 @@ export default function LeadCaptureFormSetup() {
           background:${styles.inputBg};
           box-sizing:border-box;" />
         </div>`
-      )
-      .join("\n");
+        )
+        .join("\n");
 
-    const fullForm = `
+      const fullForm = `
 <div style="display:flex;justify-content:center;align-items:center;padding:20px;box-sizing:border-box;">
   <form onsubmit="submitLead(event)" 
     style="background:${formBackground};color:${styles.formText};
@@ -178,28 +171,29 @@ async function submitLead(e){
     alert("⚠️ Network error. Please try again.");
   }
 }
-</script>
-    `.trim();
+</script>`.trim();
 
-    return inlineOnly
-      ? fullForm
-      : <div dangerouslySetInnerHTML={{ __html: fullForm }} />;
-  };
+      return inlineOnly
+        ? fullForm
+        : <div dangerouslySetInnerHTML={{ __html: fullForm }} />;
+    },
+    [fields, styles, userId] // dependencies
+  );
 
   // === MEMOIZED HTML + PREVIEW ===
   const generatedHTML: string = useMemo(
     () => renderFormHTML(true) as string,
-    [fields, styles, userId]
+    [renderFormHTML]
   );
 
   const livePreview = useMemo(
     () => renderFormHTML(false),
-    [fields, styles, userId]
+    [renderFormHTML]
   );
 
   // === COPY FUNCTION ===
   const copyToClipboard = async () => {
-    if (!userId) return; // safety guard
+    if (!userId) return;
     await navigator.clipboard.writeText(generatedHTML);
     setCopied(true);
     setTimeout(() => setCopied(false), 3000);
@@ -264,188 +258,6 @@ async function submitLead(e){
             className="builder-checkbox"
           />
           <label style={{ fontSize: "13px" }}>Enable Form Shadow</label>
-        </div>
-      </div>
-
-      {/* === Form === */}
-      <div className="builder-panel">
-        <h3>Form</h3>
-        <div className="builder-section">
-          <div>
-            <label>Background Type</label>
-            <select
-              value={styles.formBgType}
-              onChange={(e) => handleStyleChange("formBgType", e.target.value)}
-              className="builder-input"
-            >
-              <option value="solid">Solid</option>
-              <option value="gradient">Gradient</option>
-            </select>
-          </div>
-
-          {styles.formBgType === "solid" ? (
-            <div>
-              <label>Background Color</label>
-              <input
-                type="color"
-                value={styles.formBg}
-                onChange={(e) => handleStyleChange("formBg", e.target.value)}
-                className="builder-input"
-              />
-            </div>
-          ) : (
-            <>
-              <div>
-                <label>Gradient From</label>
-                <input
-                  type="color"
-                  value={styles.formGradientFrom}
-                  onChange={(e) => handleStyleChange("formGradientFrom", e.target.value)}
-                  className="builder-input"
-                />
-              </div>
-              <div>
-                <label>Gradient To</label>
-                <input
-                  type="color"
-                  value={styles.formGradientTo}
-                  onChange={(e) => handleStyleChange("formGradientTo", e.target.value)}
-                  className="builder-input"
-                />
-              </div>
-            </>
-          )}
-
-          <div>
-            <label>Font Color</label>
-            <input
-              type="color"
-              value={styles.formText}
-              onChange={(e) => handleStyleChange("formText", e.target.value)}
-              className="builder-input"
-            />
-          </div>
-
-          <div>
-            <label>Font Size ({styles.formFontSize}px)</label>
-            <input
-              type="range"
-              min={12}
-              max={22}
-              value={styles.formFontSize}
-              onChange={(e) => handleStyleChange("formFontSize", Number(e.target.value))}
-              className="w-full"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* === Inputs === */}
-      <div className="builder-panel">
-        <h3>Inputs</h3>
-        <div className="builder-section">
-          <div>
-            <label>Background Color</label>
-            <input
-              type="color"
-              value={styles.inputBg}
-              onChange={(e) => handleStyleChange("inputBg", e.target.value)}
-              className="builder-input"
-            />
-          </div>
-          <div>
-            <label>Font Color</label>
-            <input
-              type="color"
-              value={styles.inputText}
-              onChange={(e) => handleStyleChange("inputText", e.target.value)}
-              className="builder-input"
-            />
-          </div>
-          <div>
-            <label>Font Size ({styles.inputFontSize}px)</label>
-            <input
-              type="range"
-              min={12}
-              max={20}
-              value={styles.inputFontSize}
-              onChange={(e) => handleStyleChange("inputFontSize", Number(e.target.value))}
-              className="w-full"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* === Button === */}
-      <div className="builder-panel">
-        <h3>Button</h3>
-        <div className="builder-section">
-          <div>
-            <label>Background Type</label>
-            <select
-              value={styles.buttonBgType}
-              onChange={(e) => handleStyleChange("buttonBgType", e.target.value)}
-              className="builder-input"
-            >
-              <option value="solid">Solid</option>
-              <option value="gradient">Gradient</option>
-            </select>
-          </div>
-
-          {styles.buttonBgType === "solid" ? (
-            <div>
-              <label>Background Color</label>
-              <input
-                type="color"
-                value={styles.buttonBg}
-                onChange={(e) => handleStyleChange("buttonBg", e.target.value)}
-                className="builder-input"
-              />
-            </div>
-          ) : (
-            <>
-              <div>
-                <label>Gradient From</label>
-                <input
-                  type="color"
-                  value={styles.buttonGradientFrom}
-                  onChange={(e) => handleStyleChange("buttonGradientFrom", e.target.value)}
-                  className="builder-input"
-                />
-              </div>
-              <div>
-                <label>Gradient To</label>
-                <input
-                  type="color"
-                  value={styles.buttonGradientTo}
-                  onChange={(e) => handleStyleChange("buttonGradientTo", e.target.value)}
-                  className="builder-input"
-                />
-              </div>
-            </>
-          )}
-
-          <div>
-            <label>Font Color</label>
-            <input
-              type="color"
-              value={styles.buttonText}
-              onChange={(e) => handleStyleChange("buttonText", e.target.value)}
-              className="builder-input"
-            />
-          </div>
-
-          <div>
-            <label>Font Size ({styles.buttonFontSize}px)</label>
-            <input
-              type="range"
-              min={12}
-              max={22}
-              value={styles.buttonFontSize}
-              onChange={(e) => handleStyleChange("buttonFontSize", Number(e.target.value))}
-              className="w-full"
-            />
-          </div>
         </div>
       </div>
 

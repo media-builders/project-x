@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
-import { createClient } from "@/utils/supabase/client";
 import { X, RefreshCw, Search, Star, Send, Trash2, Archive } from "lucide-react";
 
 // Hydration-safe dynamic import
@@ -14,7 +13,6 @@ export default GmailClient;
 // Inner Gmail component (actual logic)
 // ------------------------------------------------------------
 function GmailInnerComponent() {
-  const supabase = createClient();
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [emails, setEmails] = useState<any[]>([]);
   const [selectedEmail, setSelectedEmail] = useState<any | null>(null);
@@ -25,25 +23,66 @@ function GmailInnerComponent() {
   const [newMail, setNewMail] = useState({ to: "", subject: "", body: "" });
 
   const fetchController = useRef<AbortController | null>(null);
+  const refreshingTokenRef = useRef<Promise<string | null> | null>(null);
+
+  const refreshGoogleAccessToken = useCallback(async (): Promise<string | null> => {
+    if (refreshingTokenRef.current) {
+      return refreshingTokenRef.current;
+    }
+
+    const refreshPromise = (async () => {
+      try {
+        const res = await fetch("/api/google/token", {
+          method: "POST",
+          credentials: "include",
+          cache: "no-store",
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(data?.error || `Google token refresh failed (${res.status})`);
+        }
+
+        const newToken = typeof data?.accessToken === "string" ? data.accessToken : null;
+        if (newToken) {
+          setAccessToken(newToken);
+        }
+        return newToken;
+      } catch (err) {
+        console.error("Google token refresh error:", err);
+        return null;
+      } finally {
+        refreshingTokenRef.current = null;
+      }
+    })();
+
+    refreshingTokenRef.current = refreshPromise;
+    return refreshPromise;
+  }, []);
 
   // ------------------------------------------------------------
-  //  Get OAuth token from Supabase session
+  //  Fetch fresh Google token on load
   // ------------------------------------------------------------
   useEffect(() => {
-    const getSessionToken = async () => {
-      const { data } = await supabase.auth.getSession();
-      const token = data?.session?.provider_token;
-      if (token) setAccessToken(token);
+    const initializeToken = async () => {
+      const token = await refreshGoogleAccessToken();
+      if (!token) {
+        console.warn("Unable to retrieve Google access token on load.");
+      }
     };
-    getSessionToken();
-  }, [supabase]);
+    initializeToken();
+  }, [refreshGoogleAccessToken]);
 
   // ------------------------------------------------------------
   //  Fetch Gmail messages
   // ------------------------------------------------------------
   const fetchEmails = useCallback(
-    async (q?: string, pageToken?: string) => {
-      if (!accessToken) return;
+    async (q?: string, pageToken?: string, retry = false) => {
+      let tokenToUse = accessToken;
+      if (!tokenToUse) {
+        tokenToUse = await refreshGoogleAccessToken();
+      }
+      if (!tokenToUse) return;
       setLoading(true);
 
       fetchController.current?.abort();
@@ -57,17 +96,25 @@ function GmailInnerComponent() {
         if (pageToken) url.searchParams.set("pageToken", pageToken);
 
         const res = await fetch(url, {
-          headers: { Authorization: `Bearer ${accessToken}` },
+          headers: { Authorization: `Bearer ${tokenToUse}` },
           signal: controller.signal,
         });
-        if (!res.ok) throw new Error(await res.text());
+        if (!res.ok) {
+          if (res.status === 401 && !retry) {
+            const refreshed = await refreshGoogleAccessToken();
+            if (refreshed && refreshed !== tokenToUse) {
+              return fetchEmails(q, pageToken, true);
+            }
+          }
+          throw new Error(await res.text());
+        }
         const data = await res.json();
 
         const messages = await Promise.all(
           (data.messages || []).map(async (msg: any) => {
             const detail = await fetch(
               `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}`,
-              { headers: { Authorization: `Bearer ${accessToken}` } }
+              { headers: { Authorization: `Bearer ${tokenToUse}` } }
             ).then((r) => r.json());
 
             const headers = detail.payload.headers;
@@ -97,7 +144,7 @@ function GmailInnerComponent() {
         setLoading(false);
       }
     },
-    [accessToken]
+    [accessToken, refreshGoogleAccessToken]
   );
 
   useEffect(() => {
@@ -108,18 +155,38 @@ function GmailInnerComponent() {
   //  Mark as read/unread
   // ------------------------------------------------------------
   const toggleRead = async (id: string, unread: boolean) => {
-    if (!accessToken) return;
-    await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}/modify`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        removeLabelIds: unread ? [] : ["UNREAD"],
-        addLabelIds: unread ? ["UNREAD"] : [],
-      }),
-    });
+    let token = accessToken;
+    if (!token) {
+      token = await refreshGoogleAccessToken();
+    }
+    if (!token) return;
+
+    const makeRequest = async (authToken: string) =>
+      fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}/modify`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          removeLabelIds: unread ? [] : ["UNREAD"],
+          addLabelIds: unread ? ["UNREAD"] : [],
+        }),
+      });
+
+    let response = await makeRequest(token);
+    if (response.status === 401) {
+      const refreshed = await refreshGoogleAccessToken();
+      if (refreshed) {
+        response = await makeRequest(refreshed);
+      }
+    }
+
+    if (!response.ok) {
+      console.error("Failed to update message read state:", await response.text());
+      return;
+    }
+
     fetchEmails(query);
   };
 
@@ -127,11 +194,31 @@ function GmailInnerComponent() {
   //  Delete message
   // ------------------------------------------------------------
   const deleteMessage = async (id: string) => {
-    if (!accessToken) return;
-    await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}/trash`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
+    let token = accessToken;
+    if (!token) {
+      token = await refreshGoogleAccessToken();
+    }
+    if (!token) return;
+
+    const makeRequest = async (authToken: string) =>
+      fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}/trash`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+
+    let response = await makeRequest(token);
+    if (response.status === 401) {
+      const refreshed = await refreshGoogleAccessToken();
+      if (refreshed) {
+        response = await makeRequest(refreshed);
+      }
+    }
+
+    if (!response.ok) {
+      console.error("Failed to delete message:", await response.text());
+      return;
+    }
+
     fetchEmails(query);
   };
 
@@ -139,7 +226,11 @@ function GmailInnerComponent() {
   //  Send new email
   // ------------------------------------------------------------
   const sendEmail = async () => {
-    if (!accessToken) return;
+    let token = accessToken;
+    if (!token) {
+      token = await refreshGoogleAccessToken();
+    }
+    if (!token) return;
 
     const emailBody = [
       `To: ${newMail.to}`,
@@ -150,14 +241,28 @@ function GmailInnerComponent() {
 
     const encoded = btoa(emailBody).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
-    await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ raw: encoded }),
-    });
+    const sendRequest = async (authToken: string) =>
+      fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ raw: encoded }),
+      });
+
+    let response = await sendRequest(token);
+    if (response.status === 401) {
+      const refreshed = await refreshGoogleAccessToken();
+      if (refreshed) {
+        response = await sendRequest(refreshed);
+      }
+    }
+
+    if (!response.ok) {
+      console.error("Failed to send email:", await response.text());
+      return;
+    }
 
     setComposeOpen(false);
     setNewMail({ to: "", subject: "", body: "" });
@@ -184,13 +289,19 @@ function GmailInnerComponent() {
   //  Render
   // ------------------------------------------------------------
   if (!accessToken) {
-    return <p className="text-gray-400">Authenticating with Gmail...</p>;
+    return <p className="text-gray-400">Authenticating...</p>;
   }
 
   return (
     <div className="gmail-container text-gray-200">
+      {/* === Header === */}
+      <div className="pb-4 border-b border-gray-800 mb-5">
+        <h2 className="text-xl font-semibold text-white/90">Mail</h2>
+        <p className="text-sm text-gray-400">
+          Manage your inbox.
+        </p>
+      </div>
       <div className="flex items-center justify-between mb-4 border-b border-gray-700 pb-2">
-        <h2 className="text-xl font-semibold">Gmail Inbox</h2>
         <div className="flex gap-2">
           <button
             onClick={() => fetchEmails(query)}

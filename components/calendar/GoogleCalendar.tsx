@@ -1,316 +1,394 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
-import {
-  EventInput,
+import type {
   DateSelectArg,
   EventClickArg,
   EventContentArg,
 } from "@fullcalendar/core";
-import { createClient } from "@/utils/supabase/client";
-import { useModal } from "@/hooks/useModal";
-import { X } from "lucide-react";
 
-const COLOR_MAP: Record<string, string> = {
-  Danger: "bg-red-600 text-white",
-  Success: "bg-emerald-500 text-white",
-  Primary: "bg-blue-600 text-white",
-  Warning: "bg-yellow-400 text-black",
-};
+import { useToast } from "./ToastProvider";
 
-interface CalendarEvent extends EventInput {
-  extendedProps: {
-    calendar: string;
-    googleEventId?: string;
-  };
-}
+import { useGoogleCalendars } from "./hooks/useGoogleCalendars";
+import { useGoogleEvents } from "./hooks/useGoogleEvents";
+import type { CalendarEvent } from "./utils/types";
+
+import { PrimaryToolbar } from "./toolbars/PrimaryToolbar";
+import { SecondaryToolbar } from "./toolbars/SecondaryToolbar";
+import { AdvancedToolbar } from "./toolbars/AdvancedToolbar";
+import EventModal from "./modals/EventModal";
+
+type CalendarView = "dayGridMonth" | "timeGridWeek" | "timeGridDay";
 
 const GoogleCalendar: React.FC = () => {
-  const supabase = createClient();
+  const { show } = useToast();
+  const calendarRef = useRef<FullCalendar | null>(null);
 
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  // ------------------ Google Calendar sources ------------------
+  const { calendars, accessToken, loading, error } = useGoogleCalendars();
+  const [activeCalendars, setActiveCalendars] = useState<string[]>([]);
+  const [activeView, setActiveView] = useState<CalendarView>("dayGridMonth");
+  const [filterRange, setFilterRange] = useState<{ start?: string; end?: string }>({});
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // ------------------ Modal + event state ------------------
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [selectedCalendarId, setSelectedCalendarId] = useState("");
+
+  // Basic
   const [eventTitle, setEventTitle] = useState("");
   const [eventStartDate, setEventStartDate] = useState("");
   const [eventEndDate, setEventEndDate] = useState("");
-  const [eventLevel, setEventLevel] = useState("Primary");
-  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [eventStartTime, setEventStartTime] = useState("09:00");
+  const [eventEndTime, setEventEndTime] = useState("10:00");
 
-  const calendarRef = useRef<FullCalendar>(null);
-  const modalRef = useRef<HTMLDivElement | null>(null);
-  const { isOpen, openModal, closeModal } = useModal();
-  const [closing, setClosing] = useState(false);
+  // Advanced
+  const [description, setDescription] = useState("");
+  const [location, setLocation] = useState("");
+  const [attendees, setAttendees] = useState("");
+  const [colorId, setColorId] = useState("");
+  const [recurrence, setRecurrence] = useState("");
+  const [reminderMinutes, setReminderMinutes] = useState<number>(10);
+  const [visibility, setVisibility] = useState<"default" | "public" | "private">(
+    "default"
+  );
+  const [notifyGuests, setNotifyGuests] = useState(false);
 
-  // ------------------------------------------------------------
-  //  Retrieve Google access token from Supabase session
-  // ------------------------------------------------------------
+  // ------------------ Initialize calendars ------------------
   useEffect(() => {
-    const getSessionToken = async () => {
-      const { data } = await supabase.auth.getSession();
-      const token = data?.session?.provider_token;
-      if (token) setAccessToken(token);
-    };
-    getSessionToken();
-  }, [supabase]);
-
-  // ------------------------------------------------------------
-  //  Fetch Google Calendar events
-  // ------------------------------------------------------------
-  const fetchGoogleEvents = useCallback(async () => {
-    if (!accessToken) return;
-    try {
-      const res = await fetch(
-        "https://www.googleapis.com/calendar/v3/calendars/primary/events?maxResults=50&singleEvents=true&orderBy=startTime",
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }
-      );
-      if (!res.ok) throw new Error("Failed to load Google Calendar events");
-
-      const data = await res.json();
-      const formatted = data.items
-        .filter((item: any) => item.status !== "cancelled")
-        .map((item: any) => ({
-          id: item.id,
-          title: item.summary || "(No Title)",
-          start: item.start?.dateTime || item.start?.date,
-          end: item.end?.dateTime || item.end?.date,
-          extendedProps: {
-            calendar: "Primary",
-            googleEventId: item.id,
-          },
-        }));
-      setEvents(formatted);
-    } catch (err: any) {
-      console.error("Google Calendar fetch error:", err.message);
+    if (!loading && calendars.length > 0) {
+      const allIds = calendars.map((c) => c.id);
+      setActiveCalendars(allIds);
+      setSelectedCalendarId(allIds[0] || "");
     }
-  }, [accessToken]);
+  }, [loading, calendars]);
 
-  useEffect(() => {
-    if (accessToken) fetchGoogleEvents();
-  }, [accessToken, fetchGoogleEvents]);
+  // ------------------ Load events ------------------
+  const {
+    events,
+    refetch,
+    upsertEvent,
+    deleteEvent,
+    moveEvent,
+    loading: eventsLoading,
+  } = useGoogleEvents({
+    sources: calendars,
+    activeCalendarIds: activeCalendars,
+    maxResults: 200,
+    timeMin: filterRange.start,
+    timeMax: filterRange.end,
+  });
 
-  // ------------------------------------------------------------
-  //  Add or update Google Calendar events
-  // ------------------------------------------------------------
-  const handleAddOrUpdateEvent = useCallback(async () => {
-    if (!accessToken) return;
-    try {
-      const body = {
-        summary: eventTitle,
-        start: { date: eventStartDate },
-        end: { date: eventEndDate || eventStartDate },
-      };
+  // ------------------ Filters ------------------
+  const filteredEvents = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return events;
+    return events.filter((e) => {
+      const t = (e.title || "").toLowerCase();
+      const c = (e.extendedProps?.calendarLabel || "").toLowerCase();
+      return t.includes(q) || c.includes(q);
+    });
+  }, [events, searchQuery]);
 
-      if (selectedEvent?.extendedProps.googleEventId) {
-        // Update event
-        await fetch(
-          `https://www.googleapis.com/calendar/v3/calendars/primary/events/${selectedEvent.extendedProps.googleEventId}`,
-          {
-            method: "PATCH",
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(body),
-          }
-        );
-      } else {
-        // Create event
-        await fetch(
-          "https://www.googleapis.com/calendar/v3/calendars/primary/events",
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(body),
-          }
-        );
-      }
-
-      await fetchGoogleEvents();
-      triggerClose();
-    } catch (err: any) {
-      console.error("Google Calendar write error:", err.message);
-    }
-  }, [
-    accessToken,
-    selectedEvent,
-    eventTitle,
-    eventStartDate,
-    eventEndDate,
-    fetchGoogleEvents,
-  ]);
-
-  // ------------------------------------------------------------
-  //  Delete event
-  // ------------------------------------------------------------
-  const handleDeleteEvent = async () => {
-    if (!accessToken || !selectedEvent?.extendedProps.googleEventId) return;
-    try {
-      await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/primary/events/${selectedEvent.extendedProps.googleEventId}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }
-      );
-      await fetchGoogleEvents();
-      triggerClose();
-    } catch (err: any) {
-      console.error("Google Calendar delete error:", err.message);
-    }
-  };
-
-  // ------------------------------------------------------------
-  //  Modal handlers
-  // ------------------------------------------------------------
-  const resetModalFields = useCallback(() => {
+  // ------------------ Modal reset ------------------
+  const resetModalFields = () => {
+    setSelectedEvent(null);
     setEventTitle("");
     setEventStartDate("");
     setEventEndDate("");
-    setEventLevel("Primary");
-    setSelectedEvent(null);
-  }, []);
-
-  const triggerClose = () => {
-    setClosing(true);
-    setTimeout(() => {
-      setClosing(false);
-      closeModal();
-      resetModalFields();
-    }, 200);
+    setEventStartTime("09:00");
+    setEventEndTime("10:00");
+    setDescription("");
+    setLocation("");
+    setAttendees("");
+    setColorId("");
+    setRecurrence("");
+    setReminderMinutes(10);
+    setVisibility("default");
   };
 
+  // ------------------ Calendar interaction handlers ------------------
   const handleDateSelect = (selectInfo: DateSelectArg) => {
+    const startDate = selectInfo.startStr.split("T")[0];
+    const endDate = (selectInfo.endStr || selectInfo.startStr).split("T")[0];
+
     resetModalFields();
-    setEventStartDate(selectInfo.startStr);
-    setEventEndDate(selectInfo.endStr || selectInfo.startStr);
-    openModal();
+    setEventStartDate(startDate);
+    setEventEndDate(endDate);
+    if (!selectedCalendarId && activeCalendars.length) {
+      setSelectedCalendarId(activeCalendars[0]);
+    }
   };
 
   const handleEventClick = (clickInfo: EventClickArg) => {
-    const evt = clickInfo.event;
-    setSelectedEvent(evt as unknown as CalendarEvent);
-    setEventTitle(evt.title);
-    setEventStartDate(evt.start?.toISOString().split("T")[0] || "");
-    setEventEndDate(evt.end?.toISOString().split("T")[0] || "");
-    openModal();
+    const evt = clickInfo.event as unknown as CalendarEvent;
+    resetModalFields();
+
+    const startIso = clickInfo.event.start?.toISOString();
+    const endIso = clickInfo.event.end?.toISOString();
+
+    if (startIso) {
+      const [sd, st] = startIso.split("T");
+      setEventStartDate(sd);
+      setEventStartTime(st.slice(0, 5));
+    }
+    if (endIso) {
+      const [ed, et] = endIso.split("T");
+      setEventEndDate(ed);
+      setEventEndTime(et.slice(0, 5));
+    } else if (startIso) {
+      setEventEndDate(startIso.split("T")[0]);
+      setEventEndTime("10:00");
+    }
+
+    setSelectedEvent(evt);
+    setEventTitle(clickInfo.event.title);
+    if (evt.extendedProps?.calendarId) {
+      setSelectedCalendarId(evt.extendedProps.calendarId);
+    }
+
+    const ext = evt.extendedProps || {};
+    setDescription(ext.description || "");
+    setLocation(ext.hangoutLink || ext.location || "");
+    setColorId(ext.colorId || "");
+    setVisibility(ext.visibility || "default");
+    setAttendees(
+      ext.attendees ? ext.attendees.map((a: any) => a.email).join(", ") : ""
+    );
+    setRecurrence(ext.recurrence?.[0]?.split(";")[0]?.replace("RRULE:FREQ=", "") || "");
+    setReminderMinutes(ext.reminders?.overrides?.[0]?.minutes ?? 10);
   };
 
+  // ------------------ Persist changes ------------------
+  const handleSaveEvent = async (
+    createConference = false,
+    notifyGuestsOverride = notifyGuests
+  ) => {
+    if (!eventTitle || !eventStartDate || !selectedCalendarId) {
+      show({
+        title: "Missing fields",
+        message: "Please add title, start date, and select a calendar.",
+        variant: "warning",
+      });
+      return;
+    }
+
+    try {
+      setNotifyGuests(notifyGuestsOverride);
+
+      const existingCalendarId = selectedEvent?.extendedProps?.calendarId;
+      const googleEventId = selectedEvent?.extendedProps?.googleEventId;
+      if (
+        selectedEvent &&
+        googleEventId &&
+        existingCalendarId &&
+        existingCalendarId !== selectedCalendarId
+      ) {
+        try {
+          await moveEvent(
+            existingCalendarId,
+            googleEventId,
+            selectedCalendarId,
+            notifyGuestsOverride
+          );
+        } catch (moveError) {
+          console.error("Move failed:", moveError);
+          show({
+            title: "Move failed",
+            message: "Could not move event to the selected calendar.",
+            variant: "error",
+          });
+          return;
+        }
+      }
+
+      const startISO = `${eventStartDate}T${eventStartTime}:00`;
+      const endISO = `${eventEndDate || eventStartDate}T${eventEndTime}:00`;
+      const shouldCreateConference =
+        createConference && !selectedEvent?.extendedProps?.hangoutLink;
+      const shouldRemoveConference =
+        !createConference && !!selectedEvent?.extendedProps?.hangoutLink;
+
+      await upsertEvent({
+        title: eventTitle,
+        startDate: startISO,
+        endDate: endISO,
+        calendarId: selectedCalendarId,
+        googleEventId: selectedEvent?.extendedProps.googleEventId,
+        notifyGuests: notifyGuestsOverride,
+        removeConference: shouldRemoveConference,
+        description,
+        location,
+        attendees: attendees
+          ? attendees
+              .split(",")
+              .map((email) => ({ email: email.trim() }))
+              .filter((a) => a.email)
+          : undefined,
+        colorId: colorId || undefined,
+        recurrence: recurrence ? [`RRULE:FREQ=${recurrence}`] : undefined,
+        visibility,
+        reminders:
+          reminderMinutes > 0
+            ? {
+                useDefault: false,
+                overrides: [{ method: "popup", minutes: reminderMinutes }],
+              }
+            : { useDefault: true },
+        createConference: shouldCreateConference,
+      });
+
+      resetModalFields();
+      await refetch();
+    } catch (e) {
+      console.error("Error saving event:", e);
+      show({
+        title: "Failed to save",
+        message: "There was a problem saving this event.",
+        variant: "error",
+      });
+    }
+  };
+
+  const handleDeleteEvent = async () => {
+    if (!selectedEvent?.extendedProps.googleEventId) return;
+    try {
+      await deleteEvent(
+        selectedEvent.extendedProps.calendarId,
+        selectedEvent.extendedProps.googleEventId
+      );
+      resetModalFields();
+      await refetch();
+    } catch (e) {
+      console.error("Delete failed:", e);
+      show({
+        title: "Failed to delete",
+        message: "There was a problem deleting this event.",
+        variant: "error",
+      });
+    }
+  };
+
+  // ------------------ Sync view selection ------------------
+  useEffect(() => {
+    const api = calendarRef.current?.getApi();
+    if (!api) return;
+    if (api.view.type !== activeView) {
+      api.changeView(activeView);
+    }
+  }, [activeView]);
+
+  // ------------------ Render ------------------
+  if (loading) return <p className="calendar-status">Loading calendars…</p>;
+  if (error) return <p className="calendar-status calendar-status--error">Error: {error}</p>;
+  if (!accessToken)
+    return <p className="calendar-status">No Google access token available.</p>;
+
   return (
-    <div>
-      <div className="pb-4 border-b border-gray-800 mb-5">
-        <h2 className="text-xl font-semibold text-white/90">Google Calendar</h2>
-        <p className="text-sm text-gray-400">
-          View, add, edit, and delete events from your Google Calendar.
-        </p>
+    <div className="calendar-shell">
+      <div className="calendar-toolbar-stack">
+        <PrimaryToolbar
+          activeView={activeView}
+          onViewChange={setActiveView}
+          onRefresh={refetch}
+        />
+
+        <SecondaryToolbar
+          calendars={calendars}
+          activeCalendars={activeCalendars}
+          setActiveCalendars={setActiveCalendars}
+        />
+
+        {/* <AdvancedToolbar
+          filterRange={filterRange}
+          setFilterRange={setFilterRange}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+        /> */}
       </div>
 
-      <FullCalendar
-        ref={calendarRef}
-        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-        initialView="dayGridMonth"
-        selectable
-        editable
-        events={events}
-        select={handleDateSelect}
-        eventClick={handleEventClick}
-        eventContent={renderEventContent}
-        height="auto"
-      />
-
-      {/* Modal */}
-      {isOpen && (
-        <div
-          className={`fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm transition-opacity duration-200 ${
-            closing ? "opacity-0" : "opacity-100"
-          }`}
-        >
-          <div
-            ref={modalRef}
-            className={`relative bg-gray-900 text-white rounded-xl shadow-2xl w-full max-w-lg p-6 transform transition-all duration-200 ${
-              closing ? "scale-95 opacity-0" : "scale-100 opacity-100"
-            }`}
-          >
-            {/* Header */}
-            <div className="flex justify-between items-center mb-6 border-b border-gray-700 pb-3">
-              <h2 className="text-xl font-semibold">
-                {selectedEvent ? "Edit Event" : "Add Event"}
-              </h2>
-              <button
-                onClick={triggerClose}
-                className="text-gray-400 hover:text-white transition p-1 rounded-md hover:bg-gray-800"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Fields */}
-            <div className="flex flex-col gap-4">
-              <input
-                type="text"
-                placeholder="Event title"
-                value={eventTitle}
-                onChange={(e) => setEventTitle(e.target.value)}
-                className="w-full border border-gray-700 bg-gray-800 rounded-md px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <input
-                  type="date"
-                  value={eventStartDate}
-                  onChange={(e) => setEventStartDate(e.target.value)}
-                  className="border border-gray-700 bg-gray-800 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500"
-                />
-                <input
-                  type="date"
-                  value={eventEndDate}
-                  onChange={(e) => setEventEndDate(e.target.value)}
-                  className="border border-gray-700 bg-gray-800 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 mt-4">
-                {selectedEvent && (
-                  <button
-                    onClick={handleDeleteEvent}
-                    className="px-4 py-2 rounded-md bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition"
-                  >
-                    Delete
-                  </button>
-                )}
-                <button
-                  onClick={handleAddOrUpdateEvent}
-                  className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition"
-                >
-                  {selectedEvent ? "Update Event" : "Add Event"}
-                </button>
-              </div>
-            </div>
-          </div>
+      <div className="calendar-content">
+        <div className="calendar-view-pane">
+          <FullCalendar
+            ref={calendarRef}
+            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+            initialView={activeView}
+            selectable
+            editable
+            events={filteredEvents}
+            select={handleDateSelect}
+            eventClick={handleEventClick}
+            eventContent={renderEvent}
+            weekends
+            height="auto"
+          />
         </div>
+
+        <EventModal
+          selectedEvent={selectedEvent}
+          selectedCalendarId={selectedCalendarId}
+          setSelectedCalendarId={setSelectedCalendarId}
+          calendars={calendars}
+          eventTitle={eventTitle}
+          setEventTitle={setEventTitle}
+          eventStartDate={eventStartDate}
+          setEventStartDate={setEventStartDate}
+          eventEndDate={eventEndDate}
+          setEventEndDate={setEventEndDate}
+          eventStartTime={eventStartTime}
+          setEventStartTime={setEventStartTime}
+          eventEndTime={eventEndTime}
+          setEventEndTime={setEventEndTime}
+          description={description}
+          setDescription={setDescription}
+          location={location}
+          setLocation={setLocation}
+          attendees={attendees}
+          setAttendees={setAttendees}
+          colorId={colorId}
+          setColorId={setColorId}
+          recurrence={recurrence}
+          setRecurrence={setRecurrence}
+          reminderMinutes={reminderMinutes}
+          setReminderMinutes={setReminderMinutes}
+          visibility={visibility}
+          setVisibility={setVisibility}
+          onSave={handleSaveEvent}
+          onDelete={handleDeleteEvent}
+          onClose={resetModalFields}
+          notifyGuests={notifyGuests}
+          setNotifyGuests={setNotifyGuests}
+        />
+      </div>
+    </div>
+  );
+};
+
+// ------------------ Custom Event Renderer (updated) ------------------
+function renderEvent(info: EventContentArg) {
+  const props = (info.event.extendedProps as CalendarEvent["extendedProps"]) ?? {};
+  const bgColor =
+    info.event.backgroundColor || props.color || "#2563EB";
+  const label = props.calendarLabel;
+
+  return (
+    <div
+      className="calendar-event-chip"
+      style={{
+        backgroundColor: bgColor,
+        borderLeftColor: bgColor,
+      }}
+    >
+      <span className="calendar-event-title">{info.event.title}</span>
+      {label && (
+        <span className="calendar-event-calendar-label">{label}</span>
       )}
     </div>
   );
-};
-
-// ------------------------------------------------------------
-//  Render Event Appearance
-// ------------------------------------------------------------
-const renderEventContent = (eventInfo: EventContentArg) => {
-  return (
-    <div
-      className="flex items-center justify-start gap-2 px-2 py-1 rounded-md text-xs font-medium bg-blue-600 text-white"
-    >
-      <span>{eventInfo.event.title}</span>
-    </div>
-  );
-};
+}
 
 export default GoogleCalendar;

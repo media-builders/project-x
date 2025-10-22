@@ -2,10 +2,11 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import CallButton from "@/components/settings/setup/CallButton";
-import { Search, ChevronUp, ChevronDown, Plus } from "lucide-react";
+import { Search, ChevronUp, ChevronDown, Plus, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import LeadProfile from "@/components/leads/LeadProfile";
+import ImportButton from "@/components/settings/setup/ImportButton";
 
 type Lead = {
   id: string;
@@ -13,21 +14,27 @@ type Lead = {
   last: string;
   email: string;
   phone: string;
+  stage?: string | null;
   featured?: boolean;
 };
 
-type SortKey = "first" | "last" | "email" | "phone";
+type SortKey = "first" | "last" | "email" | "phone" | "stage";
+
+const TABLE_COLUMNS: SortKey[] = ["first", "last", "email", "phone", "stage"];
+const FILTER_COLUMNS: SortKey[] = ["first", "last", "email", "phone", "stage"];
 
 export default function LeadsTable() {
   const [rows, setRows] = useState<Lead[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
   const [loadingDb, setLoadingDb] = useState(true);
+  const [deleting, setDeleting] = useState(false);
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<Record<SortKey, string[]>>({
     first: [],
     last: [],
     email: [],
     phone: [],
+    stage: [],
   });
 
   const [sortBy, setSortBy] = useState<SortKey>("first");
@@ -39,11 +46,13 @@ export default function LeadsTable() {
   const lastRef = useRef<HTMLDivElement | null>(null);
   const emailRef = useRef<HTMLDivElement | null>(null);
   const phoneRef = useRef<HTMLDivElement | null>(null);
+  const stageRef = useRef<HTMLDivElement | null>(null);
   const filterRefs: Record<SortKey, React.RefObject<HTMLDivElement>> = {
     first: firstRef,
     last: lastRef,
     email: emailRef,
     phone: phoneRef,
+    stage: stageRef,
   };
 
   // close filter dropdown when clicking outside
@@ -57,13 +66,20 @@ export default function LeadsTable() {
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+    // filterRefs are stable refs and won't change between renders
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openFilter]);
-
-  const allSelected = selected.length === rows.length && rows.length > 0;
 
   // select / deselect all
   const toggleAll = () => {
-    setSelected((prev) => (prev.length === rows.length ? [] : rows.map((r) => r.id)));
+    const visibleIds = filteredRows.map((r) => r.id);
+    setSelected((prev) => {
+      const everyVisibleSelected = visibleIds.every((id) => prev.includes(id));
+      if (everyVisibleSelected) {
+        return prev.filter((id) => !visibleIds.includes(id));
+      }
+      return Array.from(new Set([...prev, ...visibleIds]));
+    });
   };
 
   // select / deselect one
@@ -108,7 +124,7 @@ export default function LeadsTable() {
     skipCol?: SortKey
   ) => {
     return inputRows.filter((r) =>
-      (["first", "last", "email", "phone"] as SortKey[]).every((col) => {
+      FILTER_COLUMNS.every((col) => {
         if (col === skipCol) return true;
         const val = (r[col] || "").toString().trim();
         const active = activeFilters[col];
@@ -118,6 +134,9 @@ export default function LeadsTable() {
           const digits = val.replace(/\D/g, "");
           const prefix = digits.substring(0, 3);
           return active.includes(prefix);
+        } else if (col === "stage") {
+          if (!val) return false;
+          return active.includes(val);
         } else {
           return active.some((f) => val.toLowerCase().startsWith(f.toLowerCase()));
         }
@@ -133,7 +152,8 @@ export default function LeadsTable() {
       r.first.toLowerCase().includes(q) ||
       r.last.toLowerCase().includes(q) ||
       r.email.toLowerCase().includes(q) ||
-      r.phone.toLowerCase().includes(q)
+      r.phone.toLowerCase().includes(q) ||
+      r.stage?.toLowerCase?.().includes(q)
     );
   });
 
@@ -145,6 +165,10 @@ export default function LeadsTable() {
     return 0;
   });
 
+  const allSelected =
+    filteredRows.length > 0 &&
+    filteredRows.every((row) => selected.includes(row.id));
+
   // Dynamic filter options
   const getAvailableFilterOptions = (col: SortKey): string[] => {
     const relevantRows = applyFilters(searchedRows, filters, col);
@@ -155,6 +179,8 @@ export default function LeadsTable() {
       if (col === "phone") {
         const digits = val.replace(/\D/g, "");
         if (digits.length >= 3) options.add(digits.substring(0, 3));
+      } else if (col === "stage") {
+        options.add(val);
       } else {
         options.add(val[0].toUpperCase());
       }
@@ -185,13 +211,49 @@ export default function LeadsTable() {
     });
   };
 
+  const deleteLeads = useCallback(
+    async (ids: string[]) => {
+      if (ids.length === 0) return;
+
+      const confirmMessage =
+        ids.length === 1
+          ? "Delete this lead permanently?"
+          : `Delete ${ids.length} leads permanently?`;
+      if (!window.confirm(confirmMessage)) return;
+
+      try {
+        setDeleting(true);
+        const res = await fetch("/api/leads/db", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids }),
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(data.error || `Delete failed (${res.status})`);
+        }
+
+        await loadFromDb();
+      } catch (e: any) {
+        console.error(e);
+        alert(`Delete failed. ${e?.message ?? ""}`);
+      } finally {
+        setDeleting(false);
+      }
+    },
+    [loadFromDb]
+  );
+
+  const handleDeleteSelected = () => {
+    deleteLeads(selected);
+  };
+
   return (
     <div className="">
       <div className="pb-4 border-b border-gray-800 mb-5">
         <h2 className="text-xl font-semibold text-white/90">Lead Caller</h2>
-        <p className="text-sm text-gray-400">
-          Call and manage your leads.
-        </p>
+        <p className="text-sm text-gray-400">Call and manage your leads.</p>
       </div>
 
       {/* Lead Profile (multi-lead support) */}
@@ -211,8 +273,23 @@ export default function LeadsTable() {
             />
           </div>
         </form>
+        <div>
+          <ImportButton onImported={loadFromDb} />
+        </div>
         <div className="flex items-center space-x-4">
           <CallButton selectedLeads={selectedLeads} />
+          {selected.length > 0 && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleDeleteSelected}
+              disabled={deleting}
+              className="flex items-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              {deleting ? "Deleting..." : "Delete selected"}
+            </Button>
+          )}
           {selected.length > 0 && <span>{selected.length} selected</span>}
         </div>
       </div>
@@ -226,13 +303,17 @@ export default function LeadsTable() {
                 <th className="checkbox-cell">
                   <input type="checkbox" checked={allSelected} onChange={toggleAll} />
                 </th>
-                {(["first", "last", "email", "phone"] as SortKey[]).map((col) => (
+                {TABLE_COLUMNS.map((col) => (
                   <th key={col} className="relative header-cell">
-                    <div className="flex items-center cursor-pointer" onClick={() => toggleSort(col)}>
+                    <div
+                      className="flex items-center cursor-pointer"
+                      onClick={() => toggleSort(col)}
+                    >
                       {col === "first" && "First Name"}
                       {col === "last" && "Last Name"}
                       {col === "email" && "Email"}
                       {col === "phone" && "Phone"}
+                      {col === "stage" && "Stage"}
                       {sortBy === col &&
                         (sortOrder === "asc" ? (
                           <ChevronUp className="ml-1 h-4 w-4" />
@@ -258,7 +339,10 @@ export default function LeadsTable() {
                         className="absolute z-10 bg-white text-black shadow p-2 mt-1 rounded w-32 max-h-48 overflow-y-auto"
                       >
                         {getAvailableFilterOptions(col).map((option) => (
-                          <label key={option} className="flex items-center space-x-2 cursor-pointer">
+                          <label
+                            key={option}
+                            className="flex items-center space-x-2 cursor-pointer"
+                          >
                             <input
                               type="checkbox"
                               checked={filters[col].includes(option)}
@@ -271,6 +355,7 @@ export default function LeadsTable() {
                     )}
                   </th>
                 ))}
+                <th className="w-12" />
               </tr>
             </thead>
             <tbody>
@@ -287,18 +372,32 @@ export default function LeadsTable() {
                       type="checkbox"
                       checked={selected.includes(r.id)}
                       onChange={() => toggleOne(r.id)}
-                      onClick={(e) => e.stopPropagation()} // prevents double toggle
+                      onClick={(e) => e.stopPropagation()}
                     />
                   </td>
                   <td className="data-cell">{r.first}</td>
                   <td className="data-cell">{r.last}</td>
                   <td className="data-cell">{r.email}</td>
                   <td className="data-cell">{r.phone}</td>
+                  <td className="data-cell">{r.stage?.trim() || "Unassigned"}</td>
+                  <td className="data-cell text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteLeads([r.id]);
+                      }}
+                      disabled={deleting}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </td>
                 </tr>
               ))}
               {filteredRows.length === 0 && !loadingDb && (
                 <tr>
-                  <td colSpan={5} className="text-center data-cell">
+                  <td colSpan={7} className="text-center data-cell">
                     No matching leads
                   </td>
                 </tr>

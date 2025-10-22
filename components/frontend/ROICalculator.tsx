@@ -53,7 +53,7 @@ export default function ROICalculator() {
       motionDeals.on("change", (v) => setDisplayDeals(Math.round(v).toString())),
     ];
     return () => subs.forEach((unsub) => unsub());
-  }, []);
+  }, [motionProgress, motionRevenue, motionCommission, motionDeals]);
 
   // smooth animate
   useEffect(() => {
@@ -61,7 +61,16 @@ export default function ROICalculator() {
     animate(motionRevenue, projectedRecoveredRevenue, { duration: 0.6 });
     animate(motionCommission, commissionPerDeal, { duration: 0.6 });
     animate(motionDeals, projectedRecoveredDeals, { duration: 0.6 });
-  }, [progress, projectedRecoveredRevenue, commissionPerDeal, projectedRecoveredDeals]);
+  }, [
+    progress,
+    projectedRecoveredRevenue,
+    commissionPerDeal,
+    projectedRecoveredDeals,
+    motionProgress,
+    motionRevenue,
+    motionCommission,
+    motionDeals,
+  ]);
 
   return (
     <section className="roi-calculator" id="roi-calculator">

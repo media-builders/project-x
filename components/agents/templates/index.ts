@@ -4,14 +4,17 @@ import clinicReceptionist from "./clinic/receptionist.json";
 import clinicAppointment from "./clinic/appointmentreminder.json";
 import clinicIntake from "./clinic/patientintake.json";
 
-export default {
+// Define named variable before exporting (ESLint-compliant)
+const templates = {
   realestate: [
     ...realestateFollowup.templates,
-    ...realestateColdoutreach.templates
+    ...realestateColdoutreach.templates,
   ],
   clinic: [
     ...clinicReceptionist.templates,
     ...clinicAppointment.templates,
-    ...clinicIntake.templates
-  ]
+    ...clinicIntake.templates,
+  ],
 };
+
+export default templates;

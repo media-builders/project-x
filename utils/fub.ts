@@ -6,6 +6,7 @@ export type Lead = {
   last: string;
   email: string;
   phone: string;
+  stage?: string | null;
 };
 
 type FUBEmail = { value: string; isPrimary?: number };
@@ -14,11 +15,46 @@ type FUBPerson = {
   id: number;
   firstName?: string;
   lastName?: string;
+  stage?: string | null;
+  stageName?: string | null;
   emails?: FUBEmail[];
   phones?: FUBPhone[];
+  tags?: Array<{ name?: string } | string>;
 };
 
-export async function fetchFUBLeads(token: string): Promise<Lead[]> {
+type FetchFUBLeadsOptions = {
+  stage?: string;
+};
+
+const normalizeStage = (value?: string | null) =>
+  value && typeof value === "string" && value.trim().length > 0
+    ? value.trim()
+    : null;
+
+function extractStage(person: FUBPerson): string | null {
+  const directStage = normalizeStage(person.stage);
+  if (directStage) return directStage;
+
+  const namedStage = normalizeStage(person.stageName);
+  if (namedStage) return namedStage;
+
+  if (Array.isArray(person.tags)) {
+    for (const tag of person.tags) {
+      const tagName =
+        typeof tag === "string"
+          ? normalizeStage(tag)
+          : normalizeStage(tag?.name ?? null);
+      if (tagName) return tagName;
+    }
+  }
+
+  return null;
+}
+
+export async function fetchFUBLeads(
+  token: string,
+  options: FetchFUBLeadsOptions = {}
+): Promise<Lead[]> {
   //const token = process.env.FUB_TOKEN;
   if (!token) throw new Error("No API Key found!");
   const auth = Buffer.from(`${token}:`).toString("base64");
@@ -55,7 +91,10 @@ export async function fetchFUBLeads(token: string): Promise<Lead[]> {
     offset += limit;
   }
 
-  return allPeople.map((p) => {
+  const stageFilter = normalizeStage(options.stage)?.toLowerCase() ?? null;
+
+  const leads = allPeople.map((p) => {
+    const stage = extractStage(p);
     const email =
       p.emails?.find((e) => e.isPrimary === 1)?.value ??
       p.emails?.[0]?.value ??
@@ -70,6 +109,13 @@ export async function fetchFUBLeads(token: string): Promise<Lead[]> {
       last: (p.lastName ?? "").trim(),
       email: email.trim(),
       phone: phone.trim(),
+      stage,
     };
   });
+
+  if (!stageFilter) return leads;
+
+  return leads.filter(
+    (lead) => lead.stage?.toLowerCase() === stageFilter
+  );
 }

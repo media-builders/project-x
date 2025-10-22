@@ -7,6 +7,7 @@ export const usersTable = pgTable('users_table', {
     plan: text('plan').notNull(),
     stripe_id: text('stripe_id').notNull(),
     crm_api_key: text('crm_api_key'),
+    google_refresh_token: text('google_refresh_token'),
 });
 
 export type InsertUser = typeof usersTable.$inferInsert;
@@ -20,6 +21,7 @@ export const leadsTable = pgTable("leads", {
     last: text("last").notNull(),
     email: text("email"),
     phone: text("phone"),
+    stage: text("stage"),
     created_at: timestamp("created_at").defaultNow().notNull(),
     updated_at: timestamp("updated_at").defaultNow().notNull(),
 });

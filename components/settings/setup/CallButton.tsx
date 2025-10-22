@@ -8,6 +8,7 @@ type Lead = {
   last: string;
   email: string;
   phone: string;
+  stage?: string | null;
   featured?: boolean;
 };
 

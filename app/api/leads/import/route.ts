@@ -26,8 +26,14 @@ function formatPhone(phone: string) {
     return `${digits.slice(0,3)}-${digits.slice(3,6)}-${digits.slice(6)}`;
 }
 
-export async function POST() {
+export async function POST(request: Request) {
     try {
+        const body = await request.json().catch(() => ({}));
+        const requestedStage =
+            typeof body?.stage === "string" && body.stage.trim().length > 0
+                ? body.stage.trim()
+                : undefined;
+
         //Get logged-in user
         const cookieStore = cookies();
         const supabase = createServerClient(
@@ -82,7 +88,9 @@ export async function POST() {
         //Fetch leads from FUB using API key
 
         console.log("Fetching leads with key:", crmKey);
-        const leads = await fetchFUBLeads(crmKey);
+        const leads = await fetchFUBLeads(crmKey, {
+            stage: requestedStage,
+        });
         console.log("Leads fetched:", leads?.length);
 
         //Save leads into SUPABASE
@@ -93,6 +101,7 @@ export async function POST() {
             last: formatName(p.last),
             email: p.email?.trim() || null,
             phone: formatPhone(p.phone),
+            stage: p.stage?.trim() || null,
         }));
 
         //No duplicate entries

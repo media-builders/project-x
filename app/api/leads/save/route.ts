@@ -14,6 +14,7 @@ type Lead = {
   last: string;
   email: string;
   phone: string;
+  stage?: string | null;
 };
 
 export async function POST(req: Request) {
@@ -38,6 +39,7 @@ export async function POST(req: Request) {
       last: (p.last ?? "").trim(),
       email: (p.email ?? "").trim() || null,
       phone: (p.phone ?? "").trim() || null,
+      stage: (p.stage ?? "").trim() || null,
     }));
 
     // Upsert on (user_id, fub_id)

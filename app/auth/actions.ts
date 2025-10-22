@@ -133,30 +133,36 @@ export async function logout() {
 
 
 export async function signInWithGoogle() {
-    const supabase = createClient()
-    const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-            scopes: [
-                "https://www.googleapis.com/auth/drive",
-                "https://www.googleapis.com/auth/gmail.readonly",
-                "https://www.googleapis.com/auth/gmail.modify",
-                "https://www.googleapis.com/auth/gmail.send",
-                "https://www.googleapis.com/auth/gmail.compose",
-                "https://www.googleapis.com/auth/gmail.labels",
-                "https://www.googleapis.com/auth/calendar"
-            ].join(" "),
-            redirectTo: `${PUBLIC_URL}/auth/callback`,
-            queryParams: {
-                access_type: 'offline',
-                prompt: 'consent',
-            },
-        },
-    })
+  const supabase = createClient()
 
-    if (data.url) {
-        redirect(data.url) // use the redirect API for your server framework
-    }
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      scopes: [
+        "https://www.googleapis.com/auth/drive",
+        "https://www.googleapis.com/auth/drive.readonly",
+        "https://www.googleapis.com/auth/drive.meet.readonly",
+        "https://www.googleapis.com/auth/gmail.modify",
+        "https://www.googleapis.com/auth/calendar",
+        "https://www.googleapis.com/auth/calendar.readonly",
+        "https://www.googleapis.com/auth/calendar.events",
+        "https://www.googleapis.com/auth/meetings.space.settings",
+        "https://www.googleapis.com/auth/meetings.space.readonly",
+        "https://www.googleapis.com/auth/meetings.conference.media.readonly",
+        "https://www.googleapis.com/auth/meetings.conference.media.audio.readonly",
+        "https://www.googleapis.com/auth/meetings.conference.media.video.readonly",
+      ].join(" "),
+      redirectTo: `${PUBLIC_URL}/auth/callback`,
+      queryParams: {
+        access_type: 'offline',
+        prompt: 'consent',
+      },
+    },
+  })
+
+  if (data?.url) {
+    redirect(data.url)
+  }
 }
 
 

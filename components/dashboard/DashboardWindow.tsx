@@ -8,6 +8,10 @@ import DialerSettings from "@/components/agents/settings";
 import GoogleCalendar from "@/components/calendar/GoogleCalendar";
 import Integrations from "@/components/settings/Integrations";
 import SettingsPanel from "@/components/settings/SettingsPanel";
+import UserProfileForm, { ProfileData } from "@/components/UserProfileForm";
+import HelpCenter from "@/components/HelpCenter";
+import GmailClient from "@/components/GoogleMail";
+import DriveFiles from "@/components/GoogleDrive";
 
 function BillingComponent() {
   return (
@@ -20,9 +24,15 @@ function BillingComponent() {
 
 interface DashboardWindowProps {
   activeTab: string;
+  profileData?: ProfileData | null;
+  onProfileSaved?: (data: ProfileData) => void;
 }
 
-export default function DashboardWindow({ activeTab }: DashboardWindowProps) {
+export default function DashboardWindow({
+  activeTab,
+  profileData,
+  onProfileSaved,
+}: DashboardWindowProps) {
   return (
     <div className="dashboard-window flex-1 relative overflow-hidden">
       <AnimatePresence mode="wait">
@@ -78,6 +88,19 @@ export default function DashboardWindow({ activeTab }: DashboardWindowProps) {
           </motion.div>
         )}
 
+        {activeTab === "google-mail" && (
+          <motion.div
+            key="google-mail"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+            className="h-full"
+          >
+            <GmailClient />
+          </motion.div>
+        )}
+
         {activeTab === "calendar" && (
           <motion.div
             key="calendar"
@@ -88,6 +111,19 @@ export default function DashboardWindow({ activeTab }: DashboardWindowProps) {
             className="h-full"
           >
             <GoogleCalendar />
+          </motion.div>
+        )}
+
+        {activeTab === "google-drive" && (
+          <motion.div
+            key="google-drive"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+            className="h-full"
+          >
+            <DriveFiles />
           </motion.div>
         )}
 
@@ -127,6 +163,32 @@ export default function DashboardWindow({ activeTab }: DashboardWindowProps) {
             className="h-full"
           >
             <BillingComponent />
+          </motion.div>
+        )}
+
+        {activeTab === "user-profile" && (
+          <motion.div
+            key="user-profile"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+            className="h-full overflow-auto"
+          >
+            <UserProfileForm initialData={profileData} onProfileSaved={onProfileSaved} />
+          </motion.div>
+        )}
+
+        {activeTab === "user-help" && (
+          <motion.div
+            key="user-help"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+            className="h-full overflow-auto"
+          >
+            <HelpCenter />
           </motion.div>
         )}
       </AnimatePresence>

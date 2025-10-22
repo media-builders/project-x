@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { db } from "@/utils/db/db";
 import { usersTable } from "@/utils/db/schema";
 import { eq } from "drizzle-orm";
-import LogoIntroOverlay from "@/components/LogoIntroOverlay"; // ✅ Import the overlay
+import LogoIntroOverlay from "@/components/LogoIntroOverlay";
+import ToastLayoutClient from "./ToastLayoutClient"; // ✅ import wrapper
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -14,13 +15,12 @@ export const metadata: Metadata = {
   description: "AI Dialer",
 };
 
-// 👇 You cannot use "use client" here — layout remains a server component
 export default async function DashboardLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // ✅ Authentication + plan check stays server-side
+  // ✅ server-side auth & plan verification
   const supabase = createClient();
   const {
     data: { user },
@@ -40,12 +40,14 @@ export default async function DashboardLayout({
     redirect("/subscribe");
   }
 
-  // ✅ Add overlay inside <body>, client-side only
+  // ✅ client-side wrapper handles toasts
   return (
     <html lang="en">
-      <body>
+      <body className={inter.className}>
         <LogoIntroOverlay />
-        {children}
+        <ToastLayoutClient>
+          {children}
+        </ToastLayoutClient>
       </body>
     </html>
   );

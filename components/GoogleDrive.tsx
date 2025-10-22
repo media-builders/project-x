@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { createClient } from "@/utils/supabase/client";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Folder, FileText, ArrowLeft, Upload } from "lucide-react";
 
@@ -17,33 +16,91 @@ export default function DriveFiles() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [tokenInitialized, setTokenInitialized] = useState(false);
+  const refreshingTokenRef = useRef<Promise<string | null> | null>(null);
 
-  const supabase = createClient();
+  const refreshGoogleAccessToken = useCallback(async (): Promise<string | null> => {
+    if (refreshingTokenRef.current) {
+      return refreshingTokenRef.current;
+    }
 
-  const fetchDriveFiles = async (folderId: string = "root") => {
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError || !sessionData?.session) throw new Error("No Supabase session found");
+    const refreshPromise = (async () => {
+      try {
+        const res = await fetch("/api/google/token", {
+          method: "POST",
+          credentials: "include",
+          cache: "no-store",
+        });
 
-    const accessToken = sessionData.session.provider_token;
-    if (!accessToken) throw new Error("Google access token missing. Try logging in again.");
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data?.error || `Google token refresh failed (${res.status})`);
+        }
 
-    const response = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q='${folderId}' in parents and trashed=false&fields=files(id,name,mimeType,webViewLink)`,
-      { headers: { Authorization: `Bearer ${accessToken}` } }
-    );
+        const newToken = typeof data?.accessToken === "string" ? data.accessToken : null;
+        setAccessToken(newToken);
+        return newToken;
+      } catch (err) {
+        console.error("Google token refresh error:", err);
+        setAccessToken(null);
+        return null;
+      } finally {
+        refreshingTokenRef.current = null;
+        setTokenInitialized(true);
+      }
+    })();
 
-    if (!response.ok) throw new Error(`Google Drive API error: ${await response.text()}`);
-
-    const data = await response.json();
-    return data.files || [];
-  };
+    refreshingTokenRef.current = refreshPromise;
+    return refreshPromise;
+  }, []);
 
   useEffect(() => {
+    void refreshGoogleAccessToken();
+  }, [refreshGoogleAccessToken]);
+
+  const fetchDriveFiles = useCallback(
+    async (folderId: string = "root") => {
+      let token = accessToken ?? (await refreshGoogleAccessToken());
+      if (!token) throw new Error("Google access token missing. Try logging in again.");
+
+      const request = async (authToken: string) =>
+        fetch(
+          `https://www.googleapis.com/drive/v3/files?q='${folderId}' in parents and trashed=false&fields=files(id,name,mimeType,webViewLink)`,
+          { headers: { Authorization: `Bearer ${authToken}` } }
+        );
+
+      let response = await request(token);
+      if (response.status === 401) {
+        const refreshed = await refreshGoogleAccessToken();
+        if (refreshed && refreshed !== token) {
+          token = refreshed;
+          response = await request(refreshed);
+        }
+      }
+
+      if (!response.ok) {
+        const text = await response.text().catch(() => "");
+        throw new Error(text ? `Google Drive API error: ${text}` : "Failed to load Drive files.");
+      }
+
+      const data = await response.json();
+      return data.files || [];
+    },
+    [accessToken, refreshGoogleAccessToken]
+  );
+
+  useEffect(() => {
+    if (!tokenInitialized) return;
+
+    setLoading(true);
+    setError(null);
+
     fetchDriveFiles()
       .then((f) => setFiles(f))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [tokenInitialized, fetchDriveFiles]);
 
   const handleOpenFolder = async (file: any) => {
     if (isTransitioning) return;
@@ -98,11 +155,8 @@ export default function DriveFiles() {
 
     setIsUploading(true);
     try {
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !sessionData?.session) throw new Error("No Supabase session found");
-
-      const accessToken = sessionData.session.provider_token;
-      if (!accessToken) throw new Error("Google access token missing. Try logging in again.");
+      let token = accessToken ?? (await refreshGoogleAccessToken());
+      if (!token) throw new Error("Google access token missing. Try logging in again.");
 
       const metadata = {
         name: file.name,
@@ -116,18 +170,32 @@ export default function DriveFiles() {
       );
       formData.append("file", file);
 
-      const uploadResponse = await fetch(
-        "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink",
-        {
-          method: "POST",
-          headers: { Authorization: `Bearer ${accessToken}` },
-          body: formData,
+      const sendUpload = (authToken: string) =>
+        fetch(
+          "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink",
+          {
+            method: "POST",
+            headers: { Authorization: `Bearer ${authToken}` },
+            body: formData,
+          }
+        );
+
+      let uploadResponse = await sendUpload(token);
+      if (uploadResponse.status === 401) {
+        const refreshed = await refreshGoogleAccessToken();
+        if (refreshed && refreshed !== token) {
+          token = refreshed;
+          uploadResponse = await sendUpload(refreshed);
         }
-      );
+      }
 
-      if (!uploadResponse.ok) throw new Error("Upload failed");
+      if (!uploadResponse.ok) {
+        const text = await uploadResponse.text().catch(() => "");
+        throw new Error(text || "Upload failed");
+      }
 
-      await fetchDriveFiles(currentFolder).then((f) => setFiles(f));
+      const updated = await fetchDriveFiles(currentFolder);
+      setFiles(updated);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -150,12 +218,18 @@ export default function DriveFiles() {
     }),
   };
 
-  if (loading) return <p>Loading Google Drive files...</p>;
+  if (loading) return <p>Loading files...</p>;
   if (error) return <p className="error">Error: {error}</p>;
 
   return (
     <div className="drive-container">
       {/* Header */}
+      <div className="pb-4 border-b border-gray-800 mb-5">
+        <h2 className="text-xl font-semibold text-white/90">Files</h2>
+        <p className="text-sm text-gray-400">
+          Manage your files.
+        </p>
+      </div>
       <div className="drive-header">
         <div className="drive-breadcrumbs">
           {breadcrumbs.map((crumb, i) => (
