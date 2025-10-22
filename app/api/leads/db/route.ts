@@ -20,6 +20,15 @@ type LeadRow = {
   updated_at: string;
 };
 
+// format phone no  as xxx-xxx-xxxx 
+function fmtPhone(s: string | null | undefined) {
+  const digits = (s || "").replace(/\D/g, "");
+  if (!digits) return "";
+  const ten = digits.slice(-10); // use last 10 digits
+  if (ten.length !== 10) return ""; // not enough digits to format
+  return `${ten.slice(0,3)}-${ten.slice(3,6)}-${ten.slice(6)}`;
+}
+
 // This returns the shape the table already expects
 type LeadOut = {
   id: string;          // use DB uuid as stable row id
@@ -39,7 +48,8 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from("leads")
-    .select("*")
+    .select("id, first, last, email, phone, stage, created_at") // 
+    .eq("user_id", auth.user.id)                                 // return only the caller's leads
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -51,48 +61,9 @@ export async function GET() {
     first: r.first ?? "",
     last: r.last ?? "",
     email: r.email ?? "",
-    phone: r.phone ?? "",
+    phone: fmtPhone(r.phone),
     stage: r.stage ?? null,
   }));
 
   return NextResponse.json({ people }, { status: 200 });
-}
-
-export async function DELETE(request: Request) {
-  const supabase = createClient();
-  const { data: auth, error: authErr } = await supabase.auth.getUser();
-  if (authErr || !auth?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const body = await request.json().catch(() => ({}));
-  const ids = Array.isArray(body?.ids)
-    ? body.ids
-        .map((id: unknown) => (typeof id === "string" ? id.trim() : ""))
-        .filter((id: string) => id.length > 0)
-    : [];
-
-  if (ids.length === 0) {
-    return NextResponse.json(
-      { error: "No lead ids provided" },
-      { status: 400 }
-    );
-  }
-
-  const uniqueIds = Array.from(new Set(ids));
-
-  const { error } = await supabase
-    .from("leads")
-    .delete()
-    .in("id", uniqueIds)
-    .eq("user_id", auth.user.id);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json(
-    { ok: true, deleted: uniqueIds.length },
-    { status: 200 }
-  );
 }
