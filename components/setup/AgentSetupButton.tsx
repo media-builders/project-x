@@ -33,8 +33,8 @@ export default function AgentSetupButton() {
   };
 
   return (
-    <button type="button" className="btn btn-primary" onClick={elevenlabsSetup}>
-      Agent Setup
-    </button>
+      <button type="button" className="btn btn-primary" onClick={elevenlabsSetup}>
+        Agent Setup
+      </button>
   );
 }

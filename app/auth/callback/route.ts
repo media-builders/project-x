@@ -1,48 +1,110 @@
-import { NextResponse } from 'next/server'
-// The client you created from the Server-Side Auth instructions
-import { createClient } from '@/utils/supabase/server'
-import { createStripeCustomer } from '@/utils/stripe/api'
-import { db } from '@/utils/db/db'
-import { usersTable } from '@/utils/db/schema'
+import { NextResponse } from "next/server";
+import { createClient } from "@/utils/supabase/server";
+import { createStripeCustomer } from "@/utils/stripe/api";
+import { db } from "@/utils/db/db";
+import { usersTable } from "@/utils/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function GET(request: Request) {
-    const { searchParams, origin } = new URL(request.url)
-    const code = searchParams.get('code')
-    // if "next" is in param, use it as the redirect URL
-    const next = searchParams.get('next') ?? '/'
+  const { searchParams, origin } = new URL(request.url);
+  const code = searchParams.get("code");
+  const next = searchParams.get("next") ?? "/";
 
-    if (code) {
-        const supabase = createClient()
-        const { error } = await supabase.auth.exchangeCodeForSession(code)
-        if (!error) {
-            const {
-                data: { user },
-            } = await supabase.auth.getUser()
+  if (!code) {
+    return NextResponse.redirect(`${origin}/auth/auth-code-error`);
+  }
 
-            // check to see if user already exists in db
-            const checkUserInDB = await db.select().from(usersTable).where(eq(usersTable.email, user!.email!))
-            const isUserInDB = checkUserInDB.length > 0 ? true : false
-            if (!isUserInDB) {
-                // create Stripe customers
-                const stripeID = await createStripeCustomer(user!.id, user!.email!, user!.user_metadata.full_name)
-                // Create record in DB
-                await db.insert(usersTable).values({ id: user!.id, name: user!.user_metadata.full_name, email: user!.email!, stripe_id: stripeID, plan: 'none' })
-            }
+  const supabase = createClient();
+  const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(
+    code
+  );
 
-            const forwardedHost = request.headers.get('x-forwarded-host') // original origin before load balancer
-            const isLocalEnv = process.env.NODE_ENV === 'development'
-            if (isLocalEnv) {
-                // we can be sure that there is no load balancer in between, so no need to watch for X-Forwarded-Host
-                return NextResponse.redirect(`${origin}${next}`)
-            } else if (forwardedHost) {
-                return NextResponse.redirect(`https://${forwardedHost}${next}`)
-            } else {
-                return NextResponse.redirect(`${origin}${next}`)
-            }
-        }
+  if (exchangeError) {
+    if (process.env.NODE_ENV === "development") {
+      console.error("[auth/callback] exchange error:", exchangeError);
     }
+    return NextResponse.redirect(`${origin}/auth/auth-code-error`);
+  }
 
-    // return the user to an error page with instructions
-    return NextResponse.redirect(`${origin}/auth/auth-code-error`)
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user?.email) {
+    return NextResponse.redirect(`${origin}/auth/auth-code-error`);
+  }
+
+  const { data: sessionData } = await supabase.auth.getSession();
+  const session = sessionData?.session;
+  const providerRefreshToken = session?.provider_refresh_token ?? null;
+
+  if (process.env.NODE_ENV === "development") {
+    console.log("🔐 Supabase session:", JSON.stringify(sessionData, null, 2));
+    console.log("🔁 provider_refresh_token detected:", !!providerRefreshToken);
+  }
+
+  const [existingUser] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.email, user.email))
+    .limit(1);
+
+  if (existingUser) {
+    if (providerRefreshToken) {
+      const updated = await db
+        .update(usersTable)
+        .set({ google_refresh_token: providerRefreshToken })
+        .where(eq(usersTable.email, user.email))
+        .returning({
+          id: usersTable.id,
+          refresh: usersTable.google_refresh_token,
+        });
+
+      if (process.env.NODE_ENV === "development") {
+        console.log("🧾 Updated user row:", updated);
+      }
+    } else if (process.env.NODE_ENV === "development") {
+      console.log(
+        "ℹ️ Existing user found but no provider_refresh_token; keeping previous value."
+      );
+    }
+  } else {
+    const stripeID = await createStripeCustomer(
+      user.id,
+      user.email,
+      user.user_metadata.full_name
+    );
+
+    const inserted = await db
+      .insert(usersTable)
+      .values({
+        id: user.id,
+        name: user.user_metadata.full_name,
+        email: user.email,
+        stripe_id: stripeID,
+        plan: "none",
+        google_refresh_token: providerRefreshToken,
+      })
+      .returning({
+        id: usersTable.id,
+        refresh: usersTable.google_refresh_token,
+      });
+
+    if (process.env.NODE_ENV === "development") {
+      console.log("🧾 Inserted user row:", inserted);
+    }
+  }
+
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const isLocalEnv = process.env.NODE_ENV === "development";
+
+  if (isLocalEnv) {
+    return NextResponse.redirect(`${origin}${next}`);
+  }
+
+  if (forwardedHost) {
+    return NextResponse.redirect(`https://${forwardedHost}${next}`);
+  }
+
+  return NextResponse.redirect(`${origin}${next}`);
 }

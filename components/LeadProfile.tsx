@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -17,8 +17,38 @@ interface LeadProfileProps {
   leads: Lead[];
 }
 
+type CallLog = {
+  id: string;
+  date_time_utc: string | null;
+  duration_seconds: number | null;
+  transcript: unknown | null;
+  started_at?: string | null;
+  ended_at?: string | null;
+};
+
+const fmtDateTime = (utcISO?: string | null) => {
+  if (!utcISO) return "—";
+  const d = new Date(utcISO);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleString(); // local timezone
+};
+
+const fmtDurationMMSS = (sec?: number | null) => {
+  if (sec == null || isNaN(sec)) return "00:00";
+  const s = Math.max(0, Math.floor(sec));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}`;
+};
+
 export default function LeadProfile({ leads }: LeadProfileProps) {
   const [index, setIndex] = useState(0);
+  const [callLogs, setCallLogs] = useState<CallLog[] | null>(null);
+  const [loadingCalls, setLoadingCalls] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const hasLeads = leads && leads.length > 0;
+  const lead = hasLeads ? leads[index] : null;
 
   useEffect(() => {
     if (index >= leads.length) setIndex(0);
@@ -27,8 +57,28 @@ export default function LeadProfile({ leads }: LeadProfileProps) {
   const next = () => setIndex((i) => (i + 1) % leads.length);
   const prev = () => setIndex((i) => (i - 1 + leads.length) % leads.length);
 
-  const hasLeads = leads && leads.length > 0;
-  const lead = hasLeads ? leads[index] : null;
+  const fetchCalls = useCallback(async () => {
+    if (!lead) return;
+    try {
+      // avoid flicker: don't toggle loading each poll
+      const res = await fetch(`/api/leads/${lead.id}/calls`, { cache: "no-store" });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload?.error || `Failed (${res.status})`);
+      setCallLogs(payload?.calls ?? []);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }, [lead]);
+
+  // Initial load and when lead changes
+  useEffect(() => {
+    if (!lead) return;
+    setLoadingCalls(true);
+    setError(null);
+    fetchCalls().finally(() => setLoadingCalls(false));
+  }, [lead, fetchCalls]);
+
+  // Removed auto-polling; refresh happens only on button click or lead change
 
   return (
     <div className="bg-[var(--navy-2)] border border-[var(--hairline)] rounded-lg p-4 shadow-sm mb-6 transition-all duration-200">
@@ -62,6 +112,92 @@ export default function LeadProfile({ leads }: LeadProfileProps) {
           <p className="text-[var(--txt-2)]">
             📞 <span className="select-all">{lead?.phone}</span>
           </p>
+
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-base font-semibold text-[var(--txt-1)]">Call History</h3>
+            <Button variant="ghost" size="sm" onClick={() => fetchCalls()}>
+              Refresh
+            </Button>
+          </div>
+
+          {loadingCalls ? (
+            <p className="text-[var(--txt-3)] text-sm">Loading call history…</p>
+          ) : error ? (
+            <p className="text-red-400 text-sm">{error}</p>
+          ) : callLogs && callLogs.length > 0 ? (
+            <div className="overflow-x-auto border border-[var(--hairline)] rounded-lg">
+              <table className="min-w-full text-sm">
+                <thead className="bg-[var(--navy-3)] text-[var(--txt-1)]">
+                  <tr>
+                    <th className="text-left px-3 py-2">Date</th>
+                    <th className="text-left px-3 py-2">Transcript</th>
+                    <th className="text-left px-3 py-2">Duration</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {callLogs.map((log) => {
+                    // ✅ Compute duration properly
+                    let durationSec: number | null = null;
+                    if (
+                      typeof log.duration_seconds === "number" &&
+                      log.duration_seconds > 0
+                    ) {
+                      durationSec = log.duration_seconds;
+                    } else if (log.started_at && log.ended_at) {
+                      const start = new Date(log.started_at).getTime();
+                      const end = new Date(log.ended_at).getTime();
+                      if (!isNaN(start) && !isNaN(end) && end > start) {
+                        durationSec = Math.floor((end - start) / 1000);
+                      }
+                    }
+
+                    return (
+                      <tr
+                        key={log.id}
+                        className="border-t border-[var(--hairline)] text-[var(--txt-2)] align-top"
+                      >
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          {fmtDateTime(log.date_time_utc)}
+                        </td>
+
+                        {/* Transcript */}
+                        <td className="px-3 py-2 whitespace-pre-wrap break-words leading-relaxed">
+                          {Array.isArray(log.transcript) ? (
+                            log.transcript.map((m: any, i: number) => {
+                              const role = m.role?.toUpperCase() ?? "UNKNOWN";
+                              const color =
+                                role === "AGENT"
+                                  ? "text-blue-400"
+                                  : role === "USER"
+                                  ? "text-green-400"
+                                  : "text-gray-400";
+                              return (
+                                <div key={i}>
+                                  <strong className={color}>{role}:</strong>{" "}
+                                  {m.message}
+                                </div>
+                              );
+                            })
+                          ) : typeof log.transcript === "string" ? (
+                            <div>{log.transcript}</div>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+
+                        {/* Duration */}
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          {fmtDurationMMSS(durationSec)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-[var(--txt-3)] text-sm">No call history yet.</p>
+          )}
         </div>
       ) : (
         <div className="animate-fadeIn text-[var(--txt-3)] italic text-center py-6">
