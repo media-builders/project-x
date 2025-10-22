@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -57,23 +57,28 @@ export default function LeadProfile({ leads }: LeadProfileProps) {
   const next = () => setIndex((i) => (i + 1) % leads.length);
   const prev = () => setIndex((i) => (i - 1 + leads.length) % leads.length);
 
+  const fetchCalls = useCallback(async () => {
+    if (!lead) return;
+    try {
+      // avoid flicker: don't toggle loading each poll
+      const res = await fetch(`/api/leads/${lead.id}/calls`, { cache: "no-store" });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload?.error || `Failed (${res.status})`);
+      setCallLogs(payload?.calls ?? []);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }, [lead]);
+
+  // Initial load and when lead changes
   useEffect(() => {
     if (!lead) return;
-    (async () => {
-      setLoadingCalls(true);
-      setError(null);
-      try {
-        const res = await fetch(`/api/leads/${lead.id}/calls`);
-        const payload = await res.json();
-        if (!res.ok) throw new Error(payload?.error || `Failed (${res.status})`);
-        setCallLogs(payload?.calls ?? []);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoadingCalls(false);
-      }
-    })();
-  }, [lead]);
+    setLoadingCalls(true);
+    setError(null);
+    fetchCalls().finally(() => setLoadingCalls(false));
+  }, [lead, fetchCalls]);
+
+  // Removed auto-polling; refresh happens only on button click or lead change
 
   return (
     <div className="bg-[var(--navy-2)] border border-[var(--hairline)] rounded-lg p-4 shadow-sm mb-6 transition-all duration-200">
@@ -108,9 +113,12 @@ export default function LeadProfile({ leads }: LeadProfileProps) {
             📞 <span className="select-all">{lead?.phone}</span>
           </p>
 
-          <h3 className="text-base font-semibold text-[var(--txt-1)] mb-2">
-            Call History
-          </h3>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-base font-semibold text-[var(--txt-1)]">Call History</h3>
+            <Button variant="ghost" size="sm" onClick={() => fetchCalls()}>
+              Refresh
+            </Button>
+          </div>
 
           {loadingCalls ? (
             <p className="text-[var(--txt-3)] text-sm">Loading call history…</p>

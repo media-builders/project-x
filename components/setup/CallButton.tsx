@@ -22,8 +22,6 @@ export default function CallButton({ selectedLeads }: { selectedLeads: Lead[] })
 
     setLoading(true);
     try {
-      console.log("Initiating outbound call via ElevenLabs + Twilio...");
-
       const res = await fetch("/api/outbound-calls", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -37,14 +35,7 @@ export default function CallButton({ selectedLeads }: { selectedLeads: Lead[] })
       }
 
       const data = await res.json();
-
-      console.log("Call initiated:", {
-        from: data.from_number,
-        to: data.called_number,
-      });
-      alert(
-        `Call initiated! Calling ${data.lead_name || "Lead"}...\n\nFrom: ${data.from_number}`
-      );
+      alert(`Call initiated! Calling ${data.lead_name || "Lead"}.\nFrom: ${data.from_number}`);
     } catch (err) {
       console.error(err);
       alert("Failed to make outbound call");
@@ -61,8 +52,6 @@ export default function CallButton({ selectedLeads }: { selectedLeads: Lead[] })
 
     setLoading(true);
     try {
-      console.log("Starting queued outbound calls...");
-
       const res = await fetch("/api/outbound-calls/queue", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -75,9 +64,7 @@ export default function CallButton({ selectedLeads }: { selectedLeads: Lead[] })
         return;
       }
 
-      alert(
-        `📞 Queue started!\n${selectedLeads.length} calls will be made sequentially.`
-      );
+      alert(`Queue started!\n${selectedLeads.length} calls will be made sequentially.`);
     } catch (err) {
       console.error(err);
       alert("Failed to start call queue");

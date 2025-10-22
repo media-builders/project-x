@@ -72,7 +72,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ accepted: true }, { status: 202 });
     }
     
-    const userId = first<string>(dyn.user_id, dyn.system_user_id);
+    let userId = first<string>(dyn.user_id, dyn.system_user_id);
+    // Fallback: resolve user from DB by conversation_id when event lacks dynamic vars
+    if (!userId && conversationId) {
+      const existing = await db.query.callLogsTable.findFirst({
+        where: eq(callLogsTable.conversation_id, conversationId),
+      });
+      if (existing?.user_id) {
+        userId = existing.user_id as string;
+      }
+    }
     if (!userId) {
       console.warn("[Webhook] user_id unresolved — skipping insert", {
         conv: conversationId,
@@ -113,6 +122,11 @@ export async function POST(req: NextRequest) {
       (evt?.data?.timestamps?.started_at && new Date(evt.data.timestamps.started_at)) ||
       new Date();
 
+    // Only update dynamic_variables on conflict if we have meaningful data (avoid clobbering lead_id)
+    const dynHasLeadId = !!(dyn && typeof dyn === "object" && (dyn as any).lead_id);
+    const dynForInsert = dyn ?? null;
+    const dynForUpdate = dynHasLeadId ? dyn : undefined;
+
     await db
       .insert(callLogsTable)
       .values({
@@ -135,7 +149,7 @@ export async function POST(req: NextRequest) {
           elevenlabs_event: type,
           raw_event_type: evt?.type ?? null,
         },
-        dynamic_variables: dyn ?? null,
+        dynamic_variables: dynForInsert,
       })
       .onConflictDoUpdate({
         target: callLogsTable.conversation_id,
@@ -157,19 +171,46 @@ export async function POST(req: NextRequest) {
             elevenlabs_event: type,
             raw_event_type: evt?.type ?? null,
           },
-          dynamic_variables: dyn ?? undefined,
+          dynamic_variables: dynForUpdate,
         },
       });
 
-    // Call Queue
-    if (type === "ended" && userId) {
-      console.log(`[Queue] Call ended for user ${userId}, checking next queued call...`);
+    // Determine terminal (call-ended) conditions robustly
+    const lowerType = String(type || "").toLowerCase();
+    const endedAtTs =
+      (evt?.timestamps?.ended_at && new Date(evt.timestamps.ended_at)) ||
+      (evt?.data?.timestamps?.ended_at && new Date(evt.data.timestamps.ended_at)) ||
+      null;
+    const isTerminalEvent =
+      !!endedAtTs ||
+      /(ended|completed|terminated|finished|hangup|call\.ended|call\.completed|conversation\.completed)/.test(lowerType) ||
+      (!!evt?.billing || !!evt?.data?.billing || typeof evt?.analysis === "object" || typeof evt?.data?.analysis === "object");
 
-      // mark the previous in-progress item as completed
-      await db
-        .update(callQueueTable)
-        .set({ status: "completed" })
-        .where(and(eq(callQueueTable.user_id, userId), eq(callQueueTable.status, "in_progress")));
+    // Call Queue progression on terminal events
+    if (isTerminalEvent && userId) {
+      console.log(
+        `[Queue] Terminal event (${type}) for user ${userId}; progressing queue...`
+      );
+
+      // Prefer to mark the exact queue item (by queue_item_id) if provided
+      const queueItemId = first<string>(
+        dyn?.queue_item_id,
+        evt?.conversationInitiationClientData?.dynamicVariables?.queue_item_id,
+        evt?.data?.conversation_initiation_client_data?.dynamic_variables?.queue_item_id
+      );
+
+      if (queueItemId) {
+        await db
+          .update(callQueueTable)
+          .set({ status: "completed" })
+          .where(and(eq(callQueueTable.user_id, userId), eq(callQueueTable.id, queueItemId)));
+      } else {
+        // fallback: mark any in_progress item for this user as completed
+        await db
+          .update(callQueueTable)
+          .set({ status: "completed" })
+          .where(and(eq(callQueueTable.user_id, userId), eq(callQueueTable.status, "in_progress")));
+      }
 
       // find the next pending item
       const next = await db.query.callQueueTable.findFirst({
@@ -193,14 +234,30 @@ export async function POST(req: NextRequest) {
 
         if (nextLead) {
           console.log("[Queue] Initiating next call to:", nextLead.phone);
-          await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/outbound-calls`, {
+          const baseUrl =
+            process.env.NEXT_PUBLIC_BASE_URL || req.nextUrl.origin || "http://localhost:3000";
+          const internalSecret = process.env.INTERNAL_QUEUE_SECRET || process.env.QUEUE_INTERNAL_SECRET || "";
+          const resp = await fetch(`${baseUrl}/api/outbound-calls`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              ...(internalSecret ? { "x-internal-queue-secret": internalSecret } : {}),
+            },
+            redirect: "manual",
             body: JSON.stringify({
               leads: [nextLead],
+              userId, // authenticate internally w/ secret
+              queueItemId: next.id,
               queueMode: true,
             }),
           });
+          const redirected =
+            (resp.status >= 300 && resp.status < 400 &&
+              (resp.headers.get("location") || "").includes("/login?redirectedFrom=%2Fapi%2Foutbound-calls")) ||
+            (resp.url && resp.url.includes("/login?redirectedFrom=%2Fapi%2Foutbound-calls"));
+          if (!resp.ok || redirected) {
+            console.warn("[Queue] Next call initiation redirected or failed; check INTERNAL_QUEUE_SECRET and middleware.");
+          }
         } else {
           console.warn("[Queue] Lead not found for next queued call:", next.lead_id);
         }

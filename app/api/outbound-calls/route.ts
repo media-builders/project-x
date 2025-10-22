@@ -41,7 +41,12 @@ export async function POST(req: NextRequest) {
     const SUPABASE_ANON = assertEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
 
     const body = await req.json().catch(() => ({}));
-    const leads: Array<{ phone?: string; name?: string }> = body?.leads || [];
+    const leads: Array<{ phone?: string; name?: string; id?: string; first?: string; last?: string; email?: string }> = body?.leads || [];
+    const queueItemId: string | undefined = body?.queueItemId;
+    const overrideUserId = body?.userId as string | undefined;
+    const INTERNAL_SECRET = process.env.INTERNAL_QUEUE_SECRET || process.env.QUEUE_INTERNAL_SECRET || "";
+    const providedSecret = req.headers.get("x-internal-queue-secret") || "";
+    const isInternalQueueCall = INTERNAL_SECRET && providedSecret === INTERNAL_SECRET;
 
 
     // Supabase auth
@@ -52,32 +57,44 @@ export async function POST(req: NextRequest) {
             name: cookie.name,
             value: cookie.value,
           })),
-        setAll: (cookiesToSet) => {
-          for (const { name, value, options } of cookiesToSet) {
-            req.cookies.set(name, value);
-          }
-        },
+        setAll: () => {},
       },
     });
 
+    // Resolve user context: either from internal queue secret + overrideUserId, or via Supabase auth
+    let userId: string | undefined;
+    let userName: string | undefined;
+    if (isInternalQueueCall && overrideUserId) {
+      const userRows = await db
+        .select()
+        .from(usersTable)
+        .where(eq(usersTable.id, overrideUserId))
+        .limit(1);
+      if (!userRows.length) {
+        return NextResponse.json({ error: "User not found for internal call" }, { status: 404 });
+      }
+      userId = userRows[0].id;
+      userName = userRows[0].name || "User";
+    } else {
+      const {
+        data: { user },
+        error: authErr,
+      } = await supabase.auth.getUser();
+      if (authErr || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      if (!user.email) return NextResponse.json({ error: "User email missing" }, { status: 400 });
 
-
-    const { data: { user }, error: authErr } = await supabase.auth.getUser();
-    if (authErr || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    if (!user.email) return NextResponse.json({ error: "User email missing" }, { status: 400 });
-
-    // User Info
-    const dbUser = await db
-      .select()
-      .from(usersTable)
-      .where(eq(usersTable.email, user.email))
-      .limit(1);
-
-    if (!dbUser.length) {
-      return NextResponse.json({ error: "User not found in DB" }, { status: 404 });
+      const dbUser = await db
+        .select()
+        .from(usersTable)
+        .where(eq(usersTable.email, user.email))
+        .limit(1);
+      if (!dbUser.length) {
+        return NextResponse.json({ error: "User not found in DB" }, { status: 404 });
+      }
+      userId = dbUser[0].id;
+      userName = dbUser[0].name ?? user.email;
     }
-    const userId = dbUser[0].id;
-    const userName = dbUser[0].name ?? user.email;
+    if (!userId) return NextResponse.json({ error: "User resolution failed" }, { status: 500 });
 
     /**Checking Plan Quota
     const plan = dbUser[0].plan || "Basic";
@@ -270,6 +287,7 @@ export async function POST(req: NextRequest) {
     const dynamicVars = {
       user_id: userId,
       lead_id: lead?.id ?? "",
+      queue_item_id: queueItemId ?? "",
       agent_id: agentId,
       to_number: toNumber,
       from_number: twilioPhoneNumber!,

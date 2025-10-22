@@ -1,7 +1,8 @@
 // app/api/outbound-calls/queue/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/utils/db/db";
-import { callQueueTable } from "@/utils/db/schema";
+import { callQueueTable, leadsTable } from "@/utils/db/schema";
+import { eq, and, asc } from "drizzle-orm";
 import { createServerClient } from "@supabase/ssr";
 import { randomUUID } from "crypto";
 
@@ -56,11 +57,20 @@ export async function POST(req: NextRequest) {
     const firstLead = leads[0];
     console.log("[Queue] Initiating first queued call:", firstLead.phone);
 
+    const firstRowId = queueRows[0].id;
+    const internalSecret = process.env.INTERNAL_QUEUE_SECRET || process.env.QUEUE_INTERNAL_SECRET || "";
     const res = await fetch(`${baseUrl}/api/outbound-calls`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(internalSecret ? { "x-internal-queue-secret": internalSecret } : {}),
+      },
+      // Detect auth redirects cleanly
+      redirect: "manual",
       body: JSON.stringify({
         leads: [firstLead],
+        userId,
+        queueItemId: firstRowId,
         queueMode: true, // flag for webhook
       }),
     });
@@ -68,12 +78,69 @@ export async function POST(req: NextRequest) {
     console.log("[Queue] First call request sent, status:", res.status);
 
     // ✅ Handle potential call error
-    if (!res.ok) {
+    const redirectedToLogin =
+      (res.status >= 300 && res.status < 400 &&
+        (res.headers.get("location") || "").includes("/login?redirectedFrom=%2Fapi%2Foutbound-calls")) ||
+      (res.url && res.url.includes("/login?redirectedFrom=%2Fapi%2Foutbound-calls"));
+    const isHtml = (res.headers.get("content-type") || "").includes("text/html");
+
+    if (!res.ok || redirectedToLogin || isHtml) {
       const errorText = await res.text().catch(() => "unknown error");
       console.error("[Queue] Failed to start first call:", errorText);
+
+      // Mark the first as completed to avoid a stuck queue
+      await db
+        .update(callQueueTable)
+        .set({ status: "completed" })
+        .where(eq(callQueueTable.id, firstRowId));
+
+      // Find and start the next pending item, if any
+      const next = await db.query.callQueueTable.findFirst({
+        where: and(
+          eq(callQueueTable.user_id, userId),
+          eq(callQueueTable.status, "pending")
+        ),
+        orderBy: asc(callQueueTable.position),
+      });
+
+      if (next) {
+        await db
+          .update(callQueueTable)
+          .set({ status: "in_progress" })
+          .where(eq(callQueueTable.id, next.id));
+
+        const nextLead = await db.query.leadsTable.findFirst({
+          where: eq(leadsTable.id, next.lead_id),
+        });
+
+        if (nextLead) {
+          console.log("[Queue] Retrying with next queued lead:", nextLead.phone);
+          const retry = await fetch(`${baseUrl}/api/outbound-calls`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(internalSecret ? { "x-internal-queue-secret": internalSecret } : {}),
+            },
+            redirect: "manual",
+            body: JSON.stringify({ leads: [nextLead], userId, queueItemId: next.id, queueMode: true }),
+          });
+          const retryRedirected =
+            (retry.status >= 300 && retry.status < 400 &&
+              (retry.headers.get("location") || "").includes("/login?redirectedFrom=%2Fapi%2Foutbound-calls")) ||
+            (retry.url && retry.url.includes("/login?redirectedFrom=%2Fapi%2Foutbound-calls"));
+          if (!retry.ok || retryRedirected) {
+            console.warn("[Queue] Retry also failed or redirected to login");
+          }
+        } else {
+          console.warn("[Queue] Next queued lead not found:", next.lead_id);
+        }
+      } else {
+        console.warn("[Queue] No additional queued items to attempt for user", userId);
+      }
+
       return NextResponse.json(
-        { error: "Failed to start first call" },
-        { status: 500 }
+        { ok: false, error: "Failed to start first call; attempted next in queue." },
+        { status: 502 }
       );
     }
 
