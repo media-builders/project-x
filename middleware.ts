@@ -9,6 +9,7 @@ const PUBLIC_FILE = /\.(.*)$/i;
 const PUBLIC_API_PREFIXES = [
   "/api/outbound-calls/webhook",              // ElevenLabs unified webhook (init + post-call)
   "/api/elevenlabs/webhook",                  // (alt path if you switch later)
+  "/api/elevenlabs/calendar-webhook",         // ✅ allow Google Calendar webhook
   "/api/elevenlabs-agent/twilio-call-inspect",
   "/api/twilio-call-inspect",
 ];
