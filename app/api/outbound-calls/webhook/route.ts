@@ -8,16 +8,24 @@ import { eq } from "drizzle-orm";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Helper: return the first non-nullish value
-function first<T = any>(...vals: any[]): T | undefined {
-  for (const v of vals) if (v !== undefined && v !== null) return v as T;
-  return undefined;
-}
+type JsonRecord = Record<string, any>;
 
-// Extract dynamic variables from many possible paths/casings
-function extractDyn(evt: any) {
-  const dyn =
-    first(
+const first = <T = any>(...vals: any[]): T | undefined => {
+  for (const v of vals) {
+    if (v !== undefined && v !== null) return v as T;
+  }
+  return undefined;
+};
+
+const parseDate = (value: unknown): Date | null => {
+  if (typeof value !== "string") return null;
+  const ts = Date.parse(value);
+  return Number.isFinite(ts) ? new Date(ts) : null;
+};
+
+const extractDyn = (evt: any): JsonRecord => {
+  return (
+    first<JsonRecord>(
       evt?.conversationInitiationClientData?.dynamicVariables,
       evt?.conversation_initiation_client_data?.dynamic_variables,
       evt?.data?.conversationInitiationClientData?.dynamicVariables,
@@ -26,33 +34,37 @@ function extractDyn(evt: any) {
       evt?.conversation?.client_data?.dynamicVariables,
       evt?.client_data?.dynamic_variables,
       evt?.metadata?.dynamic_variables
-    ) || {};
-  return dyn;
-}
+    ) || {}
+  );
+};
 
-function extractELConversationId(evt: any, dyn: any) {
-    const conv = first<any>(evt?.conversation, evt?.data?.conversation);
-    const candidates = [
-      conv?.id,
-      evt?.data?.conversation?.id,
-      evt?.conversation_id,
-      evt?.data?.conversation_id,
-      evt?.conversation?.conversation_id,
-      dyn?.conversation_id, // if you ever pass it yourself (not typical)
-    ].filter((v) => typeof v === "string") as string[];
+const extractConversationId = (evt: any, dyn: JsonRecord) => {
+  const conv = first<any>(evt?.conversation, evt?.data?.conversation);
+  const str = (value: unknown) => (typeof value === "string" ? value : null);
 
-    const found = candidates.find((c) => c.startsWith("conv_"));
-    const source =
-      (found === conv?.id && "conversation.id") ||
-      (found === evt?.data?.conversation?.id && "data.conversation.id") ||
-      (found === evt?.conversation_id && "conversation_id") ||
-      (found === evt?.data?.conversation_id && "data.conversation_id") ||
-      (found === evt?.conversation?.conversation_id && "conversation.conversation_id") ||
-      (found === dyn?.conversation_id && "dyn.conversation_id") ||
-      "not_found";
+  const candidates = (
+    [
+      str(conv?.id),
+      str(evt?.data?.conversation?.id),
+      str(evt?.conversation_id),
+      str(evt?.data?.conversation_id),
+      str(evt?.conversation?.conversation_id),
+      str(dyn?.conversation_id),
+    ] as (string | null)[]
+  ).filter(Boolean) as string[];
 
-  return { id: found ?? null, source };
-}
+  const found = candidates.find((id) => id.startsWith("conv_")) ?? null;
+  const source =
+    (found === conv?.id && "conversation.id") ||
+    (found === evt?.data?.conversation?.id && "data.conversation.id") ||
+    (found === evt?.conversation_id && "conversation_id") ||
+    (found === evt?.data?.conversation_id && "data.conversation_id") ||
+    (found === evt?.conversation?.conversation_id && "conversation.conversation_id") ||
+    (found === dyn?.conversation_id && "dyn.conversation_id") ||
+    "not_found";
+
+  return { id: found, source };
+};
 
 export async function POST(req: NextRequest) {
   try {
@@ -62,37 +74,34 @@ export async function POST(req: NextRequest) {
     const conv = first<any>(evt?.conversation, evt?.data?.conversation, null);
     const agent = first<any>(evt?.agent, evt?.data?.agent, null);
     const dyn = extractDyn(evt);
-    const { id: conversationId, source: convIdSource } = extractELConversationId(evt, dyn);
+    const { id: conversationId, source: convIdSource } = extractConversationId(evt, dyn);
 
-    //
     if (!conversationId) {
-      console.warn("[Webhook] Missing ElevenLabs conversation id  — skipping insert.", {
-        knownTopLevelKeys: Object.keys(evt || {}),
+      console.warn("[Webhook] Missing conversation id. Skipping.", {
+        knownKeys: Object.keys(evt || {}),
       });
       return NextResponse.json({ accepted: true }, { status: 202 });
     }
-    
+
     let userId = first<string>(dyn.user_id, dyn.system_user_id);
-    // Fallback: resolve user from DB by conversation_id when event lacks dynamic vars
-    if (!userId && conversationId) {
+    if (!userId) {
       const existing = await db.query.callLogsTable.findFirst({
         where: eq(callLogsTable.conversation_id, conversationId),
       });
-      if (existing?.user_id) {
-        userId = existing.user_id as string;
-      }
+      if (existing?.user_id) userId = String(existing.user_id);
     }
     if (!userId) {
-      console.warn("[Webhook] user_id unresolved — skipping insert", {
-        conv: conversationId,
+      console.warn("[Webhook] Unable to resolve user_id; skipping insert.", {
+        conversationId,
+        convIdSource,
       });
       return NextResponse.json({ accepted: true }, { status: 202 });
     }
 
     const agentId = first<string>(
-      dyn?.agent_id, 
-      agent?.id, 
-      evt?.data?.assigned_agent?.agent_id, 
+      dyn?.agent_id,
+      agent?.id,
+      evt?.data?.assigned_agent?.agent_id,
       evt?.assigned_agent?.agent_id
     );
 
@@ -112,44 +121,50 @@ export async function POST(req: NextRequest) {
       evt?.to
     );
 
-    // Transcript / analysis if present
     const transcript = first<any>(evt?.transcript, evt?.data?.transcript) ?? null;
     const analysis = first<any>(evt?.analysis, evt?.data?.analysis) ?? null;
 
-    // Timestamps
     const startedAt =
-      (evt?.timestamps?.started_at && new Date(evt.timestamps.started_at)) ||
-      (evt?.data?.timestamps?.started_at && new Date(evt.data.timestamps.started_at)) ||
+      parseDate(evt?.timestamps?.started_at) ??
+      parseDate(evt?.data?.timestamps?.started_at) ??
       new Date();
 
-    // Only update dynamic_variables on conflict if we have meaningful data (avoid clobbering lead_id)
+    const endedAt =
+      parseDate(evt?.timestamps?.ended_at) ??
+      parseDate(evt?.data?.timestamps?.ended_at) ??
+      null;
+
+    const durationSec = first<number>(
+      evt?.metrics?.duration_sec,
+      evt?.data?.metrics?.duration_sec
+    );
+    const costCents = first<number>(
+      evt?.billing?.cost_cents,
+      evt?.data?.billing?.cost_cents
+    );
+
     const dynHasLeadId = !!(dyn && typeof dyn === "object" && (dyn as any).lead_id);
-    const dynForInsert = dyn ?? null;
-    const dynForUpdate = dynHasLeadId ? dyn : undefined;
 
     await db
       .insert(callLogsTable)
       .values({
-        conversation_id: conversationId, 
+        conversation_id: conversationId,
         user_id: userId,
         agent_id: agentId ?? "unknown",
         status: type,
         to_number: toNumber ?? null,
         from_number: fromNumber ?? null,
         started_at: startedAt,
-        ended_at:
-          (evt?.timestamps?.ended_at && new Date(evt.timestamps.ended_at)) ||
-          (evt?.data?.timestamps?.ended_at && new Date(evt.data.timestamps.ended_at)) ||
-          null,
-        duration_sec: first<number>(evt?.metrics?.duration_sec, evt?.data?.metrics?.duration_sec) ?? null,
-        cost_cents: first<number>(evt?.billing?.cost_cents, evt?.data?.billing?.cost_cents) ?? null,
+        ended_at: endedAt,
+        duration_sec: durationSec ?? null,
+        cost_cents: costCents ?? null,
         transcript,
         analysis,
         metadata: {
           elevenlabs_event: type,
           raw_event_type: evt?.type ?? null,
         },
-        dynamic_variables: dynForInsert,
+        dynamic_variables: dyn ?? null,
       })
       .onConflictDoUpdate({
         target: callLogsTable.conversation_id,
@@ -157,38 +172,25 @@ export async function POST(req: NextRequest) {
           status: type,
           to_number: toNumber ?? null,
           from_number: fromNumber ?? null,
-          ended_at:
-            (evt?.timestamps?.ended_at && new Date(evt.timestamps.ended_at)) ||
-            (evt?.data?.timestamps?.ended_at && new Date(evt.data.timestamps.ended_at)) ||
-            undefined,
-          duration_sec:
-            first<number>(evt?.metrics?.duration_sec, evt?.data?.metrics?.duration_sec) ?? undefined,
-          cost_cents:
-            first<number>(evt?.billing?.cost_cents, evt?.data?.billing?.cost_cents) ?? undefined,
+          ended_at: endedAt ?? undefined,
+          duration_sec: durationSec ?? undefined,
+          cost_cents: costCents ?? undefined,
           transcript: transcript ?? undefined,
           analysis: analysis ?? undefined,
           metadata: {
             elevenlabs_event: type,
             raw_event_type: evt?.type ?? null,
           },
-          dynamic_variables: dynForUpdate,
+          dynamic_variables: dynHasLeadId ? dyn : undefined,
         },
       });
 
-    // Determine terminal (call-ended) conditions robustly
-    const lowerType = String(type || "").toLowerCase();
-    const endedAtTs =
-      (evt?.timestamps?.ended_at && new Date(evt.timestamps.ended_at)) ||
-      (evt?.data?.timestamps?.ended_at && new Date(evt.data.timestamps.ended_at)) ||
-      null;
-    const isTerminalEvent =
-      !!endedAtTs ||
-      /(ended|completed|terminated|finished|hangup|call\.ended|call\.completed|conversation\.completed)/.test(lowerType) ||
-      (!!evt?.billing || !!evt?.data?.billing || typeof evt?.analysis === "object" || typeof evt?.data?.analysis === "object");
-
     return NextResponse.json({ ok: true }, { status: 200 });
-  } catch (e: any) {
-    console.error("[Webhook] error", e);
-    return NextResponse.json({ error: e?.message ?? "Webhook error" }, { status: 500 });
+  } catch (error: any) {
+    console.error("[Webhook] error", error);
+    return NextResponse.json(
+      { error: error?.message ?? "Webhook error" },
+      { status: 500 }
+    );
   }
 }
