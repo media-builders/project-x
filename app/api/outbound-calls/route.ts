@@ -283,15 +283,19 @@ export async function POST(req: NextRequest) {
       agentId,
       agentPhoneNumberId,
       TEST_MODE,
-      echo_dynamic_vars: conversationInitiationClientData,
+      echo_dynamic_vars: dynamicVars,
     });
 
-    const call = await elClient.conversationalAi.twilio.outboundCall({
-      agentId: agentId,
+    
+    const call = await (elClient.conversationalAi.twilio as any).outboundCall({
+      agentId,
       agentPhoneNumberId: agentPhoneNumberId!,
-      toNumber: toNumber,
-      conversationInitiationClientData,
+      toNumber,
+      conversation_initiation_client_data: {
+        dynamic_variables: dynamicVars,
+      },
     });
+
 
     // Immediately record a pending row
     try {
