@@ -492,10 +492,10 @@ export async function POST(req: NextRequest) {
     if (!googleResponse.ok) {
       const status = googleResponse.status;
       const message =
-        googleJson?.error?.message ??
-        googleJson?.error_description ??
-        googleJson?.error ??
-        googleText ||
+        (googleJson?.error?.message ??
+          googleJson?.error_description ??
+          googleJson?.error ??
+          googleText) ||
         `Google Calendar API responded with ${status}`;
       return NextResponse.json({ error: message, status }, { status: 502 });
     }
