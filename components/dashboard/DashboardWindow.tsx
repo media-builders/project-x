@@ -34,7 +34,7 @@ export default function DashboardWindow({
   onProfileSaved,
 }: DashboardWindowProps) {
   return (
-    <div className="dashboard-window flex-1 relative overflow-hidden">
+    <div className="dashboard-window no-scroll-bar">
       <AnimatePresence mode="wait">
         {activeTab === "leads-table" && (
           <motion.div
@@ -43,7 +43,7 @@ export default function DashboardWindow({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.25, ease: "easeInOut" }}
-            className="h-full"
+            className=""
           >
             <LeadsTable />
           </motion.div>
@@ -56,7 +56,7 @@ export default function DashboardWindow({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.25, ease: "easeInOut" }}
-            className="h-full"
+            className=""
           >
             <CallSchedule />
           </motion.div>
@@ -69,7 +69,7 @@ export default function DashboardWindow({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.25, ease: "easeInOut" }}
-            className="h-full"
+            className=""
           >
             <LeadCaptureFormSetup />
           </motion.div>
@@ -82,7 +82,7 @@ export default function DashboardWindow({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.25, ease: "easeInOut" }}
-            className="h-full"
+            className=""
           >
             <DialerSettings />
           </motion.div>
@@ -95,7 +95,7 @@ export default function DashboardWindow({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.25, ease: "easeInOut" }}
-            className="h-full"
+            className=""
           >
             <GmailClient />
           </motion.div>
@@ -108,7 +108,7 @@ export default function DashboardWindow({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.25, ease: "easeInOut" }}
-            className="h-full"
+            className=""
           >
             <GoogleCalendar />
           </motion.div>
@@ -121,7 +121,7 @@ export default function DashboardWindow({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.25, ease: "easeInOut" }}
-            className="h-full"
+            className=""
           >
             <DriveFiles />
           </motion.div>
@@ -134,7 +134,7 @@ export default function DashboardWindow({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.25, ease: "easeInOut" }}
-            className="h-full"
+            className=""
           >
             <SettingsPanel />
           </motion.div>
@@ -147,7 +147,7 @@ export default function DashboardWindow({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.25, ease: "easeInOut" }}
-            className="h-full"
+            className=""
           >
             <Integrations />
           </motion.div>
@@ -160,7 +160,7 @@ export default function DashboardWindow({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.25, ease: "easeInOut" }}
-            className="h-full"
+            className=""
           >
             <BillingComponent />
           </motion.div>
@@ -173,7 +173,7 @@ export default function DashboardWindow({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.25, ease: "easeInOut" }}
-            className="h-full overflow-auto"
+            className=""
           >
             <UserProfileForm initialData={profileData} onProfileSaved={onProfileSaved} />
           </motion.div>
@@ -186,7 +186,7 @@ export default function DashboardWindow({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.25, ease: "easeInOut" }}
-            className="h-full overflow-auto"
+            className=""
           >
             <HelpCenter />
           </motion.div>

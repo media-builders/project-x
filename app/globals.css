@@ -1339,7 +1339,9 @@ nav {
 }
 
 .dashboard-window {
+  height: 100vh;
   flex: 1 1 auto;
+  overflow: scroll;
   background: var(--surface);
   color: var(--txt-1);
   padding: 26px;
@@ -3021,8 +3023,7 @@ input[type="range"] {
 
 .lead-conversations-container, .lead-transcript-container {
   flex: 1;
-  border: 1px solid var(--hairline);
-  padding: 1rem;
+  border: var(--border-thin);
   height: 40vh;
   overflow: scroll;
 
@@ -3037,9 +3038,10 @@ input[type="range"] {
 }
 
 .lead-transcript-summary {
-
+  padding: 1rem;
+  border-bottom: var(--border-thin);
 }
 
 .lead-transcript-conversation {
-
+  padding: 1rem;
 }
