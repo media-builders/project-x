@@ -145,8 +145,6 @@ export default function DashboardMenu({
           <Image
             src={BNLogo}
             alt="BrokerNest.ai Logo"
-            width={40}
-            height={40}
             priority
             className="object-contain"
           />

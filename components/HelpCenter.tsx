@@ -241,66 +241,72 @@ export default function HelpCenter() {
   const resultsCount = filteredFaqs.length;
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-10">
+    <div className="help-center">
       {/* Header */}
-      <header className="space-y-3">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-semibold">Help & Support Center</h2>
-          <p className="text-sm text-muted-foreground">
+      <header className="help-center__intro">
+        <div className="help-center__intro-text">
+          <h2 className="help-center__title">Help & Support Center</h2>
+          <p className="help-center__description">
             Search the knowledge base, follow the launch checklist, or connect with the team whenever you need a hand.
           </p>
         </div>
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+        <div className="help-center__search">
+          <Search className="help-center__search-icon" />
           <Input
             placeholder="Search help articles or FAQs..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="pl-9"
+            className="help-center__search-input"
           />
         </div>
       </header>
 
       {/* Quick Links */}
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="help-center__quick-links">
         {quickLinks.map((link) => {
           const Icon = link.icon;
           const preview = quickLinkPreviews[link.topic];
           const lastUpdatedLabel = preview?.updatedAt ? formatUpdatedAt(preview.updatedAt) : null;
 
           return (
-            <Card key={link.title} className="hover:shadow-md transition">
-              <CardHeader className="flex flex-row items-center space-x-3">
-                <Icon className="h-5 w-5 text-accent" />
-                <h3 className="font-medium text-base">{link.title}</h3>
+            <Card key={link.title} className="help-center__quick-card">
+              <CardHeader className="help-center__quick-card-header">
+                <Icon className="help-center__quick-card-icon" />
+                <h3 className="help-center__quick-card-title">{link.title}</h3>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm text-muted-foreground">
+              <CardContent className="help-center__quick-card-content">
                 <p>{link.description}</p>
-                <div className="rounded-md border border-border/60 bg-muted/30 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/80">
+                <div className="help-center__quick-card-preview">
+                  <p className="help-center__quick-card-meta">
                     Latest highlight
                   </p>
                   {preview ? (
-                    <div className="mt-2 space-y-1 text-foreground">
-                      <p className="text-sm font-medium">{preview.headline}</p>
-                      <p className="text-xs text-muted-foreground">{preview.summary}</p>
+                    <div className="help-center__quick-card-article">
+                      <p className="help-center__quick-card-headline">{preview.headline}</p>
+                      <p className="help-center__quick-card-summary">{preview.summary}</p>
                       {lastUpdatedLabel ? (
-                        <p className="text-[11px] text-muted-foreground/80">
+                        <p className="help-center__quick-card-updated">
                           Updated {lastUpdatedLabel}
                         </p>
                       ) : null}
                     </div>
                   ) : previewsLoading ? (
-                    <p className="mt-2 text-xs text-muted-foreground">Fetching the latest article...</p>
+                    <p className="help-center__quick-card-status help-center__quick-card-status--muted">
+                      Fetching the latest article...
+                    </p>
                   ) : quickLinkPreviewError ? (
-                    <p className="mt-2 text-xs text-destructive">Unable to load preview right now.</p>
+                    <p className="help-center__quick-card-status help-center__quick-card-status--error">
+                      Unable to load preview right now.
+                    </p>
                   ) : (
-                    <p className="mt-2 text-xs text-muted-foreground">No recent articles yet. Check back soon.</p>
+                    <p className="help-center__quick-card-status help-center__quick-card-status--muted">
+                      No recent articles yet. Check back soon.
+                    </p>
                   )}
                 </div>
                 <a
                   href={preview?.href ?? link.href}
-                  className="flex items-center gap-1 text-accent font-medium hover:underline"
+                  className="help-center__quick-card-link"
                 >
                   <span>{link.cta}</span>
                   <span aria-hidden="true">-&gt;</span>
@@ -312,25 +318,25 @@ export default function HelpCenter() {
       </section>
 
       {/* Launch Checklist */}
-      <section className="space-y-4">
-        <div className="space-y-1">
-          <h3 className="text-lg font-semibold">Launch Checklist</h3>
-          <p className="text-sm text-muted-foreground">
+      <section className="help-center__section">
+        <div className="help-center__section-heading">
+          <h3 className="help-center__section-title">Launch Checklist</h3>
+          <p className="help-center__section-subtitle">
             Work through these five steps to activate your team and start closing more deals.
           </p>
         </div>
-        <ol className="space-y-3">
+        <ol className="help-center__checklist-list">
           {onboardingSteps.map((step, index) => (
             <li
               key={step.title}
-              className="flex gap-3 rounded-lg border border-border bg-muted/40 p-4"
+              className="help-center__checklist-step"
             >
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent/10 text-xs font-semibold text-accent">
+              <span className="help-center__step-number">
                 {index + 1}
               </span>
-              <div className="space-y-1">
-                <p className="text-sm font-medium">{step.title}</p>
-                <p className="text-sm text-muted-foreground">{step.body}</p>
+              <div className="help-center__step-body">
+                <p className="help-center__step-title">{step.title}</p>
+                <p className="help-center__step-description">{step.body}</p>
               </div>
             </li>
           ))}
@@ -338,36 +344,36 @@ export default function HelpCenter() {
       </section>
 
       {/* FAQ Section */}
-      <section className="space-y-4">
-        <div className="space-y-1">
-          <h3 className="text-lg font-semibold">Frequently Asked Questions</h3>
-          <p className="text-sm text-muted-foreground">
+      <section className="help-center__section">
+        <div className="help-center__section-heading">
+          <h3 className="help-center__section-title">Frequently Asked Questions</h3>
+          <p className="help-center__section-subtitle">
             Browse popular topics or refine your search above to jump directly to an answer.
           </p>
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap gap-2">
+        <div className="help-center__faq-toolbar">
+          <div className="help-center__faq-filters">
             {categories.map((category) => (
               <Button
                 key={category}
                 type="button"
                 size="sm"
                 variant={activeCategory === category ? 'default' : 'outline'}
-                className="rounded-full"
+                className="help-center__category-button"
                 onClick={() => setActiveCategory(category)}
               >
                 {category}
               </Button>
             ))}
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="help-center__faq-count">
             Showing {resultsCount} {resultsCount === 1 ? 'answer' : 'answers'}
           </p>
         </div>
         {filteredFaqs.length === 0 ? (
-          <div className="space-y-3 rounded-md border border-dashed border-border/60 p-4 text-sm text-muted-foreground">
+          <div className="help-center__empty-state">
             <p>No results found. Try another keyword or reset your filters.</p>
-            <div className="flex flex-wrap gap-2">
+            <div className="help-center__empty-actions">
               <Button
                 type="button"
                 size="sm"
@@ -384,11 +390,11 @@ export default function HelpCenter() {
             </div>
           </div>
         ) : (
-          <Accordion type="single" collapsible className="space-y-2">
+          <Accordion type="single" collapsible className="help-center__faq-list">
             {filteredFaqs.map((faq, index) => (
               <AccordionItem key={index} value={`faq-${index}`}>
-                <AccordionTrigger className="text-left">{faq.question}</AccordionTrigger>
-                <AccordionContent className="text-sm text-muted-foreground">
+                <AccordionTrigger className="help-center__faq-trigger">{faq.question}</AccordionTrigger>
+                <AccordionContent className="help-center__faq-answer">
                   {faq.answer}
                 </AccordionContent>
               </AccordionItem>
@@ -398,32 +404,32 @@ export default function HelpCenter() {
       </section>
 
       {/* Contact */}
-      <section className="space-y-3 rounded-lg border border-border bg-muted/20 p-6">
-        <div className="flex items-center gap-2">
-          <LifeBuoy className="h-5 w-5 text-accent" />
-          <h3 className="text-lg font-semibold">Need a human?</h3>
+      <section className="help-center__section help-center__contact">
+        <div className="help-center__contact-header">
+          <LifeBuoy className="help-center__contact-icon" />
+          <h3 className="help-center__contact-title">Need a human?</h3>
         </div>
-        <p className="text-sm text-muted-foreground">
+        <p className="help-center__contact-description">
           Our support specialists are available to troubleshoot issues, review automations, and recommend best practices tailored to your brokerage.
         </p>
-        <ul className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-3">
+        <ul className="help-center__contact-list">
           {supportHighlights.map((item) => (
-            <li key={item.label} className="space-y-1">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground/70">{item.label}</p>
+            <li key={item.label} className="help-center__contact-item">
+              <p className="help-center__contact-label">{item.label}</p>
               {item.href ? (
-                <a href={item.href} className="font-medium text-foreground hover:underline">
+                <a href={item.href} className="help-center__contact-link">
                   {item.value}
                 </a>
               ) : (
-                <p className="font-medium text-foreground">{item.value}</p>
+                <p className="help-center__contact-value">{item.value}</p>
               )}
             </li>
           ))}
         </ul>
-        <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-          <span className="font-medium text-foreground">Prefer email updates?</span>
-          <a href="mailto:support@brokernest.ai" className="flex items-center gap-1 text-accent hover:underline">
-            <Mail className="h-4 w-4" />
+        <div className="help-center__contact-footer">
+          <span className="help-center__contact-footer-title">Prefer email updates?</span>
+          <a href="mailto:support@brokernest.ai" className="help-center__contact-footer-link">
+            <Mail className="help-center__contact-mail-icon" />
             <span>Open a support ticket -&gt;</span>
           </a>
         </div>
