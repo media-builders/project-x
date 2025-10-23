@@ -3012,3 +3012,34 @@ input[type="range"] {
   transform: translateY(-1px);
   box-shadow: 0 16px 28px rgba(0, 0, 0, 0.45);
 }
+
+
+.lead-history-container {
+  display: flex;
+  flex-direction: row;
+}
+
+.lead-conversations-container, .lead-transcript-container {
+  flex: 1;
+  border: 1px solid var(--hairline);
+  padding: 1rem;
+  height: 40vh;
+  overflow: scroll;
+
+}
+
+.lead-conversations-container {
+
+}
+
+.lead-transcript-container {
+
+}
+
+.lead-transcript-summary {
+
+}
+
+.lead-transcript-conversation {
+
+}

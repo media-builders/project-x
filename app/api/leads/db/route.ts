@@ -146,3 +146,36 @@ export async function POST(req: Request) {
 
   return NextResponse.json({ lead: response }, { status: 201 });
 }
+
+export async function DELETE(req: Request) {
+  const supabase = createClient();
+  const { data: auth, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !auth?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = await req
+    .json()
+    .catch(() => null) as { ids?: string[] } | null;
+
+  const ids = Array.isArray(body?.ids) ? body!.ids.filter((id): id is string => typeof id === "string" && id.trim().length > 0) : [];
+
+  if (ids.length === 0) {
+    return NextResponse.json({ error: "No lead ids supplied." }, { status: 400 });
+  }
+
+  const { error: deleteError } = await supabase
+    .from("leads")
+    .delete()
+    .eq("user_id", auth.user.id)
+    .in("id", ids);
+
+  if (deleteError) {
+    return NextResponse.json(
+      { error: deleteError.message ?? "Failed to delete leads." },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({ ok: true, deleted: ids.length }, { status: 200 });
+}

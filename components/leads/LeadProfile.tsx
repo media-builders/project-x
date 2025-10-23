@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type Lead = {
@@ -113,10 +113,12 @@ const normaliseCallEntry = (
 
 export default function LeadProfile({ leads }: LeadProfileProps) {
   const [index, setIndex] = useState(0);
-  const [callCache, setCallCache] = useState<Record<string, CallEntry[]>>({});
-  const [loadingLeadId, setLoadingLeadId] = useState<string | null>(null);
+  const [leadCalls, setLeadCalls] = useState<CallEntry[]>([]);
+  const [loading, setLoading] = useState(false);
   const [callError, setCallError] = useState<string | null>(null);
   const [selectedCallId, setSelectedCallId] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const prevLeadIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (index >= leads.length) setIndex(0);
@@ -127,11 +129,6 @@ export default function LeadProfile({ leads }: LeadProfileProps) {
 
   const hasLeads = leads && leads.length > 0;
   const lead = hasLeads ? leads[index] : null;
-  const leadCalls = useMemo(() => {
-    if (!lead?.id) return [];
-    return callCache[lead.id] ?? [];
-  }, [lead?.id, callCache]);
-
   useEffect(() => {
     if (!lead?.id) {
       setSelectedCallId(null);
@@ -151,28 +148,39 @@ export default function LeadProfile({ leads }: LeadProfileProps) {
 
   const activeCall =
     leadCalls.find((call) => call.id === selectedCallId) ?? leadCalls[0] ?? null;
-  const loadingTranscript = lead?.id ? loadingLeadId === lead.id : false;
+  const loadingTranscript = loading;
 
   useEffect(() => {
     if (!lead?.id) {
-      setLoadingLeadId(null);
+      setLeadCalls([]);
+      setSelectedCallId(null);
       setCallError(null);
+      setLoading(false);
+      prevLeadIdRef.current = null;
       return;
     }
 
-    if (callCache[lead.id]) {
-      setLoadingLeadId(null);
-      setCallError(null);
-      return;
-    }
+    const isNewLead = lead.id !== prevLeadIdRef.current;
+    prevLeadIdRef.current = lead.id;
 
     const controller = new AbortController();
-    setLoadingLeadId(lead.id);
+    setLoading(true);
     setCallError(null);
+    if (isNewLead) {
+      setLeadCalls([]);
+      setSelectedCallId(null);
+    }
 
     const loadTranscripts = async () => {
       try {
-        const res = await fetch(`/api/leads/${lead.id}`, { signal: controller.signal });
+        const res = await fetch(`/api/leads/${lead.id}?t=${Date.now()}`, {
+          signal: controller.signal,
+          cache: "no-store",
+          credentials: "include",
+          headers: {
+            "Cache-Control": "no-store",
+          },
+        });
         if (!res.ok) {
           throw new Error(`Failed to load call history (${res.status})`);
         }
@@ -180,22 +188,30 @@ export default function LeadProfile({ leads }: LeadProfileProps) {
         const rawCalls = Array.isArray(data?.calls) ? data.calls : [];
         const parsedCalls = rawCalls.map((call, idx) => normaliseCallEntry(call, idx));
 
-        setCallCache((prev) => ({
-          ...prev,
-          [lead.id]: parsedCalls,
-        }));
-        setLoadingLeadId((prev) => (prev === lead.id ? null : prev));
+        setLeadCalls(parsedCalls);
+        setCallError(null);
       } catch (error: any) {
         if (controller.signal.aborted) return;
         setCallError(error?.message ?? "Unable to load call history.");
-        setLoadingLeadId((prev) => (prev === lead.id ? null : prev));
+        setLeadCalls([]);
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
     loadTranscripts();
 
-    return () => controller.abort();
-  }, [lead?.id, callCache]);
+    return () => {
+      controller.abort();
+    };
+  }, [lead?.id, refreshKey]);
+
+  const handleRefresh = () => {
+    if (!lead?.id) return;
+    setRefreshKey((key) => key + 1);
+  };
 
   return (
     <div className="bg-[var(--navy-2)] border border-[var(--hairline)] rounded-lg p-4 shadow-sm mb-6 transition-all duration-200">
@@ -240,9 +256,23 @@ export default function LeadProfile({ leads }: LeadProfileProps) {
 
           <div className="border-t border-[var(--hairline)] pt-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-[var(--txt-1)] uppercase tracking-wide">
-                Call History
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-medium text-[var(--txt-1)] uppercase tracking-wide">
+                  Call History
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleRefresh}
+                  disabled={loadingTranscript || !lead?.id}
+                  title="Refresh transcripts"
+                >
+                  <RefreshCcw
+                    className={`h-4 w-4 ${loadingTranscript ? "animate-spin" : ""}`}
+                  />
+                  <span className="sr-only">Refresh transcripts</span>
+                </Button>
+              </div>
               {activeCall?.durationSeconds ? (
                 <span className="text-xs text-[var(--txt-3)]">
                   Duration {formatSeconds(activeCall.durationSeconds)}
@@ -266,8 +296,8 @@ export default function LeadProfile({ leads }: LeadProfileProps) {
                 No call history available for this lead yet.
               </p>
             ) : (
-              <div className="mt-3 space-y-4">
-                <div className="overflow-x-auto border border-[var(--hairline)] rounded-md">
+              <div className="lead-history-container">
+                <div className="lead-conversations-container no-scroll-bar">
                   <table className="min-w-full text-sm text-[var(--txt-2)]">
                     <thead className="bg-[var(--navy-3,#1e2a45)]/40 text-[var(--txt-3)] uppercase text-xs">
                       <tr>
@@ -316,9 +346,9 @@ export default function LeadProfile({ leads }: LeadProfileProps) {
                 </div>
 
                 {activeCall ? (
-                  <div className="space-y-3">
+                  <div className="lead-transcript-container no-scroll-bar">
                     {activeCall.summaryBody ? (
-                      <div className="rounded-md border border-[var(--hairline)] bg-[var(--navy-3,#1e2a45)]/40 p-3">
+                      <div className="lead-transcript-summary">
                         <h4 className="text-sm font-semibold text-[var(--txt-1)]">
                           Summary
                         </h4>
@@ -328,7 +358,7 @@ export default function LeadProfile({ leads }: LeadProfileProps) {
                       </div>
                     ) : null}
 
-                    <div className="rounded-md border border-[var(--hairline)] bg-[var(--navy-3,#1e2a45)]/30 max-h-60 overflow-y-auto p-3 space-y-2">
+                    <div className="lead-transcript-conversation">
                       {activeCall.transcript.length > 0 ? (
                         activeCall.transcript.map((turn, idx) => {
                           const roleLabel =

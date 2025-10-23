@@ -73,14 +73,3 @@ export const callLogsTable = pgTable("call_logs", {
 export type InsertcallLogsTable = typeof callLogsTable.$inferInsert;
 export type SelectcallLogsTable = typeof callLogsTable.$inferSelect;
 
-export const callQueueTable = pgTable("call_queue", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  user_id: uuid("user_id").notNull(), 
-  lead_id: uuid("lead_id").notNull(),  
-  position: integer("position").notNull(), // queue order
-  status: text("status").notNull().default("pending"), // pending | in_progress | completed
-  created_at: timestamp("created_at").defaultNow().notNull(),
-});
-
-export type InsertCallQueue = typeof callQueueTable.$inferInsert;
-export type SelectCallQueue = typeof callQueueTable.$inferSelect;

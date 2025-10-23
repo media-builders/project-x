@@ -2,8 +2,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/utils/db/db";
-import { callLogsTable, leadsTable, callQueueTable } from "@/utils/db/schema";
-import { eq, and, asc } from "drizzle-orm";
+import { callLogsTable } from "@/utils/db/schema";
+import { eq } from "drizzle-orm";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -186,85 +186,6 @@ export async function POST(req: NextRequest) {
       /(ended|completed|terminated|finished|hangup|call\.ended|call\.completed|conversation\.completed)/.test(lowerType) ||
       (!!evt?.billing || !!evt?.data?.billing || typeof evt?.analysis === "object" || typeof evt?.data?.analysis === "object");
 
-    // Call Queue progression on terminal events
-    if (isTerminalEvent && userId) {
-      console.log(
-        `[Queue] Terminal event (${type}) for user ${userId}; progressing queue...`
-      );
-
-      // Prefer to mark the exact queue item (by queue_item_id) if provided
-      const queueItemId = first<string>(
-        dyn?.queue_item_id,
-        evt?.conversationInitiationClientData?.dynamicVariables?.queue_item_id,
-        evt?.data?.conversation_initiation_client_data?.dynamic_variables?.queue_item_id
-      );
-
-      if (queueItemId) {
-        await db
-          .update(callQueueTable)
-          .set({ status: "completed" })
-          .where(and(eq(callQueueTable.user_id, userId), eq(callQueueTable.id, queueItemId)));
-      } else {
-        // fallback: mark any in_progress item for this user as completed
-        await db
-          .update(callQueueTable)
-          .set({ status: "completed" })
-          .where(and(eq(callQueueTable.user_id, userId), eq(callQueueTable.status, "in_progress")));
-      }
-
-      // find the next pending item
-      const next = await db.query.callQueueTable.findFirst({
-        where: and(eq(callQueueTable.user_id, userId), eq(callQueueTable.status, "pending")),
-        orderBy: asc(callQueueTable.position),
-      });
-
-      if (next) {
-        console.log("[Queue] Next queued call found:", next.lead_id);
-
-        // mark as in_progress
-        await db
-          .update(callQueueTable)
-          .set({ status: "in_progress" })
-          .where(eq(callQueueTable.id, next.id));
-
-        // fetch lead details
-        const nextLead = await db.query.leadsTable.findFirst({
-          where: eq(leadsTable.id, next.lead_id),
-        });
-
-        if (nextLead) {
-          console.log("[Queue] Initiating next call to:", nextLead.phone);
-          const baseUrl =
-            process.env.NEXT_PUBLIC_BASE_URL || req.nextUrl.origin || "http://localhost:3000";
-          const internalSecret = process.env.INTERNAL_QUEUE_SECRET || process.env.QUEUE_INTERNAL_SECRET || "";
-          const resp = await fetch(`${baseUrl}/api/outbound-calls`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...(internalSecret ? { "x-internal-queue-secret": internalSecret } : {}),
-            },
-            redirect: "manual",
-            body: JSON.stringify({
-              leads: [nextLead],
-              userId, // authenticate internally w/ secret
-              queueItemId: next.id,
-              queueMode: true,
-            }),
-          });
-          const redirected =
-            (resp.status >= 300 && resp.status < 400 &&
-              (resp.headers.get("location") || "").includes("/login?redirectedFrom=%2Fapi%2Foutbound-calls")) ||
-            (resp.url && resp.url.includes("/login?redirectedFrom=%2Fapi%2Foutbound-calls"));
-          if (!resp.ok || redirected) {
-            console.warn("[Queue] Next call initiation redirected or failed; check INTERNAL_QUEUE_SECRET and middleware.");
-          }
-        } else {
-          console.warn("[Queue] Lead not found for next queued call:", next.lead_id);
-        }
-      } else {
-        console.log("[Queue] No more queued calls for user:", userId);
-      }
-    }
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (e: any) {
     console.error("[Webhook] error", e);
