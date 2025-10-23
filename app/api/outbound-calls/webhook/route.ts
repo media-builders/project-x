@@ -2,7 +2,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/utils/db/db";
-import { callLogsTable, leadsTable, callQueueTable } from "@/utils/db/schema";
+import { callLogsTable, leadsTable } from "@/utils/db/schema";
 import { eq, and, asc } from "drizzle-orm";
 
 export const runtime = "nodejs";
