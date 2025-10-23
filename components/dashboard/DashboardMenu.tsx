@@ -19,6 +19,7 @@ import {
 import Logout from '@/components/Logout';
 import BNLogo from '@/public/images/brokernest/SVG/BrokerNest - Logo - WhiteLogo.svg';
 import UserClient from '@/components/HiUserClient';
+import LeadsShortcutWindow from './LeadsShortcutWindow';
 
 const USER_OWNED_TABS = ['user-profile', 'user-help'];
 const SETTINGS_TABS = ['settings-general', 'settings-integrations', 'settings-billing'];
@@ -154,56 +155,57 @@ export default function DashboardMenu({
         </div>
       </div>
       <div className="menu-container">
-        <ul className="menu-list">
-          {/* Leads */}
-          <li
-            className={`menu-item ${leadsSubmenuActive ? 'has-active-submenu' : ''}`}
-            onClick={() => handleParentClick('leads')}
-          >
-            <span className="menu-item-content">
-              <LeadsIcon aria-hidden="true" className="menu-icon" />
-              Leads
-            </span>
-          </li>
+        <div className="menu-stack">
+          <ul className="menu-list">
+            {/* Leads */}
+            <li
+              className={`menu-item ${leadsSubmenuActive ? 'has-active-submenu' : ''}`}
+              onClick={() => handleParentClick('leads')}
+            >
+              <span className="menu-item-content">
+                <LeadsIcon aria-hidden="true" className="menu-icon" />
+                Leads
+              </span>
+            </li>
 
-          {/* Leads submenu */}
-          <AnimatePresence initial={false}>
-            {displayTab.startsWith('leads') && (
-              <motion.ul
-                key="leads-submenu"
-                className="submenu-list"
-                initial={{ height: 0, opacity: 0, y: -5 }}
-                animate={{ height: 'auto', opacity: 1, y: 0 }}
-                exit={{ height: 0, opacity: 0, y: -5 }}
-                transition={{ duration: 0.25, ease: 'easeInOut' }}
-              >
-                <motion.li
-                  className={`submenu-item ${displayTab === 'leads-table' ? 'is-active' : ''}`}
-                  onClick={() => onTabChange('leads-table')}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  transition={{ duration: 0.2 }}
+            {/* Leads submenu */}
+            <AnimatePresence initial={false}>
+              {displayTab.startsWith('leads') && (
+                <motion.ul
+                  key="leads-submenu"
+                  className="submenu-list"
+                  initial={{ height: 0, opacity: 0, y: -5 }}
+                  animate={{ height: 'auto', opacity: 1, y: 0 }}
+                  exit={{ height: 0, opacity: 0, y: -5 }}
+                  transition={{ duration: 0.25, ease: 'easeInOut' }}
                 >
-                  <span className="menu-item-content">
-                    <CallsIcon aria-hidden="true" className="menu-icon" />
-                    Calls
-                  </span>
-                </motion.li>
-                <motion.li
-                  className={`submenu-item ${displayTab === 'leads-campaigns' ? 'is-active' : ''}`}
-                  onClick={() => onTabChange('leads-campaigns')}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  transition={{ duration: 0.25, delay: 0.05 }}
-                >
-                  <span className="menu-item-content">
-                    <CampaignsIcon aria-hidden="true" className="menu-icon" />
-                    Campaigns
-                  </span>
-                </motion.li>
-                {/* <motion.li
+                  <motion.li
+                    className={`submenu-item ${displayTab === 'leads-table' ? 'is-active' : ''}`}
+                    onClick={() => onTabChange('leads-table')}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <span className="menu-item-content">
+                      <CallsIcon aria-hidden="true" className="menu-icon" />
+                      Calls
+                    </span>
+                  </motion.li>
+                  <motion.li
+                    className={`submenu-item ${displayTab === 'leads-campaigns' ? 'is-active' : ''}`}
+                    onClick={() => onTabChange('leads-campaigns')}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    transition={{ duration: 0.25, delay: 0.05 }}
+                  >
+                    <span className="menu-item-content">
+                      <CampaignsIcon aria-hidden="true" className="menu-icon" />
+                      Campaigns
+                    </span>
+                  </motion.li>
+                  {/* <motion.li
                   className={`submenu-item ${displayTab === "leads-form" ? "is-active" : ""}`}
                   onClick={() => onTabChange("leads-form")}
                   initial={{ opacity: 0, x: -10 }}
@@ -213,54 +215,57 @@ export default function DashboardMenu({
                 >
                   Forms
                 </motion.li> */}
-              </motion.ul>
-            )}
-          </AnimatePresence>
+                </motion.ul>
+              )}
+            </AnimatePresence>
 
-          {/* Agents */}
-          <li
-            className={`menu-item ${displayTab === 'dialer' ? 'is-active' : ''}`}
-            onClick={() => onTabChange('dialer')}
-          >
-            <span className="menu-item-content">
-              <AgentsIcon aria-hidden="true" className="menu-icon" />
-              Agents
-            </span>
-          </li>
+            {/* Agents */}
+            <li
+              className={`menu-item ${displayTab === 'dialer' ? 'is-active' : ''}`}
+              onClick={() => onTabChange('dialer')}
+            >
+              <span className="menu-item-content">
+                <AgentsIcon aria-hidden="true" className="menu-icon" />
+                Agents
+              </span>
+            </li>
 
-          {/* Google Mail */}
-          <li
-            className={`menu-item ${displayTab === 'google-mail' ? 'is-active' : ''}`}
-            onClick={() => onTabChange('google-mail')}
-          >
-            <span className="menu-item-content">
-              <MailIcon aria-hidden="true" className="menu-icon" />
-              Mail
-            </span>
-          </li>
+            {/* Google Mail */}
+            <li
+              className={`menu-item ${displayTab === 'google-mail' ? 'is-active' : ''}`}
+              onClick={() => onTabChange('google-mail')}
+            >
+              <span className="menu-item-content">
+                <MailIcon aria-hidden="true" className="menu-icon" />
+                Mail
+              </span>
+            </li>
 
-          {/* Calendar */}
-          <li
-            className={`menu-item ${displayTab === 'calendar' ? 'is-active' : ''}`}
-            onClick={() => onTabChange('calendar')}
-          >
-            <span className="menu-item-content">
-              <CalendarIcon aria-hidden="true" className="menu-icon" />
-              Calendar
-            </span>
-          </li>
+            {/* Calendar */}
+            <li
+              className={`menu-item ${displayTab === 'calendar' ? 'is-active' : ''}`}
+              onClick={() => onTabChange('calendar')}
+            >
+              <span className="menu-item-content">
+                <CalendarIcon aria-hidden="true" className="menu-icon" />
+                Calendar
+              </span>
+            </li>
 
-          {/* Google Drive */}
-          <li
-            className={`menu-item ${displayTab === 'google-drive' ? 'is-active' : ''}`}
-            onClick={() => onTabChange('google-drive')}
-          >
-            <span className="menu-item-content">
-              <FilesIcon aria-hidden="true" className="menu-icon" />
-              Files
-            </span>
-          </li>
-        </ul>
+            {/* Google Drive */}
+            <li
+              className={`menu-item ${displayTab === 'google-drive' ? 'is-active' : ''}`}
+              onClick={() => onTabChange('google-drive')}
+            >
+              <span className="menu-item-content">
+                <FilesIcon aria-hidden="true" className="menu-icon" />
+                Files
+              </span>
+            </li>
+          </ul>
+
+          <LeadsShortcutWindow />
+        </div>
         <ul className="menu-list">
           <AnimatePresence initial={false}>
             {isUserMenuOpen && (
