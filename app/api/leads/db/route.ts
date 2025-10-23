@@ -39,6 +39,21 @@ type LeadOut = {
   stage: string | null;
 };
 
+type LeadInsert = {
+  first?: string;
+  last?: string;
+  email?: string;
+  phone?: string;
+  stage?: string | null;
+};
+
+const sanitizeString = (value?: string | null) => (value ?? "").trim();
+
+const sanitizePhone = (value?: string | null) => {
+  const digits = sanitizeString(value).replace(/\D/g, "");
+  return digits || null;
+};
+
 export async function GET() {
   const supabase = createClient();
   const { data: auth, error: authErr } = await supabase.auth.getUser();
@@ -66,4 +81,68 @@ export async function GET() {
   }));
 
   return NextResponse.json({ people }, { status: 200 });
+}
+
+export async function POST(req: Request) {
+  const supabase = createClient();
+  const { data: auth, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !auth?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = await req
+    .json()
+    .catch(() => null) as { lead?: LeadInsert } | LeadInsert | null;
+
+  const payload: LeadInsert | null =
+    body && "lead" in body ? (body.lead as LeadInsert) : (body as LeadInsert);
+
+  if (!payload) {
+    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  }
+
+  const first = sanitizeString(payload.first);
+  const last = sanitizeString(payload.last);
+  const email = sanitizeString(payload.email || null) || null;
+  const phone = sanitizePhone(payload.phone);
+  const stage = sanitizeString(payload.stage || null) || null;
+
+  if (!first && !last) {
+    return NextResponse.json(
+      { error: "Please provide at least a first or last name." },
+      { status: 400 }
+    );
+  }
+
+  const { data, error } = await supabase
+    .from("leads")
+    .insert({
+      user_id: auth.user.id,
+      fub_id: null,
+      first,
+      last,
+      email,
+      phone,
+      stage,
+    })
+    .select("id, first, last, email, phone, stage")
+    .single();
+
+  if (error || !data) {
+    return NextResponse.json(
+      { error: error?.message ?? "Failed to create lead." },
+      { status: 500 }
+    );
+  }
+
+  const response: LeadOut = {
+    id: data.id,
+    first: data.first ?? "",
+    last: data.last ?? "",
+    email: data.email ?? "",
+    phone: fmtPhone(data.phone),
+    stage: data.stage ?? null,
+  };
+
+  return NextResponse.json({ lead: response }, { status: 201 });
 }

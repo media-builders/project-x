@@ -1,12 +1,28 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import {
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
 import CallButton from "@/components/settings/setup/CallButton";
-import { Search, ChevronUp, ChevronDown, Plus, Trash2 } from "lucide-react";
+import {
+  Search,
+  ChevronUp,
+  ChevronDown,
+  Plus,
+  Trash2,
+  UserPlus,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import LeadProfile from "@/components/leads/LeadProfile";
 import ImportButton from "@/components/settings/setup/ImportButton";
+import { Label } from "@/components/ui/label";
+import { Modal } from "@/components/ui/modal";
 
 type Lead = {
   id: string;
@@ -23,6 +39,22 @@ type SortKey = "first" | "last" | "email" | "phone" | "stage";
 const TABLE_COLUMNS: SortKey[] = ["first", "last", "email", "phone", "stage"];
 const FILTER_COLUMNS: SortKey[] = ["first", "last", "email", "phone", "stage"];
 
+type NewLeadForm = {
+  first: string;
+  last: string;
+  email: string;
+  phone: string;
+  stage: string;
+};
+
+const EMPTY_LEAD: NewLeadForm = {
+  first: "",
+  last: "",
+  email: "",
+  phone: "",
+  stage: "",
+};
+
 export default function LeadsTable() {
   const [rows, setRows] = useState<Lead[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
@@ -36,6 +68,10 @@ export default function LeadsTable() {
     phone: [],
     stage: [],
   });
+  const [showAddLead, setShowAddLead] = useState(false);
+  const [creatingLead, setCreatingLead] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [newLead, setNewLead] = useState<NewLeadForm>(EMPTY_LEAD);
 
   const [sortBy, setSortBy] = useState<SortKey>("first");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
@@ -249,6 +285,65 @@ export default function LeadsTable() {
     deleteLeads(selected);
   };
 
+  const openAddLeadModal = () => {
+    setShowAddLead(true);
+    setNewLead(EMPTY_LEAD);
+    setCreateError(null);
+  };
+
+  const closeAddLeadModal = () => {
+    setShowAddLead(false);
+    setCreatingLead(false);
+    setNewLead(EMPTY_LEAD);
+    setCreateError(null);
+  };
+
+  const handleLeadFieldChange =
+    (field: keyof NewLeadForm) => (e: ChangeEvent<HTMLInputElement>) => {
+      const { value } = e.target;
+      setNewLead((prev) => ({ ...prev, [field]: value }));
+    };
+
+  const handleCreateLead = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const payload = {
+      first: newLead.first.trim(),
+      last: newLead.last.trim(),
+      email: newLead.email.trim(),
+      phone: newLead.phone.trim(),
+      stage: newLead.stage.trim(),
+    };
+
+    if (!payload.first && !payload.last) {
+      setCreateError("Enter at least a first or last name.");
+      return;
+    }
+
+    setCreatingLead(true);
+    setCreateError(null);
+
+    try {
+      const res = await fetch("/api/leads/db", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lead: payload }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data.error || `Create failed (${res.status})`);
+      }
+
+      await loadFromDb();
+      closeAddLeadModal();
+    } catch (e: any) {
+      console.error(e);
+      setCreateError(e?.message ?? "Failed to add lead.");
+    } finally {
+      setCreatingLead(false);
+    }
+  };
+
   return (
     <div className="">
       <div className="pb-4 border-b border-gray-800 mb-5">
@@ -273,7 +368,16 @@ export default function LeadsTable() {
             />
           </div>
         </form>
-        <div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={openAddLeadModal}
+            className="flex items-center gap-2"
+          >
+            <UserPlus className="h-4 w-4" />
+            Add lead
+          </Button>
           <ImportButton onImported={loadFromDb} />
         </div>
         <div className="flex items-center space-x-4">
@@ -406,6 +510,93 @@ export default function LeadsTable() {
           </table>
         </div>
       </div>
+
+      <Modal isOpen={showAddLead} onClose={closeAddLeadModal} className="max-w-lg">
+        <div className="p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Add lead
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Fill in the details below to create a new lead manually.
+          </p>
+
+          <form onSubmit={handleCreateLead} className="mt-6 space-y-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1">
+                <Label htmlFor="lead-first">First name</Label>
+                <Input
+                  id="lead-first"
+                  value={newLead.first}
+                  onChange={handleLeadFieldChange("first")}
+                  placeholder="Jane"
+                  autoComplete="given-name"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="lead-last">Last name</Label>
+                <Input
+                  id="lead-last"
+                  value={newLead.last}
+                  onChange={handleLeadFieldChange("last")}
+                  placeholder="Doe"
+                  autoComplete="family-name"
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="lead-email">Email</Label>
+              <Input
+                id="lead-email"
+                type="email"
+                value={newLead.email}
+                onChange={handleLeadFieldChange("email")}
+                placeholder="jane@example.com"
+                autoComplete="email"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="lead-phone">Phone</Label>
+              <Input
+                id="lead-phone"
+                type="tel"
+                value={newLead.phone}
+                onChange={handleLeadFieldChange("phone")}
+                placeholder="(555) 123-4567"
+                autoComplete="tel"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="lead-stage">Stage</Label>
+              <Input
+                id="lead-stage"
+                value={newLead.stage}
+                onChange={handleLeadFieldChange("stage")}
+                placeholder="New Lead"
+              />
+            </div>
+
+            {createError && (
+              <p className="text-sm text-red-500" role="alert">
+                {createError}
+              </p>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={closeAddLeadModal}
+                disabled={creatingLead}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={creatingLead}>
+                {creatingLead ? "Saving..." : "Save lead"}
+              </Button>
+            </div>
+          </form>
+        </div>
+      </Modal>
     </div>
   );
 }
