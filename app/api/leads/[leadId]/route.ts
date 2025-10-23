@@ -12,6 +12,7 @@ type Row = {
   ended_at: string | null;
   duration_sec: number | null;
   transcript: unknown | null;
+  analysis: Record<string, unknown> | null;
   dynamic_variables: Record<string, any> | null;
 };
 
@@ -152,6 +153,7 @@ export async function GET(
 
   const calls = Array.from(byConv.values()).map((r) => {
     const dv = (r as any).dynamic_variables || {};
+    const analysis = (r as any).analysis || null;
     const utcISO: string | null =
       (typeof (dv as any).system__time_utc === "string" && (dv as any).system__time_utc) ||
       r.started_at ||
@@ -169,6 +171,7 @@ export async function GET(
       date_time_utc: utcISO,
       duration_seconds: dur,
       transcript: r.transcript ?? null,
+      analysis: analysis,
     };
   });
 
