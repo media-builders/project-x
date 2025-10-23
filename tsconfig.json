@@ -9,7 +9,7 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
-    "types": ["node", "next"],
+    //"types": ["node", "next"],
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,

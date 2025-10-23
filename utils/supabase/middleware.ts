@@ -35,7 +35,12 @@ export async function updateSession(request: NextRequest) {
     } = await supabase.auth.getUser()
     const url = request.nextUrl.clone()
 
-    if (request.nextUrl.pathname.startsWith('/webhook')) {
+    // Allow public webhook callbacks (no auth/cookie context available on provider calls)
+    const path = request.nextUrl.pathname
+    if (
+        path.startsWith('/api/outbound-calls/webhook') ||
+        path.startsWith('/webhook') // legacy/alternate root path if used elsewhere
+    ) {
         return supabaseResponse
     }
 
