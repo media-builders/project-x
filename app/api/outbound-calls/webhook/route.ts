@@ -38,7 +38,7 @@ function extractELConversationId(evt: any, dyn: any) {
       evt?.conversation_id,
       evt?.data?.conversation_id,
       evt?.conversation?.conversation_id,
-      dyn?.conversation_id, // if you ever pass it yourself (not typical)
+      dyn?.conversation_id, 
     ].filter((v) => typeof v === "string") as string[];
 
     const found = candidates.find((c) => c.startsWith("conv_"));
