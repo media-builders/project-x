@@ -262,9 +262,59 @@ function buildEventPayload(evt: any, dyn: any) {
     dyn?.location
   );
 
-  const attendees = normalizeAttendees(
+  let attendees = normalizeAttendees(
     first(eventRaw.attendees, evt?.attendees, dyn?.attendees)
   );
+
+  const leadEmailCandidate = first(
+    eventRaw?.leadEmail,
+    eventRaw?.lead_email,
+    eventRaw?.Lead_Email,
+    evt?.leadEmail,
+    evt?.lead_email,
+    evt?.Lead_Email,
+    evt?.lead?.email,
+    evt?.Lead?.Email,
+    dyn?.leadEmail,
+    dyn?.lead_email,
+    dyn?.Lead_Email,
+    dyn?.lead?.email
+  );
+
+  const extraAttendeeSources = [
+    first(
+      eventRaw?.attendeeEmails,
+      eventRaw?.attendee_emails,
+      evt?.attendeeEmails,
+      evt?.attendee_emails,
+      dyn?.attendeeEmails,
+      dyn?.attendee_emails
+    ),
+    leadEmailCandidate,
+    first(
+      evt?.contactEmail,
+      evt?.contact_email,
+      dyn?.contactEmail,
+      dyn?.contact_email
+    ),
+  ];
+
+  for (const source of extraAttendeeSources) {
+    const normalized = normalizeAttendees(source);
+    if (!normalized?.length) continue;
+
+    if (!attendees) attendees = [];
+    for (const attendee of normalized) {
+      const emailLower = attendee.email.toLowerCase();
+      if (!attendees.some((a) => a.email.toLowerCase() === emailLower)) {
+        attendees.push(attendee);
+      }
+    }
+  }
+
+  if (attendees && attendees.length === 0) {
+    attendees = undefined;
+  }
 
   const colorId = first<string>(eventRaw.colorId, eventRaw.color_id, dyn?.color_id);
   const visibility = first<string>(
