@@ -325,13 +325,22 @@ function buildEventPayload(evt: any, dyn: any) {
 
   const reminders = first<any>(eventRaw.reminders, dyn?.reminders);
   const recurrence = first<string[]>(eventRaw.recurrence, dyn?.recurrence);
-  const notifyGuests = coerceBoolean(
-    first(eventRaw.notifyGuests, evt?.notifyGuests, dyn?.notifyGuests)
-  );
 
-  const createConference = coerceBoolean(
-    first(eventRaw.createConference, evt?.createConference, dyn?.createConference)
+  const notifyGuestsRaw = first(eventRaw.notifyGuests, evt?.notifyGuests, dyn?.notifyGuests);
+  let notifyGuests = coerceBoolean(notifyGuestsRaw);
+  if (notifyGuests === undefined && notifyGuestsRaw === undefined) {
+    notifyGuests = true;
+  }
+
+  const createConferenceRaw = first(
+    eventRaw.createConference,
+    evt?.createConference,
+    dyn?.createConference
   );
+  let createConference = coerceBoolean(createConferenceRaw);
+  if (createConference === undefined && createConferenceRaw === undefined) {
+    createConference = true;
+  }
 
   const startRaw = first<DateLike>(
     eventRaw.start,
@@ -420,25 +429,93 @@ function buildEventPayload(evt: any, dyn: any) {
 
 export async function POST(req: NextRequest) {
   try {
+    const raw = await req.text();
+    let evt: any = {};
+    if (raw) {
+      try {
+        evt = JSON.parse(raw);
+      } catch {
+        return NextResponse.json({ error: "Invalid JSON payload." }, { status: 400 });
+      }
+    }
+
+    if (!evt || typeof evt !== "object") {
+      return NextResponse.json({ error: "Invalid JSON payload." }, { status: 400 });
+    }
+
+    const embeddedHeaders = new Map<string, string>();
+    const ingestHeader = (name: unknown, value: unknown) => {
+      if (name === undefined || name === null) return;
+      if (value === undefined || value === null) return;
+      const key = String(name).trim();
+      if (!key) return;
+      embeddedHeaders.set(key.toLowerCase(), String(value).trim());
+    };
+
+    const processHeaders = (source: unknown): void => {
+      if (!source) return;
+
+      if (Array.isArray(source)) {
+        for (const entry of source) processHeaders(entry);
+        return;
+      }
+
+      if (typeof source === "string") {
+        const trimmed = source.trim();
+        if (!trimmed) return;
+        try {
+          const parsed = JSON.parse(trimmed);
+          processHeaders(parsed);
+          return;
+        } catch {
+          // fall through and treat as newline-separated header list
+        }
+        for (const line of trimmed.split(/\r?\n/)) {
+          const idx = line.indexOf(":");
+          if (idx === -1) continue;
+          const key = line.slice(0, idx);
+          const val = line.slice(idx + 1);
+          ingestHeader(key, val);
+        }
+        return;
+      }
+
+      if (typeof source === "object") {
+        const record: Record<string, unknown> = source as Record<string, unknown>;
+        const recordAny: any = record;
+        const explicitName = first<string>(recordAny?.name, recordAny?.key, recordAny?.header);
+        const explicitValue = first(recordAny?.value, recordAny?.val, recordAny?.headerValue);
+        if (explicitName !== undefined || explicitValue !== undefined) {
+          ingestHeader(explicitName, explicitValue);
+          return;
+        }
+        for (const [name, value] of Object.entries(record)) {
+          ingestHeader(name, value);
+        }
+      }
+    };
+
+    processHeaders((evt as any).__IMTHEADERS__);
+
+    const getHeader = (name: string) => {
+      const lowered = name.toLowerCase();
+      return req.headers.get(name) ?? embeddedHeaders.get(lowered) ?? null;
+    };
+
     if (WEBHOOK_SECRET) {
       const provided =
-        req.headers.get("x-elevenlabs-signature") ??
-        req.headers.get("x-elevenlabs-secret") ??
-        req.headers.get("x-webhook-secret");
+        getHeader("x-elevenlabs-signature") ||
+        getHeader("x-elevenlabs-secret") ||
+        getHeader("x-webhook-secret");
       if (provided !== WEBHOOK_SECRET) {
         return NextResponse.json({ error: "Unauthorized webhook caller." }, { status: 401 });
       }
     }
 
-    const evt = await req.json().catch(() => ({}));
-    if (!evt || typeof evt !== "object") {
-      return NextResponse.json({ error: "Invalid JSON payload." }, { status: 400 });
-    }
-
     const dyn = extractDyn(evt);
 
     const userId = first<string>(
-      req.headers.get("user_id"),
+      getHeader("user_id"),
       evt?.user_id,
       evt?.userId,
       evt?.user?.id,
@@ -449,6 +526,8 @@ export async function POST(req: NextRequest) {
     );
 
     const userEmail = first<string>(
+      evt?.Lead_Email,
+      getHeader("user_email"),
       evt?.user?.email,
       evt?.email,
       evt?.user_email,
