@@ -1,4 +1,5 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 
 export function createClient() {
@@ -24,4 +25,9 @@ export function createClient() {
       },
     }
   );
+}
+
+// ✅ Add this helper for Route Handlers
+export function createRouteClient() {
+  return createRouteHandlerClient({ cookies });
 }
