@@ -35,6 +35,24 @@ export default function CallButton({ selectedLeads }: { selectedLeads: Lead[] })
       }
 
       const data = await res.json();
+      // Build a clean, user-friendly message without undefined values.
+      const selected = selectedLeads?.[0] ?? ({} as Partial<Lead>);
+      const agentNumber = data.from_number ?? data.agent_number ?? "";
+      const leadName =
+        data.lead_name ||
+        [selected.first, selected.last].filter(Boolean).join(" ") ||
+        (selected as any).name ||
+        "Unknown Lead";
+      const leadEmail = data.lead_email ?? selected.email ?? "";
+      const leadNumber = data.called_number ?? data.lead_number ?? selected.phone ?? "";
+      const lines = [
+        `${agentNumber || "Unknown Caller"} - Calling Lead`,
+        leadName,
+        leadEmail,
+        leadNumber,
+      ].filter(Boolean);
+      alert(lines.join("\n"));
+      return;
       alert(
         `${data.agent_number} — Calling Lead\n` +
         `${data.lead_name}\n` +
