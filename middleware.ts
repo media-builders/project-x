@@ -9,15 +9,8 @@ const PUBLIC_FILE = /\.(.*)$/i;
 const PUBLIC_API_PREFIXES = [
   "/api/outbound-calls/webhook",              // ElevenLabs unified webhook (init + post-call)
   "/api/elevenlabs/webhook",                  // (alt path if you switch later)
-  "/api/elevenlabs/calendar-webhook",         // ✅ allow Google Calendar webhook
   "/api/elevenlabs-agent/twilio-call-inspect",
   "/api/twilio-call-inspect",
-];
-
-// Internal-allowed API endpoints when secret header is present
-const INTERNAL_ALLOWED_PREFIXES = [
-  "/api/outbound-calls",
-  "/api/outbound-calls/queue",
 ];
 
 // Public pages (no auth)
@@ -46,18 +39,6 @@ export async function middleware(req: NextRequest) {
 
   // 3) Bypass auth for webhook + public API endpoints
   if (startsWithAny(pathname, PUBLIC_API_PREFIXES)) {
-    return NextResponse.next();
-  }
-
-  // 3b) Allow internal server-to-server queue calls when secret header is valid
-  const internalSecret =
-    process.env.INTERNAL_QUEUE_SECRET || process.env.QUEUE_INTERNAL_SECRET || "";
-  const provided = req.headers.get("x-internal-queue-secret") || "";
-  if (
-    internalSecret &&
-    provided === internalSecret &&
-    startsWithAny(pathname, INTERNAL_ALLOWED_PREFIXES)
-  ) {
     return NextResponse.next();
   }
 
@@ -98,9 +79,6 @@ export async function middleware(req: NextRequest) {
   return res;
 }
 
-// Match everything except Next internals & obvious static files
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|gif|ico|css|js|map)).*)",
-  ],
+  matcher: [],
 };
