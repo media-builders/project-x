@@ -98,13 +98,14 @@ export async function GET(request: Request) {
   const forwardedHost = request.headers.get("x-forwarded-host");
   const isLocalEnv = process.env.NODE_ENV === "development";
 
+  // ✅ Always go to /dashboard on same host
   if (isLocalEnv) {
-    return NextResponse.redirect(`${origin}${next}`);
+    return NextResponse.redirect(`${origin}/dashboard`);
   }
 
   if (forwardedHost) {
-    return NextResponse.redirect(`https://${forwardedHost}${next}`);
+    return NextResponse.redirect(`https://${forwardedHost}/dashboard`);
   }
 
-  return NextResponse.redirect(`${origin}${next}`);
+  return NextResponse.redirect(`${origin}/dashboard`);
 }
