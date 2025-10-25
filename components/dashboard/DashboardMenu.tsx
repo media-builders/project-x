@@ -192,7 +192,7 @@ export default function DashboardMenu({
                       Calls
                     </span>
                   </motion.li>
-                  <motion.li
+                  {/* <motion.li
                     className={`submenu-item ${displayTab === 'leads-campaigns' ? 'is-active' : ''}`}
                     onClick={() => onTabChange('leads-campaigns')}
                     initial={{ opacity: 0, x: -10 }}
@@ -204,7 +204,7 @@ export default function DashboardMenu({
                       <CampaignsIcon aria-hidden="true" className="menu-icon" />
                       Campaigns
                     </span>
-                  </motion.li>
+                  </motion.li> */}
                   {/* <motion.li
                   className={`submenu-item ${displayTab === "leads-form" ? "is-active" : ""}`}
                   onClick={() => onTabChange("leads-form")}
@@ -220,7 +220,7 @@ export default function DashboardMenu({
             </AnimatePresence>
 
             {/* Agents */}
-            <li
+            {/* <li
               className={`menu-item ${displayTab === 'dialer' ? 'is-active' : ''}`}
               onClick={() => onTabChange('dialer')}
             >
@@ -228,10 +228,10 @@ export default function DashboardMenu({
                 <AgentsIcon aria-hidden="true" className="menu-icon" />
                 Agents
               </span>
-            </li>
+            </li> */}
 
             {/* Google Mail */}
-            <li
+            {/* <li
               className={`menu-item ${displayTab === 'google-mail' ? 'is-active' : ''}`}
               onClick={() => onTabChange('google-mail')}
             >
@@ -239,7 +239,7 @@ export default function DashboardMenu({
                 <MailIcon aria-hidden="true" className="menu-icon" />
                 Mail
               </span>
-            </li>
+            </li> */}
 
             {/* Calendar */}
             <li
@@ -253,7 +253,7 @@ export default function DashboardMenu({
             </li>
 
             {/* Google Drive */}
-            <li
+            {/* <li
               className={`menu-item ${displayTab === 'google-drive' ? 'is-active' : ''}`}
               onClick={() => onTabChange('google-drive')}
             >
@@ -261,10 +261,10 @@ export default function DashboardMenu({
                 <FilesIcon aria-hidden="true" className="menu-icon" />
                 Files
               </span>
-            </li>
+            </li> */}
           </ul>
 
-          <LeadsShortcutWindow />
+          {/* <LeadsShortcutWindow /> */}
         </div>
         <ul className="menu-list">
           <AnimatePresence initial={false}>

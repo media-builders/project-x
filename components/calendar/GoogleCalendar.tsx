@@ -328,7 +328,7 @@ const GoogleCalendar: React.FC = () => {
           />
         </div>
 
-        <EventModal
+        {/* <EventModal
           selectedEvent={selectedEvent}
           selectedCalendarId={selectedCalendarId}
           setSelectedCalendarId={setSelectedCalendarId}
@@ -362,7 +362,7 @@ const GoogleCalendar: React.FC = () => {
           onClose={resetModalFields}
           notifyGuests={notifyGuests}
           setNotifyGuests={setNotifyGuests}
-        />
+        /> */}
       </div>
     </div>
   );
