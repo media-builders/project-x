@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import BNLogo from "@/public/images/brokernest/SVG/BrokerNest - Logo - WhiteLogo.svg";
-import Wave from "@/components/frontend/graphics/Wave";
 
 export default function LogoIntroOverlay() {
   const [done, setDone] = useState(false);
@@ -108,7 +107,6 @@ export default function LogoIntroOverlay() {
           mixBlendMode: "screen",
         }}
       >
-        {/* <Wave /> */}
       </div>
 
       {/* RGB Bloom Layer */}
