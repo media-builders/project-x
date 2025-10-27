@@ -93,13 +93,26 @@ function normalizeInstant(input: DateLike | undefined) {
     }
   };
 
+  // Core adjustment logic
+  const addFourHoursIfUTC = (iso: string | undefined) => {
+    if (!iso) return undefined;
+    // Only adjust if explicitly UTC (ends with Z)
+    if (iso.endsWith("Z")) {
+      const date = new Date(iso);
+      date.setHours(date.getHours() + 4);
+      return date.toISOString();
+    }
+    return iso;
+  };
+
   if (typeof input === "string" || typeof input === "number" || input instanceof Date) {
     const asString = String(input);
     if (isAllDayDate(asString)) {
       return { date: asString };
     }
     const iso = toIso(asString);
-    return iso ? { dateTime: iso } : undefined;
+    const adjustedIso = addFourHoursIfUTC(iso);
+    return adjustedIso ? { dateTime: adjustedIso } : undefined;
   }
 
   if (typeof input === "object") {
@@ -119,14 +132,16 @@ function normalizeInstant(input: DateLike | undefined) {
       (input as any).timestamp
     );
     const iso = dateTimeCandidate ? toIso(dateTimeCandidate) : undefined;
+    const adjustedIso = addFourHoursIfUTC(iso);
     const tz = first<string>(input.timeZone, (input as any).timezone, (input as any).time_zone);
-    if (iso) {
-      return tz ? { dateTime: iso, timeZone: tz } : { dateTime: iso };
+    if (adjustedIso) {
+      return tz ? { dateTime: adjustedIso, timeZone: tz } : { dateTime: adjustedIso };
     }
   }
 
   return undefined;
 }
+
 
 function coerceBoolean(value: any): boolean | undefined {
   if (value === undefined || value === null) return undefined;

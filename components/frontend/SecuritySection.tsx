@@ -10,7 +10,7 @@ export default function SecuritySection() {
     },
     {
       icon: Lock,
-      title: "SOC 2–Aligned Infrastructure",
+      title: "SOC 2 Infrastructure",
       desc: "Encryption in transit and at rest using enterprise-grade cloud standards.",
     },
     {
@@ -36,9 +36,9 @@ export default function SecuritySection() {
           {features.map((f, i) => (
             <div key={i} className="card">
               <div className="security-icon">
-                <f.icon className="h-10 w-10 text-sky-400" />
+                <f.icon className="" />
               </div>
-              <h4 className="card-title">{f.title}</h4>
+              <h3 className="card-title">{f.title}</h3>
               <p className="card-desc">{f.desc}</p>
             </div>
           ))}

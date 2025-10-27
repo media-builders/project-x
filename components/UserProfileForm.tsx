@@ -1,17 +1,20 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { formatE164ToUS } from '@/utils/formatters';
 
 export interface ProfileData {
   name: string;
   email: string;
   crmApiKey: string;
+  phoneNumber?: string;
 }
 
 const defaultProfile: ProfileData = {
   name: '',
   email: '',
   crmApiKey: '',
+  phoneNumber: '',
 };
 
 interface UserProfileFormProps {
@@ -26,36 +29,27 @@ export default function UserProfileForm({ initialData, onProfileSaved }: UserPro
   const [feedback, setFeedback] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!initialData) {
-      return;
-    }
-
+    if (!initialData) return;
     setProfile(initialData);
     setIsLoading(false);
   }, [initialData]);
 
   useEffect(() => {
-    if (initialData) {
-      return;
-    }
+    if (initialData) return;
 
     let isMounted = true;
-
     const fetchProfile = async () => {
       try {
         const response = await fetch('/api/profile');
-
-        if (!response.ok) {
-          throw new Error('Unable to load profile information.');
-        }
+        if (!response.ok) throw new Error('Unable to load profile information.');
 
         const data = (await response.json()) as Partial<ProfileData>;
-
         if (isMounted) {
           setProfile({
             name: data.name ?? '',
             email: data.email ?? '',
             crmApiKey: data.crmApiKey ?? '',
+            phoneNumber: data.phoneNumber ?? '',
           });
         }
       } catch (error) {
@@ -63,14 +57,11 @@ export default function UserProfileForm({ initialData, onProfileSaved }: UserPro
           setFeedback(error instanceof Error ? error.message : 'Failed to load profile.');
         }
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        if (isMounted) setIsLoading(false);
       }
     };
 
     fetchProfile();
-
     return () => {
       isMounted = false;
     };
@@ -91,23 +82,20 @@ export default function UserProfileForm({ initialData, onProfileSaved }: UserPro
     try {
       const response = await fetch('/api/profile', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: profile.name,
           crmApiKey: profile.crmApiKey,
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Unable to save profile.');
-      }
+      if (!response.ok) throw new Error('Unable to save profile.');
 
       const updated: ProfileData = {
         name: profile.name,
         email: profile.email,
         crmApiKey: profile.crmApiKey,
+        phoneNumber: profile.phoneNumber,
       };
 
       setFeedback('Profile updated successfully.');
@@ -132,7 +120,9 @@ export default function UserProfileForm({ initialData, onProfileSaved }: UserPro
     <div className="p-6 max-w-2xl">
       <h2 className="text-lg font-semibold mb-4">Profile</h2>
       {feedback && <p className="mb-4 text-sm text-accent">{feedback}</p>}
+
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Name */}
         <div>
           <label className="block text-sm font-medium mb-1" htmlFor="profile-name">
             Name
@@ -142,11 +132,13 @@ export default function UserProfileForm({ initialData, onProfileSaved }: UserPro
             type="text"
             className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2"
             value={profile.name}
-          onChange={handleChange('name')}
-          placeholder="Enter your name"
-        />
-      </div>
-      <div>
+            onChange={handleChange('name')}
+            placeholder="Enter your name"
+          />
+        </div>
+
+        {/* Email */}
+        <div>
           <label className="block text-sm font-medium mb-1" htmlFor="profile-email">
             Email
           </label>
@@ -161,6 +153,25 @@ export default function UserProfileForm({ initialData, onProfileSaved }: UserPro
             Email updates require contacting support to ensure account security.
           </p>
         </div>
+
+        {/* Phone Number (read-only) */}
+        <div>
+          <label className="block text-sm font-medium mb-1" htmlFor="profile-phone">
+            Phone Number
+          </label>
+          <input
+            id="profile-phone"
+            type="text"
+            className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 opacity-60"
+            value={formatE164ToUS(profile.phoneNumber)}
+            readOnly
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            This number is automatically linked to your account.
+          </p>
+        </div>
+
+        {/* CRM API Key */}
         <div>
           <label className="block text-sm font-medium mb-1" htmlFor="profile-crm-key">
             CRM API Key
@@ -174,6 +185,8 @@ export default function UserProfileForm({ initialData, onProfileSaved }: UserPro
             placeholder="Enter your CRM API key"
           />
         </div>
+
+        {/* Submit Button */}
         <div className="flex justify-end">
           <button
             type="submit"

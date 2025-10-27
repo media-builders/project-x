@@ -8,37 +8,41 @@ export default function BeforeAfterSection() {
     { label: "Stress", before: "High (Burnout & Turnover)", after: "Low (leads qualified)" },
     { label: "Conversion", before: "Inconsistent & Time Tested", after: "Consistent, 3x more appts" },
     { label: "Team Attention & Focus", before: "Cold Calling and Admin Work", after: "Selling, showing & closing" },
-  ]
+  ];
 
   return (
     <section className="landing-section alt comparison floating-pulse">
       <div className="section-container">
-        <h2 className="section-title">
-          Replace Manual Follow-Up with BrokerNest
-        </h2>
+        <h2 className="section-title">Replace Manual Follow-Up with BrokerNest</h2>
         <p className="section-subtitle">The difference of BrokerNest</p>
 
+        {/* ==================== TABLE ==================== */}
         <div className="before-after-table">
-          <div className="table-head">
-            <div className="cell label strong">Aspect</div>
-            <div className="cell before strong">Before BrokerNest</div>
-            <div className="cell after strong">After BrokerNest</div>
+          <div className="table-header">
+            <div className="header-row">
+              <div className="header-cell label">Aspect</div>
+              <div className="header-cell before">Before BrokerNest</div>
+              <div className="header-cell after">After BrokerNest</div>
+            </div>
           </div>
 
-          {rows.map((r, i) => (
-            <div key={i} className="table-row">
-              <div className="cell label">{r.label}</div>
-              <div className="cell before">{r.before}</div>
-              <div className="cell after">{r.after}</div>
-            </div>
-          ))}
+          <div className="table-body">
+            {rows.map((r, i) => (
+              <div key={i} className="table-row">
+                <div className="cell label">{r.label}</div>
+                <div className="cell before">{r.before}</div>
+                <div className="cell after">{r.after}</div>
+              </div>
+            ))}
+          </div>
         </div>
+        {/* ================================================= */}
 
         <p className="section-footer">
-          You and your team shouldn’t be chasing leads — you should be closing more deals. 
-          <br />BrokerNest makes that possible.
+          You and your team shouldn’t be chasing leads — you should be closing more deals. <br />
+          BrokerNest makes that possible.
         </p>
       </div>
     </section>
-  )
+  );
 }

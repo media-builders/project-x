@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Roboto } from "next/font/google";
-import "./globals.css";
+import "./globals-light.css";
 
 {/*prevents hydration error*/}
 import Script from "next/script"; 

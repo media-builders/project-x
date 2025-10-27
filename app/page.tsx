@@ -57,8 +57,8 @@ export default async function LandingPage() {
 
   return (
     <div className="flex flex-col min-h-[100dvh]">
-      <header className="">
-        <div className="header-container gradient">
+      <header className="header-bar">
+        <div className="header-container">
           <Link className="" href="#">
             <Image src="/images/brokernest/SVG/BrokerNest - Logo - WhiteLogo.svg" alt="logo" width={35} height={35} />
             <span className="sr-only">BrokerNest.ai</span>
@@ -80,8 +80,13 @@ export default async function LandingPage() {
             </Link>
           </Button>
         </div>
+        <Button className="call-button" >
+            <Link className="" href="">
+              Call
+            </Link>
+        </Button>
       </header>
-        <Wave />
+        {/* <Wave /> */}
       <main className="no-scroll-bar">
         <HeroSection />
         <IntroSection />

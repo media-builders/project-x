@@ -20,9 +20,9 @@ export default function HeroSection() {
         <h2 className="section-title">
           Your AI-powered inside sales team that calls, qualifies, and books appointments while you focus on selling more.
         </h2>
-        <p className="section-subtitle">
+        <h3 className="section-subtitle">
           Meet BrokerNest — built by experienced real estate industry veterans specifically for professionals like you.
-        </p>
+        </h3>
         <div className="">
           <Button size="lg">Try BrokerNest</Button>
           <Button variant="outline" size="lg">

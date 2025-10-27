@@ -214,96 +214,96 @@ export default function LeadProfile({ leads }: LeadProfileProps) {
   };
 
   return (
-    <div className="bg-[var(--navy-2)] border border-[var(--hairline)] rounded-lg p-4 shadow-sm mb-6 transition-all duration-200">
-      {/* Header with pagination */}
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-semibold text-[var(--txt-1)]">
-          {hasLeads ? `Lead ${index + 1} of ${leads.length}` : "Lead Profile"}
-        </h2>
+    <div className="lead-profile-container">
 
-        {hasLeads && leads.length > 1 && (
-          <div className="flex space-x-2">
-            <Button variant="ghost" size="icon" onClick={prev}>
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={next}>
-              <ChevronRight className="h-5 w-5" />
-            </Button>
-          </div>
-        )}
-      </div>
 
       {/* Content */}
       {hasLeads ? (
-        <div className="animate-fadeIn space-y-4">
-          <div>
-            <p className="text-xl font-medium text-[var(--txt-1)] mb-1">
-              {lead?.first} {lead?.last}
-            </p>
-            <p className="text-[var(--txt-2)] mb-1">
-              Email: <span className="select-all">{lead?.email || "—"}</span>
-            </p>
-            <p className="text-[var(--txt-2)]">
-              Phone: <span className="select-all">{lead?.phone || "—"}</span>
-            </p>
-            <p className="text-[var(--txt-2)] mt-1">
-              Stage:{" "}
-              <span className="font-medium text-[var(--txt-1)]">
-                {lead?.stage?.trim() || "Unassigned"}
-              </span>
-            </p>
+        <div className="animate-fadeIn">
+          <div className="lead-profile">
+            <div className="lead-profile-info">
+              <h2 className="profile-lead-name">
+                {lead?.first} {lead?.last}
+              </h2>
+              
+              <div className="profile-lead-email">
+                <p className="select-all">
+                  {lead?.email || "—"}
+                  </p>
+              </div>
+
+              <div className="profile-lead-phone">
+                <p className="select-all">
+                  {lead?.phone || "—"}
+                  </p>
+              </div>
+
+              <div className="profile-lead-stage">
+                <p className="">
+                  Stage:{" "}
+                </p>
+                <p className="">
+                  {lead?.stage?.trim() || "Unassigned"}
+                </p>
+              </div>
+            </div>
+
+            {/* Header with pagination */}
+            <div className="lead-profile-pagination">
+              {/* <h2 className="text-lg font-semibold text-[var(--txt-1)]">
+                {hasLeads ? `Lead ${index + 1} of ${leads.length}` : "Lead Profile"}
+              </h2> */}
+
+              {hasLeads && leads.length > 1 && (
+                <div className="flex space-x-2">
+                  <Button variant="ghost" size="icon" onClick={prev}>
+                    <ChevronLeft className="h-5 w-5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={next}>
+                    <ChevronRight className="h-5 w-5" />
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="border-t border-[var(--hairline)] pt-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-medium text-[var(--txt-1)] uppercase tracking-wide">
-                  Call History
-                </h3>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleRefresh}
-                  disabled={loadingTranscript || !lead?.id}
-                  title="Refresh transcripts"
-                >
-                  <RefreshCcw
-                    className={`h-4 w-4 ${loadingTranscript ? "animate-spin" : ""}`}
-                  />
-                  <span className="sr-only">Refresh transcripts</span>
-                </Button>
-              </div>
+          <div className="">
+            <div className="lead-profile-header">
+              <Button className="refresh-button" variant="ghost" >
+                <RefreshCcw className={`${loadingTranscript ? "animate-spin" : ""}`} />
+                <span className="">Refresh</span>
+              </Button>
               {activeCall?.durationSeconds ? (
-                <span className="text-xs text-[var(--txt-3)]">
+                <span className="">
                   Duration {formatSeconds(activeCall.durationSeconds)}
                 </span>
               ) : null}
-            </div>
             {activeCall?.dateTimeUtc ? (
-              <p className="text-xs text-[var(--txt-3)] mt-1">
+              <p className="">
                 {new Date(activeCall.dateTimeUtc).toLocaleString()}
               </p>
             ) : null}
+            </div>
 
             {loadingTranscript ? (
-              <p className="text-sm text-[var(--txt-3)] mt-3">Loading call history…</p>
+              <p className="">Loading call history…</p>
             ) : callError ? (
-              <p className="text-sm text-red-400 mt-3" role="alert">
+              <p className="" role="alert">
                 {callError}
               </p>
             ) : leadCalls.length === 0 ? (
-              <p className="text-sm text-[var(--txt-3)] mt-3">
+              <p className="">
                 No call history available for this lead yet.
               </p>
             ) : (
               <div className="lead-history-container">
                 <div className="lead-conversations-container no-scroll-bar">
-                  <table className="min-w-full text-sm text-[var(--txt-2)]">
-                    <thead className="bg-[var(--navy-3,#1e2a45)]/40 text-[var(--txt-3)] uppercase text-xs">
+                  <table className="">
+                    <thead className="">
                       <tr>
-                        <th className="px-3 py-2 text-left font-medium">Conversation</th>
-                        <th className="px-3 py-2 text-left font-medium">Date</th>
-                        <th className="px-3 py-2 text-left font-medium">Duration</th>
+                        <th className="">Conversation</th>
+                        <th className="">Date</th>
+                        <th className="">Duration</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -322,20 +322,20 @@ export default function LeadProfile({ leads }: LeadProfileProps) {
                                 : "hover:bg-[rgba(73,179,255,0.08)]"
                             }`}
                           >
-                            <td className="px-3 py-2 align-top">
-                              <div className="font-medium">{displayTitle}</div>
+                            <td className="">
+                              <div className="f">{displayTitle}</div>
                               {call.summaryBody ? (
-                                <p className="text-xs text-[var(--txt-3)] mt-0.5">
+                                <p className="">
                                   {call.summaryBody}
                                 </p>
                               ) : null}
                             </td>
-                            <td className="px-3 py-2 align-top">
+                            <td className="">
                               {call.dateTimeUtc
                                 ? new Date(call.dateTimeUtc).toLocaleString()
                                 : "—"}
                             </td>
-                            <td className="px-3 py-2 align-top">
+                            <td className="">
                               {formatSeconds(call.durationSeconds) ?? "—"}
                             </td>
                           </tr>
@@ -349,10 +349,10 @@ export default function LeadProfile({ leads }: LeadProfileProps) {
                   <div className="lead-transcript-container no-scroll-bar">
                     {activeCall.summaryBody ? (
                       <div className="lead-transcript-summary">
-                        <h4 className="text-sm font-semibold text-[var(--txt-1)]">
+                        <h4 className="">
                           Summary
                         </h4>
-                        <p className="text-sm text-[var(--txt-2)] whitespace-pre-wrap mt-1">
+                        <p className="">
                           {activeCall.summaryBody}
                         </p>
                       </div>
@@ -365,41 +365,42 @@ export default function LeadProfile({ leads }: LeadProfileProps) {
                             turn.role === "agent"
                               ? "Agent"
                               : turn.role === "user"
-                              ? "Lead"
+                              ? `${lead?.first || ''}`.trim() || "Lead"
                               : turn.role || "Unknown";
                           const timeLabel = formatSeconds(turn.time_in_call_secs);
                           return (
-                            <div key={`${turn.role}-${idx}`} className="space-y-1">
-                              <div className="flex items-center justify-between text-xs text-[var(--txt-3)]">
-                                <span className="font-semibold uppercase tracking-wide">
+                            <div key={`${turn.role}-${idx}`} className="role-message">
+                              <p className="message">
+                                {turn.message || "—"}
+                              </p>
+                              <div className="time-stamp">
+                                <span className="role">
                                   {roleLabel}
                                 </span>
                                 {timeLabel ? <span>{timeLabel}</span> : null}
                               </div>
-                              <p className="text-sm text-[var(--txt-1)] whitespace-pre-wrap">
-                                {turn.message || "—"}
-                              </p>
                             </div>
                           );
                         })
                       ) : (
-                        <p className="text-sm text-[var(--txt-3)]">
+                        <p className="">
                           Transcript not available for this conversation.
                         </p>
                       )}
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm text-[var(--txt-3)]">
+                  <p className="">
                     Select a conversation to view its transcript.
                   </p>
                 )}
               </div>
             )}
           </div>
+
         </div>
       ) : (
-        <div className="animate-fadeIn text-[var(--txt-3)] italic text-center py-6">
+        <div className="animate-fadeIn">
           Select one or more leads to view details here.
         </div>
       )}

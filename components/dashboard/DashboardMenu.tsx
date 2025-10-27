@@ -151,7 +151,7 @@ export default function DashboardMenu({
           />
         </div>
         <div className="bn-title">
-          <h1>BrokerNest</h1>
+          <h3>BrokerNest</h3>
         </div>
       </div>
       <div className="menu-container">
@@ -365,7 +365,7 @@ export default function DashboardMenu({
             className={`menu-item ${userSubmenuActive ? 'has-active-submenu' : ''}`}
             onClick={() => handleParentClick('user')}
           >
-            <UserClient className="menu-item" />
+            <UserClient className="" />
           </li>
         </ul>
       </div>

@@ -94,22 +94,24 @@ export default function LogoIntroOverlay() {
         willChange: "transform, opacity, filter",
       }}
     >
-      {/* 🌊 Animated Wave Background (replaces radial gradient) */}
+      {/* Animated Wave Background (replaces radial gradient) */}
       <div
         ref={bgRef}
         style={{
           position: "absolute",
           inset: 0,
           opacity: 0,
+          background:
+            "radial-gradient(circle at 50% 50%, rgba(0,0,0,0.08) 0%, transparent 70%)",
           willChange: "opacity",
           zIndex: 1,
           mixBlendMode: "screen",
         }}
       >
-        <Wave />
+        {/* <Wave /> */}
       </div>
 
-      {/* 💫 RGB Bloom Layer */}
+      {/* RGB Bloom Layer */}
       <div
         style={{
           position: "absolute",
