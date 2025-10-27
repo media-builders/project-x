@@ -17,7 +17,6 @@ import ROICalculator from "@/components/frontend/ROICalculator"
 import TestimonialsSection from "@/components/frontend/TestimonialsSection"
 import FAQSection from "@/components/frontend/FAQSection"
 import SecuritySection from "@/components/frontend/SecuritySection"
-import Wave from "@/components/frontend/graphics/Wave"
 
 
 
@@ -86,7 +85,6 @@ export default async function LandingPage() {
             </Link>
         </Button>
       </header>
-        {/* <Wave /> */}
       <main className="no-scroll-bar">
         <HeroSection />
         <IntroSection />
