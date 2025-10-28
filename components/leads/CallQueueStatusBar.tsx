@@ -90,8 +90,8 @@ export default function CallQueueStatusBar() {
   }
 
   return (
-    <div className="mb-4 rounded-md border border-primary/40 bg-primary/10 p-4 text-sm text-primary-foreground/90 shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+    <div className="call-queue-container">
+      <div className="">
         <div>
           <p className="font-medium text-primary-foreground">
             {showActive
@@ -137,9 +137,6 @@ export default function CallQueueStatusBar() {
           Last message: &ldquo;{latestTranscript}&rdquo;
         </p>
       )}
-      {showActive && status?.error && !scheduledFuture && (
-        <p className="mt-2 text-xs text-red-300">Last error: {status.error}</p>
-      )}
       <p className="mt-2 text-xs text-primary-foreground/70">
         Completed {showActive ? completed : 0}
       </p>
@@ -149,8 +146,8 @@ export default function CallQueueStatusBar() {
           : showActive
           ? scheduledFuture
             ? "Queue will start automatically at the scheduled time."
-            : "Queue will remain visible until all calls complete."
-          : "Start a call queue to populate this section."}
+            : "Calling List"
+          : "No calls scheduled."}
       </p>
     </div>
   );

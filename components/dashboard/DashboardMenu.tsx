@@ -273,7 +273,7 @@ export default function DashboardMenu({
             {isUserMenuOpen && (
               <motion.ul
                 key="user-submenu"
-                className="submenu-list"
+                className="profilemenu-list"
                 initial={{ height: 0, opacity: 0, y: -5 }}
                 animate={{ height: 'auto', opacity: 1, y: 0 }}
                 exit={{ height: 0, opacity: 0, y: -5 }}
