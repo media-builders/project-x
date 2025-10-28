@@ -23,35 +23,62 @@ export async function POST(req: NextRequest) {
     const SUPABASE_URL = assertEnv("NEXT_PUBLIC_SUPABASE_URL");
     const SUPABASE_ANON = assertEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
 
-    const body = await req.json().catch(() => ({}));
-    const leads: LeadIn[] = body?.leads || [];
-
-    const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON, {
-      cookies: {
-        getAll: () =>
-          req.cookies.getAll().map((cookie) => ({
-            name: cookie.name,
-            value: cookie.value,
-          })),
-        setAll: () => {},
-      },
-    });
-
-    const {
-      data: { user },
-      error: authErr,
-    } = await supabase.auth.getUser();
-
-    if (authErr || !user) {
+    const queueSecret = process.env.QUEUE_API_KEY ?? "";
+    const providedQueueKey = req.headers.get("x-queue-key");
+    if (providedQueueKey && (!queueSecret || providedQueueKey !== queueSecret)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (!user.email) {
-      return NextResponse.json({ error: "User email missing" }, { status: 400 });
+    const body = await req.json().catch(() => ({}));
+    const leads: LeadIn[] = body?.leads || [];
+    if (!leads.length) {
+      return NextResponse.json({ error: "No leads provided." }, { status: 400 });
     }
 
-    const dbUser = await fetchUserByEmailOrThrow(user.email);
-    const userId = dbUser.id;
+    const isQueueRequest = !!queueSecret && providedQueueKey === queueSecret;
+    let userId: string;
+
+    if (isQueueRequest) {
+      const overrideUserId =
+        (body?.user_id as string | undefined) ??
+        (body?.userId as string | undefined) ??
+        (body?.userID as string | undefined);
+
+      if (!overrideUserId) {
+        return NextResponse.json(
+          { error: "Missing user_id for queue invocation." },
+          { status: 400 }
+        );
+      }
+      userId = overrideUserId;
+    } else {
+      const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON, {
+        cookies: {
+          getAll: () =>
+            req.cookies.getAll().map((cookie) => ({
+              name: cookie.name,
+              value: cookie.value,
+            })),
+          setAll: () => {},
+        },
+      });
+
+      const {
+        data: { user },
+        error: authErr,
+      } = await supabase.auth.getUser();
+
+      if (authErr || !user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+
+      if (!user.email) {
+        return NextResponse.json({ error: "User email missing" }, { status: 400 });
+      }
+
+      const dbUser = await fetchUserByEmailOrThrow(user.email);
+      userId = dbUser.id;
+    }
 
     /**Checking Plan Quota
     const plan = dbUser.plan || "Basic";
@@ -76,6 +103,7 @@ export async function POST(req: NextRequest) {
     }**/
 
     const context = await fetchOutboundContextOrThrow(userId);
+
     const lead: LeadIn = leads?.[0] ?? {};
 
     const result = await initiateOutboundCall(context, lead);

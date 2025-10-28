@@ -261,10 +261,7 @@ export default function AgentProfile() {
         const isOpen = openMenu[agent.agent_id];
 
         return (
-          <div
-            key={agent.agent_id}
-            className="agent-settings-box"
-          >
+          <div key={agent.agent_id} className="agent-settings-box">
             {/* Twilio number */}
             {agent.twilio_number && (
               <div className="mb-3">
@@ -306,7 +303,9 @@ export default function AgentProfile() {
                 />
                 {isOpen && presetNames.length > 0 && (
                   <ul
-                    ref={(el) => (menuRefs.current[agent.agent_id] = el)}
+                    ref={(el) => {
+                      menuRefs.current[agent.agent_id] = el;
+                    }}
                     className="absolute z-20 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-700 bg-gray-800 text-sm text-white shadow-lg"
                     onMouseDown={(e) => e.preventDefault()}
                   >
