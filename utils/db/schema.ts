@@ -89,6 +89,29 @@ export type InsertCallLogsTable = typeof callLogsTable.$inferInsert;
 export type SelectCallLogsTable = typeof callLogsTable.$inferSelect;
 
 // ==========================
+// CALL QUEUE JOBS TABLE
+// ==========================
+export const callQueueJobsTable = pgTable("call_queue_jobs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  user_id: uuid("user_id").notNull(),
+  status: text("status").notNull().default("pending"),
+  total_leads: integer("total_leads").notNull(),
+  initiated: integer("initiated").notNull().default(0),
+  completed: integer("completed").notNull().default(0),
+  failed: integer("failed").notNull().default(0),
+  current_index: integer("current_index"),
+  current_conversation_id: text("current_conversation_id"),
+  current_lead: jsonb("current_lead").$type<any>(),
+  error: text("error"),
+  lead_snapshot: jsonb("lead_snapshot").$type<any>(),
+  created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type InsertCallQueueJob = typeof callQueueJobsTable.$inferInsert;
+export type SelectCallQueueJob = typeof callQueueJobsTable.$inferSelect;
+
+// ==========================
 // AGENT SETTINGS TABLE
 // ==========================
 

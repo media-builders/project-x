@@ -3,7 +3,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/utils/db/db";
 import { callLogsTable } from "@/utils/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -127,6 +127,11 @@ export async function POST(req: NextRequest) {
     const dynForInsert = dyn ?? null;
     const dynForUpdate = dynHasLeadId ? dyn : undefined;
 
+    const metadataUpdate = {
+      elevenlabs_event: type,
+      raw_event_type: evt?.type ?? null,
+    };
+
     await db
       .insert(callLogsTable)
       .values({
@@ -145,10 +150,7 @@ export async function POST(req: NextRequest) {
         cost_cents: first<number>(evt?.billing?.cost_cents, evt?.data?.billing?.cost_cents) ?? null,
         transcript,
         analysis,
-        metadata: {
-          elevenlabs_event: type,
-          raw_event_type: evt?.type ?? null,
-        },
+        metadata: metadataUpdate,
         dynamic_variables: dynForInsert,
       })
       .onConflictDoUpdate({
@@ -167,10 +169,9 @@ export async function POST(req: NextRequest) {
             first<number>(evt?.billing?.cost_cents, evt?.data?.billing?.cost_cents) ?? undefined,
           transcript: transcript ?? undefined,
           analysis: analysis ?? undefined,
-          metadata: {
-            elevenlabs_event: type,
-            raw_event_type: evt?.type ?? null,
-          },
+          metadata: sql`coalesce(${callLogsTable.metadata}, '{}'::jsonb) || ${JSON.stringify(
+            metadataUpdate
+          )}::jsonb`,
           dynamic_variables: dynForUpdate,
         },
       });
