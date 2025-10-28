@@ -18,6 +18,7 @@ import {
 export type QueueStatusResponse = {
   job_id: string;
   status: string;
+  scheduled_start_at: string | null;
   total_leads: number;
   initiated: number;
   completed: number;
@@ -31,13 +32,13 @@ export type QueueStatusResponse = {
   updated_at?: string | null;
 };
 
-export const ACTIVE_QUEUE_STATUSES = new Set(["pending", "running"]);
+export const ACTIVE_QUEUE_STATUSES = new Set(["pending", "running", "scheduled"]);
 
 type CallQueueContextValue = {
   activeJob: StoredQueueJob | null;
   status: QueueStatusResponse | null;
   isPolling: boolean;
-  beginQueue: (jobId: string, total?: number) => void;
+  beginQueue: (jobId: string, total?: number, scheduledAt?: string | null) => void;
   clearQueue: () => void;
   refresh: () => Promise<void>;
 };
@@ -84,7 +85,7 @@ export function CallQueueProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setStoredQueueJob(activeJob);
-  }, [activeJob?.jobId, activeJob?.total]);
+  }, [activeJob?.jobId, activeJob?.total, activeJob?.scheduledAt]);
 
   const pollStatus = useCallback(
     async (jobId: string) => {
@@ -95,6 +96,13 @@ export function CallQueueProvider({ children }: { children: React.ReactNode }) {
         setIsPolling(true);
         const data = await fetchQueueStatus(jobId, controller);
         setStatus(data);
+        if (data.scheduled_start_at) {
+          setActiveJob((prev) => {
+            if (!prev || prev.jobId !== data.job_id) return prev;
+            if (prev.scheduledAt === data.scheduled_start_at) return prev;
+            return { ...prev, scheduledAt: data.scheduled_start_at };
+          });
+        }
 
         if (!ACTIVE_QUEUE_STATUSES.has(data.status)) {
           setActiveJob(null);
@@ -133,7 +141,21 @@ export function CallQueueProvider({ children }: { children: React.ReactNode }) {
       if (cancelled) return;
 
       if (data && ACTIVE_QUEUE_STATUSES.has(data.status)) {
-        pollTimeoutRef.current = setTimeout(run, 4000);
+        let nextDelay = 4000;
+        if (data.status === "scheduled" && data.scheduled_start_at) {
+          const msUntil =
+            new Date(data.scheduled_start_at).getTime() - Date.now();
+          if (!Number.isNaN(msUntil) && msUntil > 0) {
+            if (msUntil > 5 * 60_000) {
+              nextDelay = 60_000;
+            } else if (msUntil > 60_000) {
+              nextDelay = 15_000;
+            } else {
+              nextDelay = Math.max(msUntil, 4000);
+            }
+          }
+        }
+        pollTimeoutRef.current = setTimeout(run, nextDelay);
       }
     };
 
@@ -149,10 +171,13 @@ export function CallQueueProvider({ children }: { children: React.ReactNode }) {
     };
   }, [activeJob?.jobId, pollStatus]);
 
-  const beginQueue = useCallback((jobId: string, total?: number) => {
-    setStatus(null);
-    setActiveJob({ jobId, total });
-  }, []);
+  const beginQueue = useCallback(
+    (jobId: string, total?: number, scheduledAt?: string | null) => {
+      setStatus(null);
+      setActiveJob({ jobId, total, scheduledAt: scheduledAt ?? null });
+    },
+    []
+  );
 
   const clearQueue = useCallback(() => {
     setActiveJob(null);

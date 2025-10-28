@@ -59,6 +59,7 @@ export async function GET(
       {
         job_id: job.id,
         status: job.status,
+        scheduled_start_at: job.scheduled_start_at,
         total_leads: job.total_leads,
         initiated: job.initiated,
         completed: job.completed,

@@ -5,6 +5,7 @@ export const CALL_QUEUE_STORAGE_KEY = "callQueue.activeJob";
 export type StoredQueueJob = {
   jobId: string;
   total?: number;
+  scheduledAt?: string | null;
 };
 
 const isBrowser = typeof window !== "undefined";
@@ -19,6 +20,10 @@ export const getStoredQueueJob = (): StoredQueueJob | null => {
       return {
         jobId: parsed.jobId,
         total: typeof parsed.total === "number" ? parsed.total : undefined,
+        scheduledAt:
+          typeof parsed.scheduledAt === "string" && parsed.scheduledAt.length > 0
+            ? parsed.scheduledAt
+            : null,
       };
     }
   } catch (err) {

@@ -95,6 +95,9 @@ export const callQueueJobsTable = pgTable("call_queue_jobs", {
   id: uuid("id").primaryKey().defaultRandom(),
   user_id: uuid("user_id").notNull(),
   status: text("status").notNull().default("pending"),
+  scheduled_start_at: timestamp("scheduled_start_at", {
+    withTimezone: true,
+  }),
   total_leads: integer("total_leads").notNull(),
   initiated: integer("initiated").notNull().default(0),
   completed: integer("completed").notNull().default(0),

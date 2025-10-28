@@ -19,6 +19,42 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json().catch(() => ({}));
     const leads: LeadIn[] = body?.leads || [];
+    const schedule = body?.schedule ?? null;
+
+    let scheduledStartAt: Date | null = null;
+    if (schedule) {
+      if (typeof schedule.startAt === "string") {
+        const parsed = new Date(schedule.startAt);
+        if (Number.isNaN(parsed.getTime())) {
+          return NextResponse.json(
+            { error: "Invalid schedule.startAt value. Provide ISO 8601 string." },
+            { status: 400 }
+          );
+        }
+        scheduledStartAt = parsed;
+      } else {
+        const startDate = typeof schedule.startDate === "string" ? schedule.startDate : null;
+        const startTime = typeof schedule.startTime === "string" ? schedule.startTime : null;
+        const tzOffset =
+          typeof schedule.timezoneOffset === "string" && schedule.timezoneOffset.length > 0
+            ? schedule.timezoneOffset
+            : "Z";
+        if (startDate) {
+          const isoCandidate = `${startDate}T${startTime ?? "00:00"}${tzOffset}`;
+          const parsed = new Date(isoCandidate);
+          if (Number.isNaN(parsed.getTime())) {
+            return NextResponse.json(
+              {
+                error:
+                  "Invalid schedule startDate/startTime. Provide ISO date (YYYY-MM-DD) and time (HH:mm or HH:mm:ss) in UTC, or send schedule.startAt instead.",
+              },
+              { status: 400 }
+            );
+          }
+          scheduledStartAt = parsed;
+        }
+      }
+    }
 
     if (!leads.length) {
       return NextResponse.json({ error: "No leads provided." }, { status: 400 });
@@ -63,7 +99,11 @@ export async function POST(req: NextRequest) {
       .insert(callQueueJobsTable)
       .values({
         user_id: userId,
-        status: "pending",
+        status:
+          scheduledStartAt && scheduledStartAt.getTime() > Date.now()
+            ? "scheduled"
+            : "pending",
+        scheduled_start_at: scheduledStartAt,
         total_leads: leads.length,
         initiated: 0,
         completed: 0,
@@ -86,8 +126,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         job_id: jobId,
-        status: "pending",
+        status:
+          scheduledStartAt && scheduledStartAt.getTime() > Date.now()
+            ? "scheduled"
+            : "pending",
         total_leads: leads.length,
+        scheduled_start_at: scheduledStartAt?.toISOString() ?? null,
       },
       { status: 202 }
     );
