@@ -282,7 +282,9 @@ export default function AgentProfile() {
             <div className="flex items-center gap-2 mb-4 relative">
               <div className="relative flex-1">
                 <input
-                  ref={(el) => (nameInputRefs.current[agent.agent_id] = el)}
+                  ref={(el) => {
+                    nameInputRefs.current[agent.agent_id] = el;
+                  }}
                   type="text"
                   value={form.presetName}
                   onFocus={() => setOpenMenu((o) => ({ ...o, [agent.agent_id]: true }))}
