@@ -13,6 +13,7 @@
 
       --main-light: #ffffff;
       --main-dark: #000000;
+      --main-light-grey: #f3f3f3; /* light grey base */
       --main-grey: #e1e1e1; /* light grey base */
       --main-dark-grey: #3b3b3b; /* light grey base */
 
@@ -25,8 +26,10 @@
       --accent-strong: var(--theme-color-2); /* deeper electric blue */
       --accent-dark: var(--theme-color-3); /* dark teal */
 
-      --theme-success: var(--accent-strong); /* vibrant blue */
+      --theme-success: var(--accent); /* vibrant blue */
+      --theme-success-strong: var(--accent-strong); /* vibrant blue */
       --theme-error:rgb(176, 38, 38); /* vivid red */
+      --theme-error-strong:rgb(130, 22, 22); /* vivid red */
 
       --navy-1: #06101f; /* Sidebar base */
       --navy-2: rgba(20, 28, 46, 0.95); /* Top panel gradient start */
@@ -96,6 +99,7 @@
 
     /* PADDING */
 
+      --padding-xs: 6px 12px;
       --padding-s: 10px;
       --padding-m: 18px;
       --padding-l: 24px;
@@ -174,12 +178,12 @@ h2 {
 }
 
 h3 {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 600;
 }
 
 h4 {
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 600;
 }
 
@@ -337,11 +341,21 @@ section {
    4. GRIDS
    ========================================================== */
    
+section {
 
+  & .section-grid {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    grid-template-columns: var(--grid-columns-4);
+    gap: 1rem;
+  }
+
+}
 .section-grid {
   display: flex;
   flex-direction: row;
-  justify-content: center;
+  justify-content: flex-start;
   grid-template-columns: var(--grid-columns-4);
   gap: 1rem;
 }
@@ -364,6 +378,23 @@ section {
   text-align: center;
   animation: fadeInUp 0.8s ease both;
   z-index: var(--layer-2);
+  aspect-ratio: 1;
+}
+
+.card-active {
+  aspect-ratio: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: var(--padding-l);
+  border-radius: var(--border-radius-m);
+  background: var(--accent-strong);
+  color: var(--txt-1);
+  justify-content: space-evenly;
+  text-align: center;
+  animation: fadeInUp 0.8s ease both;
+  z-index: var(--layer-2);
+  aspect-ratio: 1;
 }
 
 .card-header {
@@ -477,6 +508,133 @@ nav {
   border-radius: 50px;
   font-weight: 600;
 }
+
+
+/* ────────────────────────────── */
+/* NOTIFICATION TOAST STYLING */
+/* ────────────────────────────── */
+
+.toast-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: var(--layer-5, 9999);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: all;
+  min-width: 260px;
+  max-width: 360px;
+  border-radius: var(--radius-md, 12px);
+  padding: 14px 18px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
+  background: rgba(20, 20, 20, 0.75);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  color: var(--text-primary, #fff);
+  animation: toast-slide-in 0.35s ease forwards;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Variants */
+.toast--success {
+  border-left: 4px solid var(--theme-success, #2ecc71);
+  background: rgba(20, 40, 20, 0.7);
+}
+
+.toast--error {
+  border-left: 4px solid var(--theme-error, #e74c3c);
+  background: rgba(40, 20, 20, 0.7);
+}
+
+.toast--warning {
+  border-left: 4px solid var(--theme-warning, #f1c40f);
+  background: rgba(45, 35, 15, 0.7);
+}
+
+.toast--default {
+  border-left: 4px solid var(--accent, #3498db);
+  background: rgba(30, 30, 40, 0.75);
+}
+
+/* Content Layout */
+.toast-content {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.toast-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-strong, #fff);
+  margin-bottom: 2px;
+}
+
+.toast-message {
+  font-size: 0.85rem;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.85));
+  line-height: 1.4;
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+}
+
+.toast-close:hover {
+  opacity: 0.9;
+  transform: scale(1.1);
+}
+
+.toast-close-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Exit Animation */
+.toast--closing {
+  animation: toast-slide-out 0.35s ease forwards;
+}
+
+/* Animations */
+@keyframes toast-slide-in {
+  from {
+    opacity: 0;
+    transform: translatey(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translatey(0);
+  }
+}
+
+@keyframes toast-slide-out {
+  from {
+    opacity: 1;
+    transform: translatey(0);
+  }
+  to {
+    opacity: 0;
+    transform: translatey(40px);
+  }
+}
+
+
+
 
 /* ────────────────────────────── */
 /* RESPONSIVE BEHAVIOR */
@@ -1496,6 +1654,7 @@ nav {
   display: flex;
   flex-direction: column;
   width: 15vw;
+  min-width: 200px;
   color: var(--txt-1);
 }
 
@@ -3843,3 +4002,93 @@ input.help-center__search-input:focus-visible {
 }
 
 
+
+/* ==========================================
+   AGENT SETTINGS BOX
+   ========================================== */
+
+.agent-settings-box {
+  
+  & .form-input {
+    background: var(--main-light-grey);
+    border: var(--border-thin-light);
+    color: #333333;
+    padding: var(--padding-xs);
+    width: 100%;
+  }
+
+  & .add-preset-button {
+    background: var(--theme-success);
+    color: var(--txt-1);
+
+    &:hover {
+      background-color: var(--theme-success-strong);
+    }
+  }
+
+  & .delete-preset-button {
+    background: var(--theme-error);
+    color: var(--txt-1);
+
+    &:hover {
+      background-color: var(--theme-error-strong);
+    }
+  }
+
+  & .delete-preset-button-active {
+    background: var(--theme-error-strong);
+    color: var(--txt-1);
+
+    &:hover {
+      background-color: var(--theme-error);
+    }
+  }
+
+  & .button-save {
+    background-color: var(--theme-success-strong);
+    color: var(--txt-1);
+
+    &:hover {
+      background-color: var(--theme-success);
+    }
+
+  }
+
+  & .button-delete {
+    background-color: var(--theme-error);
+    color: var(--txt-1);
+
+    &:hover {
+      background-color: var(--theme-error-strong);
+    }
+
+  }
+
+  & .agent-card-title {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--gap-m);
+
+    & svg {
+      width: 50px;
+      height: 50px;
+    }
+  }
+
+  & .agent-card-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    & .agent-name {
+      font-weight: 400;
+    }
+
+    & .agent-title {
+      width: 75%;
+    }
+
+  }
+
+}

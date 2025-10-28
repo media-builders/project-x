@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CalendarEvent, NormalizedCalendarSource } from "../utils/types";
-import { useToast } from "../ToastProvider";
+import { useToast } from "../../notifications/ToastProvider";
 
 type UseGoogleEventsArgs = {
   sources: NormalizedCalendarSource[];

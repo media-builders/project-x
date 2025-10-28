@@ -220,15 +220,15 @@ export default function DashboardMenu({
             </AnimatePresence>
 
             {/* Agents */}
-            {/* <li
-              className={`menu-item ${displayTab === 'dialer' ? 'is-active' : ''}`}
-              onClick={() => onTabChange('dialer')}
+            <li
+              className={`menu-item ${displayTab === 'agent-preferences' ? 'is-active' : ''}`}
+              onClick={() => onTabChange('agent-preferences')}
             >
               <span className="menu-item-content">
                 <AgentsIcon aria-hidden="true" className="menu-icon" />
                 Agents
               </span>
-            </li> */}
+            </li>
 
             {/* Google Mail */}
             {/* <li
@@ -279,7 +279,7 @@ export default function DashboardMenu({
               >
                 <motion.li
                   key="user-profile"
-                  className={`submenu-item ${displayTab === 'user-profile' ? 'is-active' : ''}`}
+                  className={`menu-item ${displayTab === 'user-profile' ? 'is-active' : ''}`}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -10 }}
@@ -287,16 +287,18 @@ export default function DashboardMenu({
                 >
                   <button
                     type="button"
-                    className="flex items-center w-full"
+                    className=""
                     onClick={() => handleUserSelection('user-profile')}
                   >
-                    <UserIcon className="menu-icon" />
-                    <span>Profile</span>
+                    <span className='menu-item-content'>
+                      <UserIcon aria-hidden="true" className="menu-icon" />
+                      Profile
+                    </span>
                   </button>
                 </motion.li>
                 <motion.li
                   key="user-settings"
-                  className={`submenu-item ${isSettingsTab ? 'is-active' : ''}`}
+                  className={`menu-item ${isSettingsTab ? 'is-active' : ''}`}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -10 }}
@@ -304,16 +306,18 @@ export default function DashboardMenu({
                 >
                   <button
                     type="button"
-                    className="flex items-center w-full"
+                    className=""
                     onClick={() => handleUserSelection('settings-general')}
                   >
-                    <SettingsIcon className="menu-icon" />
-                    <span>Settings</span>
+                    <span className='menu-item-content'>
+                      <SettingsIcon aria-hidden="true" className="menu-icon" />
+                      Settings
+                    </span>
                   </button>
                 </motion.li>
                 <motion.li
                   key="user-billing"
-                  className={`submenu-item ${isBillingLaunching ? 'is-active' : ''}`}
+                  className={`menu-item ${isBillingLaunching ? 'is-active' : ''}`}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -10 }}
@@ -321,17 +325,19 @@ export default function DashboardMenu({
                 >
                   <button
                     type="button"
-                    className="flex items-center w-full"
+                    className=""
                     onClick={() => handleUserSelection('user-billing')}
                     disabled={isBillingLaunching}
                   >
-                    <ReceiptText className="menu-icon" />
-                    <span>Billing</span>
+                    <span className='menu-item-content'>
+                      <ReceiptText aria-hidden="true" className="menu-icon" />
+                      Billing
+                    </span>
                   </button>
                 </motion.li>
                 <motion.li
                   key="user-help"
-                  className={`submenu-item ${displayTab === 'user-help' ? 'is-active' : ''}`}
+                  className={`menu-item ${displayTab === 'user-help' ? 'is-active' : ''}`}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -10 }}
@@ -339,16 +345,18 @@ export default function DashboardMenu({
                 >
                   <button
                     type="button"
-                    className="flex items-center w-full"
+                    className=""
                     onClick={() => handleUserSelection('user-help')}
                   >
-                    <HelpCircle className="menu-icon" />
-                    <span>Help</span>
+                    <span className='menu-item-content'>
+                      <HelpCircle aria-hidden="true" className="menu-icon" />
+                      Help
+                    </span>
                   </button>
                 </motion.li>
                 <motion.li
                   key="user-logout"
-                  className="submenu-item"
+                  className="menu-item"
                   onClick={() => setUserMenuOpen(false)}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -365,7 +373,10 @@ export default function DashboardMenu({
             className={`menu-item ${userSubmenuActive ? 'has-active-submenu' : ''}`}
             onClick={() => handleParentClick('user')}
           >
-            <UserClient className="" />
+            <span className="menu-item-content">
+              <UserIcon aria-hidden="true" className="menu-icon" />
+              <UserClient className="" />
+            </span>
           </li>
         </ul>
       </div>

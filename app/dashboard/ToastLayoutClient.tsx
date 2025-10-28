@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ToastProvider } from "@/components/calendar/ToastProvider";
+import { ToastProvider } from "@/components/notifications/ToastProvider";
 
 export default function ToastLayoutClient({
   children,

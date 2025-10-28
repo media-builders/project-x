@@ -5,6 +5,7 @@ import LeadsTable from "@/components/leads/Leads";
 import CallSchedule from "@/components/leads/calls/schedule";
 import LeadCaptureFormSetup from "@/components/leads/LeadCaptureFormSetup";
 import DialerSettings from "@/components/agents/settings";
+import AgentProfile from "@/components/agents/AgentProfile";
 import GoogleCalendar from "@/components/calendar/GoogleCalendar";
 import Integrations from "@/components/settings/Integrations";
 import SettingsPanel from "@/components/settings/SettingsPanel";
@@ -75,16 +76,16 @@ export default function DashboardWindow({
           </motion.div>
         )}
 
-        {activeTab === "dialer" && (
+        {activeTab === "agent-preferences" && (
           <motion.div
-            key="dialer"
+            key="agent-preferences"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.25, ease: "easeInOut" }}
             className=""
           >
-            <DialerSettings />
+            <AgentProfile />
           </motion.div>
         )}
 

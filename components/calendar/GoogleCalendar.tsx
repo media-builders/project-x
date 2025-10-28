@@ -11,16 +11,14 @@ import type {
   EventContentArg,
 } from "@fullcalendar/core";
 
-import { useToast } from "./ToastProvider";
-
-import { useGoogleCalendars } from "./hooks/useGoogleCalendars";
-import { useGoogleEvents } from "./hooks/useGoogleEvents";
-import type { CalendarEvent } from "./utils/types";
-
-import { PrimaryToolbar } from "./toolbars/PrimaryToolbar";
-import { SecondaryToolbar } from "./toolbars/SecondaryToolbar";
-import { AdvancedToolbar } from "./toolbars/AdvancedToolbar";
-import EventModal from "./modals/EventModal";
+import { useToast } from "@/components/notifications/ToastProvider";
+import { useGoogleCalendars } from "@/components/calendar/hooks/useGoogleCalendars";
+import { useGoogleEvents } from "@/components/calendar/hooks/useGoogleEvents";
+import type { CalendarEvent } from "@/components/calendar/utils/types";
+import { PrimaryToolbar } from "@/components/calendar/toolbars/PrimaryToolbar";
+import { SecondaryToolbar } from "@/components/calendar/toolbars/SecondaryToolbar";
+import { AdvancedToolbar } from "@/components/calendar/toolbars/AdvancedToolbar";
+import EventModal from "@/components/calendar/modals/EventModal";
 
 type CalendarView = "dayGridMonth" | "timeGridWeek" | "timeGridDay";
 
@@ -328,7 +326,7 @@ const GoogleCalendar: React.FC = () => {
           />
         </div>
 
-        {/* <EventModal
+        <EventModal
           selectedEvent={selectedEvent}
           selectedCalendarId={selectedCalendarId}
           setSelectedCalendarId={setSelectedCalendarId}
@@ -362,7 +360,7 @@ const GoogleCalendar: React.FC = () => {
           onClose={resetModalFields}
           notifyGuests={notifyGuests}
           setNotifyGuests={setNotifyGuests}
-        /> */}
+        />
       </div>
     </div>
   );
