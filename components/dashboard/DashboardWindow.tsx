@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import LeadsTable from "@/components/leads/Leads";
 import CallSchedule from "@/components/leads/calls/schedule";
 import LeadCaptureFormSetup from "@/components/leads/LeadCaptureFormSetup";
-import DialerSettings from "@/components/agents/settings";
 import AgentProfile from "@/components/agents/AgentProfile";
 import GoogleCalendar from "@/components/calendar/GoogleCalendar";
 import Integrations from "@/components/settings/Integrations";
