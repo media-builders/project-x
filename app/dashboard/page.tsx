@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import DashboardMenu from "@/components/dashboard/DashboardMenu";
 import DashboardWindow from "@/components/dashboard/DashboardWindow";
 import type { ProfileData } from "@/components/UserProfileForm";
+import { CallQueueProvider } from "@/context/CallQueueContext";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("leads-table");
@@ -115,19 +116,21 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="dashboard flex">
-      <div></div>
-      <DashboardMenu
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-        onUserMenuPrefetch={prefetchUserMenuData}
-        resolveBillingPortalUrl={resolveBillingPortalUrl}
-      />
-      <DashboardWindow
-        activeTab={activeTab}
-        profileData={profileData}
-        onProfileSaved={handleProfileSaved}
-      />
-    </div>
+    <CallQueueProvider>
+      <div className="dashboard flex">
+        <div></div>
+        <DashboardMenu
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          onUserMenuPrefetch={prefetchUserMenuData}
+          resolveBillingPortalUrl={resolveBillingPortalUrl}
+        />
+        <DashboardWindow
+          activeTab={activeTab}
+          profileData={profileData}
+          onProfileSaved={handleProfileSaved}
+        />
+      </div>
+    </CallQueueProvider>
   );
 }

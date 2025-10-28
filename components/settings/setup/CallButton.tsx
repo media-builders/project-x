@@ -2,6 +2,11 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/notifications/ToastProvider";
+import {
+  useCallQueue,
+  ACTIVE_QUEUE_STATUSES,
+  type QueueStatusResponse,
+} from "@/context/CallQueueContext";
 
 type Lead = {
   id: string;
@@ -12,24 +17,6 @@ type Lead = {
   stage?: string | null;
   featured?: boolean;
 };
-
-type QueueStatusResponse = {
-  job_id: string;
-  status: string;
-  total_leads: number;
-  initiated: number;
-  completed: number;
-  failed: number;
-  current_index: number | null;
-  current_conversation_id: string | null;
-  current_lead: Record<string, unknown> | null;
-  error: string | null;
-  lead_snapshot?: unknown;
-  created_at?: string | null;
-  updated_at?: string | null;
-};
-
-const ACTIVE_STATUSES = new Set(["pending", "running"]);
 
 const buildFinalMessage = (data: QueueStatusResponse) => {
   const total = data.total_leads ?? 0;
@@ -50,88 +37,49 @@ const buildFinalMessage = (data: QueueStatusResponse) => {
   }
 };
 
+const FINAL_QUEUE_STATUSES = new Set([
+  "succeeded",
+  "failed",
+  "completed_with_errors",
+  "cancelled",
+]);
+
 export default function CallButton({ selectedLeads }: { selectedLeads: Lead[] }) {
   const { show } = useToast();
   const [loading, setLoading] = useState(false);
-  const [queueJobId, setQueueJobId] = useState<string | null>(null);
-  const [queueStatus, setQueueStatus] = useState<QueueStatusResponse | null>(null);
-  const [queueTotal, setQueueTotal] = useState<number | null>(null);
-  const finalToastShown = useRef(false);
+  const lastFinishedJobRef = useRef<string | null>(null);
+  const sawActiveJobRef = useRef(false);
+
+  const { beginQueue, status, activeJob, isPolling } = useCallQueue();
 
   useEffect(() => {
-    if (!queueJobId) {
-      return () => {
-        /* noop */
-      };
+    if (!status) return;
+    if (ACTIVE_QUEUE_STATUSES.has(status.status)) {
+      sawActiveJobRef.current = true;
+      return;
     }
+    if (!status.job_id || !FINAL_QUEUE_STATUSES.has(status.status)) {
+      sawActiveJobRef.current = false;
+      return;
+    }
+    if (!sawActiveJobRef.current) return;
+    if (status.job_id === lastFinishedJobRef.current) return;
 
-    let cancelled = false;
-    let timeout: ReturnType<typeof setTimeout> | null = null;
+    lastFinishedJobRef.current = status.job_id;
+    sawActiveJobRef.current = false;
+    show({
+      title: "Call queue finished",
+      message: buildFinalMessage(status),
+      variant:
+        status.status === "succeeded"
+          ? "success"
+          : status.status === "failed"
+          ? "error"
+          : "warning",
+    });
+  }, [status, show]);
 
-    const poll = async () => {
-      try {
-        const res = await fetch(`/api/outbound-calls/queue/${queueJobId}`, {
-          method: "GET",
-          cache: "no-store",
-        });
-
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.error || `Status request failed with ${res.status}`);
-        }
-
-        const data: QueueStatusResponse = await res.json();
-        if (cancelled) {
-          return;
-        }
-
-        setQueueStatus(data);
-        setQueueTotal((prev) => prev ?? data.total_leads ?? null);
-
-        if (ACTIVE_STATUSES.has(data.status)) {
-          timeout = setTimeout(poll, 4000);
-        } else {
-          if (!finalToastShown.current) {
-            finalToastShown.current = true;
-            const variant =
-              data.status === "succeeded"
-                ? "success"
-                : data.status === "failed"
-                ? "error"
-                : "warning";
-            show({
-              title: "Call queue finished",
-              message: buildFinalMessage(data),
-              variant,
-            });
-          }
-          setLoading(false);
-          setQueueJobId(null);
-        }
-      } catch (err: any) {
-        if (cancelled) {
-          return;
-        }
-        console.error("[CallQueue] polling error", err);
-        show({
-          title: "Queue status error",
-          message: err?.message || "Failed to fetch queue status.",
-          variant: "error",
-        });
-        setLoading(false);
-        setQueueJobId(null);
-      }
-    };
-
-    poll();
-
-    return () => {
-      cancelled = true;
-      if (timeout) clearTimeout(timeout);
-    };
-  }, [queueJobId, show]);
-
-  const makeOutboundCall = async () => {
+  const handleClick = async () => {
     if (!selectedLeads || selectedLeads.length === 0) {
       show({ message: "No leads selected", variant: "warning" });
       return;
@@ -139,10 +87,6 @@ export default function CallButton({ selectedLeads }: { selectedLeads: Lead[] })
 
     try {
       setLoading(true);
-      finalToastShown.current = false;
-      setQueueStatus(null);
-      setQueueTotal(selectedLeads.length);
-
       const res = await fetch("/api/outbound-calls/queue", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -156,26 +100,25 @@ export default function CallButton({ selectedLeads }: { selectedLeads: Lead[] })
           message: errData.error || `Queue API failed with status ${res.status}`,
           variant: "error",
         });
-        setLoading(false);
         return;
       }
 
-      const data: { job_id?: string; status?: string; total_leads?: number } = await res.json();
+      const data: { job_id?: string; total_leads?: number } = await res.json();
       if (!data.job_id) {
         show({
           title: "Queue start failed",
           message: "Missing job identifier from server response.",
           variant: "error",
         });
-        setLoading(false);
         return;
       }
 
-      setQueueJobId(data.job_id);
-      setQueueTotal(data.total_leads ?? selectedLeads.length);
+      beginQueue(data.job_id, data.total_leads ?? selectedLeads.length);
       show({
         title: "Call queue started",
-        message: `Processing ${data.total_leads ?? selectedLeads.length} lead${selectedLeads.length === 1 ? "" : "s"}.`,
+        message: `Processing ${data.total_leads ?? selectedLeads.length} lead${
+          selectedLeads.length === 1 ? "" : "s"
+        }.`,
         variant: "success",
       });
     } catch (err: any) {
@@ -185,23 +128,28 @@ export default function CallButton({ selectedLeads }: { selectedLeads: Lead[] })
         message: err?.message || "Failed to start outbound call queue.",
         variant: "error",
       });
+    } finally {
       setLoading(false);
     }
   };
 
+  const total = status?.total_leads ?? activeJob?.total ?? selectedLeads.length;
+  const initiated = status?.initiated ?? 0;
+  const completed = status?.completed ?? 0;
+  const inFlight = Math.max(initiated - completed, 0);
+  const progress = Math.min(completed + inFlight, total || 0);
+
+  const queueRunning = Boolean(
+    (status && ACTIVE_QUEUE_STATUSES.has(status.status)) || activeJob
+  );
+
   const buttonLabel = (() => {
-    if (loading) {
-      const total = queueTotal ?? selectedLeads.length;
-      const initiated = queueStatus?.initiated ?? 0;
-      const completed = queueStatus?.completed ?? 0;
-      const inFlight = Math.max(initiated - completed, 0);
+    if (loading || queueRunning || isPolling) {
       if (total > 0) {
-        const progress = Math.min(completed + inFlight, total);
         return `Calling ${progress}/${total}`;
       }
       return "Queueing...";
     }
-
     return `Call${selectedLeads.length > 1 ? "s" : ""}`;
   })();
 
@@ -209,8 +157,10 @@ export default function CallButton({ selectedLeads }: { selectedLeads: Lead[] })
     <button
       type="button"
       className="btn btn-primary"
-      onClick={makeOutboundCall}
-      disabled={selectedLeads.length === 0 || loading}
+      onClick={handleClick}
+      disabled={
+        selectedLeads.length === 0 || loading || queueRunning || isPolling
+      }
     >
       {buttonLabel}
     </button>
