@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@supabase/supabase-js";
 import { formatE164ToUS } from "@/utils/formatters";
@@ -38,6 +38,7 @@ export default function AgentProfile() {
   const [loadingInitial, setLoadingInitial] = useState(true);
   const [saving, setSaving] = useState(false);
   const [openMenu, setOpenMenu] = useState<Record<string, boolean>>({});
+  const [agentSnapshot, setAgentSnapshot] = useState<any | null>(null);
   const nameInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const menuRefs = useRef<Record<string, HTMLUListElement | null>>({});
 
@@ -100,13 +101,45 @@ export default function AgentProfile() {
     [userId, show]
   );
 
+  // �� Fetch primary agent snapshot from ElevenLabs ����
+  const fetchAgentSnapshot = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const res = await fetch("/api/elevenlabs-agent", { credentials: "include" });
+      if (res.status === 404) {
+        setAgentSnapshot(null);
+        return;
+      }
+      const payload = await res.json().catch(() => null);
+      if (!res.ok) {
+        const message =
+          (payload && typeof payload === "object" && "error" in payload
+            ? (payload as { error?: string }).error
+            : undefined) ?? `Request failed (${res.status})`;
+        throw new Error(message);
+      }
+      setAgentSnapshot(payload);
+    } catch (err) {
+      console.error("[Agent] snapshot error:", err);
+      show({
+        title: "Agent Fetch Error",
+        message:
+          err instanceof Error ? err.message : "Unable to load agent configuration.",
+        variant: "error",
+      });
+    }
+  }, [userId, show]);
+
   useEffect(() => {
     loadUser();
   }, [loadUser]);
 
   useEffect(() => {
-    if (userId) fetchAgents();
-  }, [userId, fetchAgents]);
+    if (userId) {
+      fetchAgents();
+      fetchAgentSnapshot();
+    }
+  }, [userId, fetchAgents, fetchAgentSnapshot]);
 
   // ── Outside click to close dropdown ────────
   useEffect(() => {
@@ -243,12 +276,18 @@ export default function AgentProfile() {
   };
 
   // ── Render ────────────────────────────────
+  const agentSnapshotJson = useMemo(
+    () => (agentSnapshot ? JSON.stringify(agentSnapshot, null, 2) : ""),
+    [agentSnapshot]
+  );
   if (loadingInitial) return <p className="text-gray-400">Loading agents…</p>;
-  if (!agents.length) return <p className="text-gray-400">No agents found.</p>;
+
+  const hasAgents = agents.length > 0;
 
   return (
-    <div className="">
-      {agents.map((agent) => {
+    <div className="agents-window">
+      {hasAgents ? (
+        agents.map((agent) => {
         const prefs = agent.preferences || {};
         const presets = prefs.presets || {};
         const presetNames = Object.keys(presets);
@@ -260,8 +299,8 @@ export default function AgentProfile() {
         };
         const isOpen = openMenu[agent.agent_id];
 
-        return (
-          <div key={agent.agent_id} className="agent-settings-box">
+          return (
+            <div key={agent.agent_id} className="agent-settings-box">
             {/* Twilio number */}
             {agent.twilio_number && (
               <div className="mb-3">
@@ -275,9 +314,9 @@ export default function AgentProfile() {
               </div>
             )}
 
-            {/* Preset Name Dropdown */}
-            <div className="flex items-center gap-2 mb-4 relative">
-              <div className="relative flex-1">
+              {/* Preset Name Dropdown */}
+              <div className="relative mb-4 flex items-center gap-2">
+                <div className="relative flex-1">
                 <input
                   ref={(el) => {
                     nameInputRefs.current[agent.agent_id] = el;
@@ -446,7 +485,20 @@ export default function AgentProfile() {
             />
           </div>
         );
-      })}
+        })
+      ) : (
+        <p className="text-gray-400">No agents found.</p>
+      )}
+      {agentSnapshotJson && (
+        <div className="mb-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+            Active Agent Snapshot
+          </p>
+          <pre className="max-h-96 overflow-x-auto whitespace-pre-wrap break-words font-mono text-xs text-slate-700">
+            {agentSnapshotJson}
+          </pre>
+        </div>
+      )}
     </div>
   );
 }

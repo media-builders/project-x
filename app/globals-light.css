@@ -4007,6 +4007,13 @@ input.help-center__search-input:focus-visible {
    AGENT SETTINGS BOX
    ========================================== */
 
+.agents-window {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-l);
+}
+
+
 .agent-settings-box {
   
   & .form-input {

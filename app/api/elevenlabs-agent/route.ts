@@ -205,7 +205,39 @@ async function updateAgentFromTemplate(agentId: string, template: any, nameOverr
   return res.json(); // PATCH may return {}, or agent object, etc.
 }
 
-// ===== Route handler =====
+// ===== Route handlers =====
+export async function GET(req: NextRequest) {
+  try {
+    const supabase = supaFromRequest(req);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const binding = await db
+      .select({ agent_id: userAgentsTable.agent_id })
+      .from(userAgentsTable)
+      .where(eq(userAgentsTable.user_id, user.id))
+      .limit(1);
+
+    const agentId = binding?.[0]?.agent_id;
+    if (!agentId) {
+      return NextResponse.json(
+        { error: "No agent linked to user" },
+        { status: 404 }
+      );
+    }
+
+    const { agent } = await getAgentById(agentId);
+    return NextResponse.json({ agent, agent_id: agentId });
+  } catch (e: any) {
+    return NextResponse.json(
+      { error: e?.message ?? "Agent fetch failed" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const supabase = supaFromRequest(req);
