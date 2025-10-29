@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/utils/db/db";
 import { usersTable } from "@/utils/db/schema";
 import { eq } from "drizzle-orm";
+import { listNotificationsForUser } from "@/lib/notifications";
 import LogoIntroOverlay from "@/components/LogoIntroOverlay";
 import ToastLayoutClient from "./ToastLayoutClient";
 
@@ -76,11 +77,30 @@ export default async function DashboardLayout({
   const fullName = rawFullName.trim();
   const email = user.email ?? "";
 
+  const notifications = await listNotificationsForUser(user.id, {
+    limit: 50,
+    includeRead: true,
+  });
+
+  const initialNotifications = notifications.map((notification) => ({
+    id: notification.id,
+    title: notification.title,
+    message: notification.message,
+    variant: notification.variant,
+    metadata: notification.metadata,
+    createdAt: notification.createdAt.toISOString(),
+  }));
+
   // --- Layout structure ---
   return (
     <div className="dashboard-layout">
       <LogoIntroOverlay />
-      <ToastLayoutClient user={{ name: fullName, email }}>{children}</ToastLayoutClient>
+      <ToastLayoutClient
+        user={{ name: fullName, email }}
+        initialNotifications={initialNotifications}
+      >
+        {children}
+      </ToastLayoutClient>
     </div>
   );
 }

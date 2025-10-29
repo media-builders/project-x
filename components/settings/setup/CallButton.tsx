@@ -73,14 +73,15 @@ export default function CallButton({ selectedLeads }: { selectedLeads: Lead[] })
         status.status === "succeeded"
           ? "success"
           : status.status === "failed"
-          ? "error"
-          : "warning",
+            ? "error"
+            : "warning",
+      persist: false,
     });
   }, [status, show]);
 
   const handleClick = async () => {
     if (!selectedLeads || selectedLeads.length === 0) {
-      show({ message: "No leads selected", variant: "warning" });
+      show({ message: "No leads selected", variant: "warning", persist: false });
       return;
     }
 
@@ -98,6 +99,7 @@ export default function CallButton({ selectedLeads }: { selectedLeads: Lead[] })
           title: "Queue start failed",
           message: errData.error || `Queue API failed with status ${res.status}`,
           variant: "error",
+          persist: false,
         });
         return;
       }
@@ -109,6 +111,7 @@ export default function CallButton({ selectedLeads }: { selectedLeads: Lead[] })
           title: "Queue start failed",
           message: "Missing job identifier from server response.",
           variant: "error",
+          persist: false,
         });
         return;
       }
@@ -120,6 +123,7 @@ export default function CallButton({ selectedLeads }: { selectedLeads: Lead[] })
           selectedLeads.length === 1 ? "" : "s"
         }.`,
         variant: "success",
+        persist: false,
       });
     } catch (err: any) {
       console.error("[CallQueue] start error", err);
@@ -127,6 +131,7 @@ export default function CallButton({ selectedLeads }: { selectedLeads: Lead[] })
         title: "Queue error",
         message: err?.message || "Failed to start outbound call queue.",
         variant: "error",
+        persist: false,
       });
     } finally {
       setLoading(false);

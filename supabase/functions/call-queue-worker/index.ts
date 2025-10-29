@@ -14,6 +14,22 @@ console.log(`[Worker:${WORKER_ID}] ✅ Environment variables loaded`);
 const supabase = createClient(supabaseUrl, serviceKey);
 const sleep = (ms)=>new Promise((res)=>setTimeout(res, ms));
 const RUNNING_JOB_STALE_MS = 45_000;
+
+const buildFinalMessage = (job: any, completed: number, failed: number) => {
+  const total = job.total_leads ?? 0;
+  switch (job.status) {
+    case "succeeded":
+      return `Completed ${completed} of ${total} lead${total === 1 ? "" : "s"}.`;
+    case "failed":
+      return failed === total
+        ? `All ${total} lead${total === 1 ? "" : "s"} failed.`
+        : `Queue failed with ${failed} of ${total} lead${total === 1 ? "" : "s"}.`;
+    case "completed_with_errors":
+      return `Finished ${completed} of ${total} lead${total === 1 ? "" : "s"}; ${failed} failed.`;
+    default:
+      return `Processed ${completed} of ${total} lead${total === 1 ? "" : "s"}.`;
+  }
+};
 // ---------- Helper: touch running job (quiet logs) ----------
 let lastHeartbeatLog = 0;
 async function touchRunningJob(jobId) {
@@ -300,6 +316,37 @@ Deno.serve(async () => {
     updated_at: new Date().toISOString(),
     worker_id: null
   }).eq("id", job.id).eq("worker_id", WORKER_ID);
+
+  const summary = buildFinalMessage(
+    { ...job, status: finalStatus },
+    completed,
+    failed
+  );
+  const variant =
+    finalStatus === "succeeded"
+      ? "success"
+      : finalStatus === "failed"
+      ? "error"
+      : "warning";
+
+  try {
+    await supabase.from("notifications").insert({
+      user_id: job.user_id,
+      title: "Call queue finished",
+      message: summary,
+      variant,
+      metadata: {
+        jobId: job.id,
+        total: job.total_leads,
+        initiated,
+        completed,
+        failed,
+      },
+    });
+  } catch (err) {
+    console.error(`[Worker:${WORKER_ID}] ❌ Failed to persist notification:`, err);
+  }
+
   console.log(`[Worker:${WORKER_ID}] --- Invocation end ---`);
   return new Response("ok", {
     status: 200

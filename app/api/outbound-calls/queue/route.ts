@@ -9,6 +9,7 @@ import {
   type LeadIn,
 } from "@/lib/outboundCallService";
 import { and, asc, eq, inArray } from "drizzle-orm";
+import { createNotification } from "@/lib/notifications";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -176,6 +177,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  let userId: string | null = null;
+
   try {
     const body = await req.json().catch(() => ({}));
     const leads: LeadIn[] = body?.leads || [];
@@ -219,9 +222,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const { userId, isWorker } = await resolveUser(req, {
+    const resolvedUser = await resolveUser(req, {
       bodyUserId: typeof body?.user_id === "string" ? body.user_id : null,
     });
+    userId = resolvedUser.userId;
+
+    const { userId: resolvedUserId, isWorker } = resolvedUser;
 
     const leadSnapshot = leads.map((lead) => ({
       id: lead.id ?? null,
@@ -236,7 +242,7 @@ export async function POST(req: NextRequest) {
     const inserted = await db
       .insert(callQueueJobsTable)
       .values({
-        user_id: userId,
+        user_id: resolvedUserId,
         status,
         scheduled_start_at: scheduledStartAt,
         total_leads: leads.length,
@@ -258,6 +264,15 @@ export async function POST(req: NextRequest) {
       throw new Error("Failed to create call queue job.");
     }
 
+    await createNotification({
+      user_id: resolvedUserId,
+      title: scheduledStartAt ? "Call queue scheduled" : "Call queue started",
+      message: scheduledStartAt
+        ? `Will dial ${leads.length} lead${leads.length === 1 ? "" : "s"} at ${scheduledStartAt.toLocaleString()}.`
+        : `Calling ${leads.length} lead${leads.length === 1 ? "" : "s"} now.`,
+      variant: "success",
+    });
+
     return NextResponse.json(
       {
         job_id: jobId,
@@ -278,6 +293,20 @@ export async function POST(req: NextRequest) {
         { status: err.status }
       );
     }
+
+    if (userId) {
+      try {
+        await createNotification({
+          user_id: userId,
+          title: "Call queue failed to start",
+          message: err?.message || "Unable to start outbound call queue.",
+          variant: "error",
+        });
+      } catch (notifyErr) {
+        console.error("[CallQueue] Failed to persist failure notification:", notifyErr);
+      }
+    }
+
     return NextResponse.json(
       { error: err?.message || "Failed to enqueue outbound call queue." },
       { status: 500 }

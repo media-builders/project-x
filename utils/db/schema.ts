@@ -1,5 +1,5 @@
 import { pgTable, text, timestamp, bigint, jsonb, uuid, integer } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 // ==========================
 // USERS TABLE
@@ -130,6 +130,23 @@ export const agentSettingsTable = pgTable("agent_settings", {
 
 export type InsertAgentSettings = typeof agentSettingsTable.$inferInsert;
 export type SelectAgentSettings = typeof agentSettingsTable.$inferSelect;
+
+// ==========================
+// NOTIFICATIONS TABLE
+// ==========================
+export const notificationsTable = pgTable("notifications", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  user_id: uuid("user_id").notNull().default(sql`auth.uid()`),
+  title: text("title"),
+  message: text("message").notNull(),
+  variant: text("variant").notNull().default("default"),
+  metadata: jsonb("metadata"),
+  read_at: timestamp("read_at", { withTimezone: true }),
+  created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type InsertNotification = typeof notificationsTable.$inferInsert;
+export type SelectNotification = typeof notificationsTable.$inferSelect;
 
 // ==========================
 // RELATIONS (OPTIONAL)

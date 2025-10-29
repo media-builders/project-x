@@ -78,6 +78,22 @@ To create the necessary tables to start, run `npm run db:migrate`
 3. run `npm run db:generate` to generate migration files
 4. run `npm run db:migrate` to apply migration
 
+### Persisted Notification History
+The dashboard now surfaces toast notifications from a persisted `notifications` table so users see important events even after they log out.
+
+1. **Create/migrate the table** – if you ran the raw SQL already, generate a Drizzle migration so it’s tracked:  
+   ```bash
+   npm run db:generate
+   npm run db:migrate
+   ```
+   The schema lives in `utils/db/schema.ts` (`notificationsTable`).
+2. **Persist from the server** – import and call `createNotification` from `@/lib/notifications` in any server/API/worker code that should log a durable notification (e.g. call queue jobs, billing hooks, background tasks). Client toasts still call `show()` but set `persist: false` so they don’t double-write.
+3. **Client sync** – the dashboard bootstrap (`ToastLayoutClient`) receives initial rows server-side and the provider exposes REST helpers:
+   - `POST /api/notifications` – create (used by `ToastProvider` when `persist !== false`)
+   - `PATCH /api/notifications` – mark one or more notifications as read (`{ ids?: string[] }`)
+   - `DELETE /api/notifications` – clear notifications (`{ ids?: string[] }` optional)
+4. **Optional realtime** – subscribe to Supabase Realtime on `public.notifications` filtered by `user_id` if you want newly inserted rows (e.g. from the queue worker) to appear instantly in open sessions.
+
 ```bash
 npm run dev
 # or

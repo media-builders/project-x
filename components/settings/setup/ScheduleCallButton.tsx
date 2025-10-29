@@ -64,7 +64,7 @@ export default function ScheduleCallButton({
 
   const handleSchedule = async () => {
     if (selectedLeads.length === 0) {
-      show({ message: "No leads selected", variant: "warning" });
+      show({ message: "No leads selected", variant: "warning", persist: false });
       return;
     }
     if (!scheduleDate) {
@@ -72,6 +72,7 @@ export default function ScheduleCallButton({
         title: "Schedule incomplete",
         message: "Choose a start date before scheduling the queue.",
         variant: "warning",
+        persist: false,
       });
       return;
     }
@@ -101,6 +102,7 @@ export default function ScheduleCallButton({
           title: "Schedule failed",
           message: errData.error || `Queue API failed with status ${res.status}`,
           variant: "error",
+          persist: false,
         });
         return;
       }
@@ -116,6 +118,7 @@ export default function ScheduleCallButton({
           title: "Schedule failed",
           message: "Missing job identifier from server response.",
           variant: "error",
+          persist: false,
         });
         return;
       }
@@ -134,6 +137,7 @@ export default function ScheduleCallButton({
           formatIsoForDisplay(data.scheduled_start_at ?? scheduledIso) || "soon"
         }.`,
         variant: "success",
+        persist: false,
       });
 
       setOpen(false);
@@ -145,6 +149,7 @@ export default function ScheduleCallButton({
         title: "Schedule error",
         message: err?.message || "Failed to schedule outbound call queue.",
         variant: "error",
+        persist: false,
       });
     } finally {
       setLoading(false);
@@ -224,4 +229,3 @@ export default function ScheduleCallButton({
     </div>
   );
 }
-
