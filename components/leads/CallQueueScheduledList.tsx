@@ -1,22 +1,10 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   useCallQueue,
   type QueueJobSummary,
 } from "@/context/CallQueueContext";
-
-const formatDateTime = (iso?: string | null) => {
-  if (!iso) return "";
-  const dt = new Date(iso);
-  if (Number.isNaN(dt.getTime())) return "";
-  return dt.toLocaleString(undefined, {
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
 
 const getLeadLabel = (lead: unknown): string | null => {
   if (!lead || typeof lead !== "object") return null;
@@ -37,16 +25,8 @@ export default function CallQueueScheduledList({
 }: {
   onSelect?: (job: QueueJobSummary | null) => void;
 }) {
-  const { upcomingJobs, status, refreshUpcoming } = useCallQueue();
+  const { upcomingJobs, status } = useCallQueue();
   const [expandedId, setExpandedId] = useState<string | null>(null);
-
-  useEffect(() => {
-    void refreshUpcoming();
-    const interval = setInterval(() => {
-      void refreshUpcoming();
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [refreshUpcoming]);
 
   const sortedUpcoming = useMemo(() => {
     return [...(upcomingJobs || [])].sort((a, b) => {

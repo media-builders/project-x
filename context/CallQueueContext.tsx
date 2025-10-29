@@ -37,6 +37,11 @@ export type QueueJobSummary = {
   status: string;
   scheduled_start_at: string | null;
   total_leads: number;
+  initiated?: number | null;
+  completed?: number | null;
+  failed?: number | null;
+  current_index?: number | null;
+  current_lead?: Record<string, unknown> | null;
   lead_snapshot: unknown;
   created_at: string | null;
   updated_at: string | null;
@@ -51,31 +56,15 @@ type CallQueueContextValue = {
   beginQueue: (jobId: string, total?: number, scheduledAt?: string | null) => void;
   clearQueue: () => void;
   refresh: () => Promise<void>;
-  upcomingJobs: QueueJobSummary[];
   refreshUpcoming: () => Promise<void>;
+  upcomingJobs: QueueJobSummary[];
 };
 
-const CallQueueContext = createContext<CallQueueContextValue | undefined>(
-  undefined
-);
+const CallQueueContext = createContext<CallQueueContextValue | undefined>(undefined);
 
-const fetchQueueStatus = async (
-  jobId: string,
-  controller: AbortController
-): Promise<QueueStatusResponse> => {
-  const res = await fetch(`/api/outbound-calls/queue/${jobId}`, {
-    method: "GET",
-    cache: "no-store",
-    signal: controller.signal,
-  });
-
-  if (!res.ok) {
-    const errData = await res.json().catch(() => ({}));
-    throw new Error(errData?.error || `Status request failed with ${res.status}`);
-  }
-
-  return res.json();
-};
+const QUEUE_LIST_ENDPOINT = "/api/outbound-calls/queue?scope=all";
+const queueDetailEndpoint = (id: string) =>
+  `/api/outbound-calls/queue/${encodeURIComponent(id)}`;
 
 export function CallQueueProvider({ children }: { children: React.ReactNode }) {
   const [activeJob, setActiveJob] = useState<StoredQueueJob | null>(null);
@@ -83,168 +72,230 @@ export function CallQueueProvider({ children }: { children: React.ReactNode }) {
   const [isPolling, setIsPolling] = useState(false);
   const [upcomingJobs, setUpcomingJobs] = useState<QueueJobSummary[]>([]);
 
-  const pollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
-  const upcomingAbortRef = useRef<AbortController | null>(null);
-  const hydratedRef = useRef(false);
-
+  const activeJobRef = useRef<StoredQueueJob | null>(null);
   useEffect(() => {
-    if (hydratedRef.current) return;
-    hydratedRef.current = true;
-    const stored = getStoredQueueJob();
-    if (stored) {
-      setActiveJob(stored);
-    }
-  }, []);
+    activeJobRef.current = activeJob;
+  }, [activeJob]);
 
   useEffect(() => {
     setStoredQueueJob(activeJob);
   }, [activeJob?.jobId, activeJob?.total, activeJob?.scheduledAt]);
 
-  const refreshUpcoming = useCallback(async () => {
-    try {
-      upcomingAbortRef.current?.abort();
-      const controller = new AbortController();
-      upcomingAbortRef.current = controller;
-      const res = await fetch("/api/outbound-calls/queue?scope=upcoming", {
-        method: "GET",
-        cache: "no-store",
-        signal: controller.signal,
-      });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData?.error || `Upcoming request failed with ${res.status}`);
+  const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const mountedRef = useRef(false);
+  const lastRunningRef = useRef(false);
+
+  const scheduleNextPoll = useCallback(
+    (delay: number, runPoll: () => void) => {
+      if (!mountedRef.current) return;
+      if (pollTimerRef.current) {
+        clearTimeout(pollTimerRef.current);
       }
-      const data = await res.json();
-      const jobs = Array.isArray(data?.jobs) ? data.jobs : [];
-      setUpcomingJobs(jobs);
-    } catch (err: any) {
-      if (err?.name === "AbortError") return;
-      console.error("[CallQueue] upcoming fetch error", err);
-    }
-  }, []);
-
-  const pollStatus = useCallback(
-    async (jobId: string) => {
-      abortRef.current?.abort();
-      const controller = new AbortController();
-      abortRef.current = controller;
-      try {
-        setIsPolling(true);
-        const data = await fetchQueueStatus(jobId, controller);
-        setStatus(data);
-        if (data.scheduled_start_at) {
-          setActiveJob((prev) => {
-            if (!prev || prev.jobId !== data.job_id) return prev;
-            if (prev.scheduledAt === data.scheduled_start_at) return prev;
-            return { ...prev, scheduledAt: data.scheduled_start_at };
-          });
-        }
-
-        if (!ACTIVE_QUEUE_STATUSES.has(data.status)) {
-          setActiveJob(null);
-          setStoredQueueJob(null);
-        }
-
-        void refreshUpcoming();
-
-        return data;
-      } catch (err: any) {
-        if (!controller.signal.aborted) {
-          console.error("[CallQueue] status fetch error", err);
-        }
-        return null;
-      } finally {
-        if (!controller.signal.aborted) {
-          setIsPolling(false);
-        }
-      }
+      pollTimerRef.current = setTimeout(runPoll, Math.max(delay, 0));
     },
     []
   );
 
-  useEffect(() => {
-    if (!activeJob?.jobId) {
-      abortRef.current?.abort();
-      if (pollTimeoutRef.current) {
-        clearTimeout(pollTimeoutRef.current);
-        pollTimeoutRef.current = null;
+  const previousStatusRef = useRef<QueueStatusResponse | null>(null);
+
+  const runPoll = useCallback(async () => {
+    if (!mountedRef.current) return;
+    setIsPolling(true);
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    let nextDelay = 15_000;
+    let immediateNext = false;
+
+    try {
+      const listRes = await fetch(QUEUE_LIST_ENDPOINT, {
+        method: "GET",
+        cache: "no-store",
+        credentials: "include",
+        signal: controller.signal,
+      });
+      if (!listRes.ok) {
+        throw new Error(`Queue list failed (${listRes.status})`);
       }
-      return;
-    }
+      const listData = await listRes.json();
+      const jobs: QueueJobSummary[] = Array.isArray(listData?.jobs)
+        ? listData.jobs
+        : [];
 
-    let cancelled = false;
+      const now = Date.now();
 
-    const run = async () => {
-      const data = await pollStatus(activeJob.jobId);
-      if (cancelled) return;
+      const upcoming = jobs.filter(
+        (job) =>
+          job &&
+          typeof job.status === "string" &&
+          (job.status === "scheduled" || job.status === "pending")
+      );
+      setUpcomingJobs(upcoming);
 
-      if (data && ACTIVE_QUEUE_STATUSES.has(data.status)) {
-        let nextDelay = 4000;
-        if (data.status === "scheduled" && data.scheduled_start_at) {
-          const msUntil =
-            new Date(data.scheduled_start_at).getTime() - Date.now();
-          if (!Number.isNaN(msUntil) && msUntil > 0) {
-            if (msUntil > 5 * 60_000) {
-              nextDelay = 60_000;
-            } else if (msUntil > 60_000) {
-              nextDelay = 15_000;
-            } else {
-              nextDelay = Math.max(msUntil, 4000);
-            }
+      const futureStarts = upcoming
+        .map((job) =>
+          job.scheduled_start_at ? new Date(job.scheduled_start_at).getTime() : NaN
+        )
+        .filter((time) => Number.isFinite(time) && time >= now);
+
+      const earliestStart =
+        futureStarts.length > 0 ? Math.min(...futureStarts) : null;
+
+      const runningJob = jobs.find((job) => job.status === "running") ?? null;
+
+      const trackedJobId =
+        runningJob?.id ??
+        activeJobRef.current?.jobId ??
+        previousStatusRef.current?.job_id ??
+        null;
+
+      const listEntry = trackedJobId
+        ? jobs.find((job) => job.id === trackedJobId) ?? null
+        : null;
+
+      let detail: QueueStatusResponse | null = null;
+      if (trackedJobId) {
+        try {
+          const detailRes = await fetch(queueDetailEndpoint(trackedJobId), {
+            method: "GET",
+            cache: "no-store",
+            credentials: "include",
+            signal: controller.signal,
+          });
+          if (detailRes.ok) {
+            detail = (await detailRes.json()) as QueueStatusResponse;
+          } else if (detailRes.status === 404) {
+            detail = null;
+          } else {
+            throw new Error(`Queue status failed (${detailRes.status})`);
+          }
+        } catch (detailErr) {
+          if (!controller.signal.aborted) {
+            console.error("[CallQueue] detail fetch error", detailErr);
           }
         }
-        pollTimeoutRef.current = setTimeout(run, nextDelay);
+      } else {
+        detail = null;
       }
-    };
 
-    run();
+      if (detail) {
+        setStatus(detail);
+        previousStatusRef.current = detail;
+        if (!ACTIVE_QUEUE_STATUSES.has(detail.status)) {
+          if (activeJobRef.current?.jobId === detail.job_id) {
+            setActiveJob(null);
+            activeJobRef.current = null;
+            setStoredQueueJob(null);
+          }
+        }
+      } else if (listEntry) {
+        const fallback: QueueStatusResponse = {
+          job_id: listEntry.id,
+          status: listEntry.status,
+          scheduled_start_at: listEntry.scheduled_start_at ?? null,
+          total_leads: listEntry.total_leads ?? 0,
+          initiated: listEntry.initiated ?? 0,
+          completed: listEntry.completed ?? 0,
+          failed: listEntry.failed ?? 0,
+          current_index: listEntry.current_index ?? null,
+          current_conversation_id: null,
+          current_lead:
+            (listEntry.current_lead as Record<string, unknown> | null | undefined) ?? null,
+          error: null,
+          lead_snapshot: listEntry.lead_snapshot ?? [],
+        };
+        setStatus((prev) => {
+          if (prev && prev.job_id === fallback.job_id) {
+            return prev;
+          }
+          return fallback;
+        });
+        previousStatusRef.current = fallback;
+      } else if (!runningJob && !listEntry) {
+        setStatus(null);
+        previousStatusRef.current = null;
+      }
 
+      const effectiveStatus = detail ?? previousStatusRef.current;
+      const runningNow =
+        Boolean(effectiveStatus && effectiveStatus.status === "running") ||
+        Boolean(listEntry && listEntry.status === "running");
+
+      const threshold =
+        earliestStart !== null ? earliestStart - 120_000 : null;
+      const withinFastWindow =
+        runningNow || (threshold !== null && now >= threshold);
+
+      nextDelay = withinFastWindow ? 1_000 : 15_000;
+
+      if (lastRunningRef.current && !runningNow) {
+        immediateNext = true;
+      }
+      lastRunningRef.current = runningNow;
+    } catch (err) {
+      if (!controller.signal.aborted) {
+        console.error("[CallQueue] poll error", err);
+      }
+      nextDelay = 15_000;
+    } finally {
+      setIsPolling(false);
+      if (!mountedRef.current) return;
+      scheduleNextPoll(immediateNext ? 0 : nextDelay, () => {
+        void runPoll();
+      });
+    }
+  }, [scheduleNextPoll]);
+
+  const refresh = useCallback(async () => {
+    if (!mountedRef.current) return;
+    if (pollTimerRef.current) {
+      clearTimeout(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
+    await runPoll();
+  }, [runPoll]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    const stored = getStoredQueueJob();
+    if (stored) {
+      activeJobRef.current = stored;
+      setActiveJob(stored);
+    }
+    void runPoll();
     return () => {
-      cancelled = true;
+      mountedRef.current = false;
       abortRef.current?.abort();
-      if (pollTimeoutRef.current) {
-        clearTimeout(pollTimeoutRef.current);
-        pollTimeoutRef.current = null;
+      if (pollTimerRef.current) {
+        clearTimeout(pollTimerRef.current);
+        pollTimerRef.current = null;
       }
     };
-  }, [activeJob?.jobId, pollStatus]);
+  }, [runPoll]);
 
   const beginQueue = useCallback(
     (jobId: string, total?: number, scheduledAt?: string | null) => {
+      const payload: StoredQueueJob = {
+        jobId,
+        total,
+        scheduledAt: scheduledAt ?? null,
+      };
+      setActiveJob(payload);
+      activeJobRef.current = payload;
       setStatus(null);
-      setActiveJob({ jobId, total, scheduledAt: scheduledAt ?? null });
-      void refreshUpcoming();
+      void refresh();
     },
-    [refreshUpcoming]
+    [refresh]
   );
 
   const clearQueue = useCallback(() => {
     setActiveJob(null);
+    activeJobRef.current = null;
     setStatus(null);
     setStoredQueueJob(null);
-    abortRef.current?.abort();
-    if (pollTimeoutRef.current) {
-      clearTimeout(pollTimeoutRef.current);
-      pollTimeoutRef.current = null;
-    }
   }, []);
-
-  const refresh = useCallback(async () => {
-    if (!activeJob?.jobId) return;
-    await pollStatus(activeJob.jobId);
-  }, [activeJob?.jobId, pollStatus]);
-
-  useEffect(() => {
-    void refreshUpcoming();
-    const interval = setInterval(() => {
-      void refreshUpcoming();
-    }, 60_000);
-    return () => {
-      clearInterval(interval);
-      upcomingAbortRef.current?.abort();
-    };
-  }, [refreshUpcoming]);
 
   const value = useMemo(
     () => ({
@@ -254,19 +305,10 @@ export function CallQueueProvider({ children }: { children: React.ReactNode }) {
       beginQueue,
       clearQueue,
       refresh,
+      refreshUpcoming: refresh,
       upcomingJobs,
-      refreshUpcoming,
     }),
-    [
-      activeJob,
-      status,
-      isPolling,
-      beginQueue,
-      clearQueue,
-      refresh,
-      upcomingJobs,
-      refreshUpcoming,
-    ]
+    [activeJob, status, isPolling, beginQueue, clearQueue, refresh, upcomingJobs]
   );
 
   return (

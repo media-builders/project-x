@@ -9,6 +9,7 @@ import {
   type FormEvent,
 } from "react";
 import CallButton from "@/components/settings/setup/CallButton";
+import ScheduleCallButton from "@/components/settings/setup/ScheduleCallButton";
 import {
   Search,
   ChevronUp,
@@ -381,7 +382,10 @@ export default function LeadsTable() {
           <ImportButton onImported={loadFromDb} />
         </div>
         <div className="flex items-center space-x-4">
-          <CallButton selectedLeads={selectedLeads} />
+          <div className="flex flex-col gap-2">
+            <CallButton selectedLeads={selectedLeads} />
+            <ScheduleCallButton selectedLeads={selectedLeads} />
+          </div>
           {selected.length > 0 && (
             <Button
               variant="destructive"

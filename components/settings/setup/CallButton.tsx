@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/notifications/ToastProvider";
 import {
   useCallQueue,
@@ -44,50 +44,12 @@ const buildFinalMessage = (data: QueueStatusResponse) => {
   }
 };
 
-const formatIsoForDisplay = (iso?: string | null) => {
-  if (!iso) return "";
-  const dt = new Date(iso);
-  if (Number.isNaN(dt.getTime())) return "";
-  return dt.toLocaleString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
-
-const toOffsetString = (offsetMinutes: number) => {
-  const sign = offsetMinutes <= 0 ? "+" : "-";
-  const absolute = Math.abs(offsetMinutes);
-  const hours = String(Math.floor(absolute / 60)).padStart(2, "0");
-  const minutes = String(absolute % 60).padStart(2, "0");
-  return `${sign}${hours}:${minutes}`;
-};
-
 export default function CallButton({ selectedLeads }: { selectedLeads: Lead[] }) {
   const { show } = useToast();
   const [loading, setLoading] = useState(false);
-  const [scheduleEnabled, setScheduleEnabled] = useState(false);
-  const [scheduleDate, setScheduleDate] = useState("");
-  const [scheduleTime, setScheduleTime] = useState("");
-
   const lastFinishedJobRef = useRef<string | null>(null);
   const sawActiveJobRef = useRef(false);
-
   const { beginQueue, status, activeJob, isPolling } = useCallQueue();
-
-  const timezoneOffset = useMemo(
-    () => toOffsetString(new Date().getTimezoneOffset()),
-    []
-  );
-
-  const scheduledIso = useMemo(() => {
-    if (!scheduleEnabled || !scheduleDate) return null;
-    const isoCandidate = `${scheduleDate}T${scheduleTime || "00:00"}${timezoneOffset}`;
-    const parsed = new Date(isoCandidate);
-    return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
-  }, [scheduleEnabled, scheduleDate, scheduleTime, timezoneOffset]);
 
   useEffect(() => {
     if (!status) return;
@@ -122,35 +84,12 @@ export default function CallButton({ selectedLeads }: { selectedLeads: Lead[] })
       return;
     }
 
-    if (scheduleEnabled && !scheduleDate) {
-      show({
-        title: "Schedule incomplete",
-        message: "Choose a start date before scheduling the queue.",
-        variant: "warning",
-      });
-      return;
-    }
-
     try {
       setLoading(true);
-      const payload: Record<string, unknown> = { leads: selectedLeads };
-
-      if (scheduleEnabled) {
-        if (scheduledIso) {
-          payload.schedule = { startAt: scheduledIso };
-        } else {
-          payload.schedule = {
-            startDate: scheduleDate,
-            startTime: scheduleTime || "00:00",
-            timezoneOffset,
-          };
-        }
-      }
-
       const res = await fetch("/api/outbound-calls/queue", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ leads: selectedLeads }),
       });
 
       if (!res.ok) {
@@ -163,11 +102,7 @@ export default function CallButton({ selectedLeads }: { selectedLeads: Lead[] })
         return;
       }
 
-      const data: {
-        job_id?: string;
-        total_leads?: number;
-        scheduled_start_at?: string | null;
-      } = await res.json();
+      const data: { job_id?: string; total_leads?: number } = await res.json();
 
       if (!data.job_id) {
         show({
@@ -178,29 +113,14 @@ export default function CallButton({ selectedLeads }: { selectedLeads: Lead[] })
         return;
       }
 
-      beginQueue(
-        data.job_id,
-        data.total_leads ?? selectedLeads.length,
-        data.scheduled_start_at
-      );
-
-      if (data.scheduled_start_at) {
-        show({
-          title: "Call queue scheduled",
-          message: `Will dial ${data.total_leads ?? selectedLeads.length} lead${
-            selectedLeads.length === 1 ? "" : "s"
-          } starting ${formatIsoForDisplay(data.scheduled_start_at) || "soon"}.`,
-          variant: "success",
-        });
-      } else {
-        show({
-          title: "Call queue started",
-          message: `Processing ${data.total_leads ?? selectedLeads.length} lead${
-            selectedLeads.length === 1 ? "" : "s"
-          }.`,
-          variant: "success",
-        });
-      }
+      beginQueue(data.job_id, data.total_leads ?? selectedLeads.length, null);
+      show({
+        title: "Call queue started",
+        message: `Processing ${data.total_leads ?? selectedLeads.length} lead${
+          selectedLeads.length === 1 ? "" : "s"
+        }.`,
+        variant: "success",
+      });
     } catch (err: any) {
       console.error("[CallQueue] start error", err);
       show({
@@ -227,76 +147,24 @@ export default function CallButton({ selectedLeads }: { selectedLeads: Lead[] })
   );
 
   const buttonLabel = (() => {
-    if (loading || queueRunning || isPolling) {
+    if (loading) return "Queueing...";
+    if (queueRunning) {
       if (total > 0) {
         return `Calling ${progress}/${total}`;
       }
-      return "Queueing...";
+      return "Calling…";
     }
     return `Call${selectedLeads.length > 1 ? "s" : ""}`;
   })();
 
   return (
-    <div className="flex flex-col gap-3">
-      <button
-        type="button"
-        className="btn btn-primary"
-        onClick={handleClick}
-        disabled={
-          selectedLeads.length === 0 || loading || queueRunning || isPolling
-        }
-      >
-        {buttonLabel}
-      </button>
-
-      <label className="flex items-center gap-2 text-sm text-primary-foreground/80">
-        <input
-          type="checkbox"
-          checked={scheduleEnabled}
-          onChange={(event) => setScheduleEnabled(event.target.checked)}
-        />
-        Schedule this queue to start later
-      </label>
-
-      {scheduleEnabled && (
-        <div className="flex flex-col gap-2 rounded-md border border-primary/30 bg-primary/10 p-3 text-sm">
-          <div className="flex flex-wrap gap-2">
-            <label className="flex flex-col gap-1 text-xs">
-              <span className="uppercase tracking-wide text-primary-foreground/60">
-                Start date
-              </span>
-              <input
-                type="date"
-                value={scheduleDate}
-                onChange={(event) => setScheduleDate(event.target.value)}
-                className="rounded border border-primary/40 bg-background px-2 py-1 text-sm"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-xs">
-              <span className="uppercase tracking-wide text-primary-foreground/60">
-                Start time
-              </span>
-              <input
-                type="time"
-                value={scheduleTime}
-                onChange={(event) => setScheduleTime(event.target.value)}
-                step={60}
-                className="rounded border border-primary/40 bg-background px-2 py-1 text-sm"
-              />
-            </label>
-          </div>
-          <p className="text-xs text-primary-foreground/60">
-            Times use your local offset ({timezoneOffset}). Leave the time blank to start at
-            midnight.
-          </p>
-          {(scheduledIso || activeJob?.scheduledAt) && (
-            <p className="text-xs text-primary-foreground/80">
-              Scheduled for{" "}
-              {formatIsoForDisplay(scheduledIso ?? activeJob?.scheduledAt) || "—"}.
-            </p>
-          )}
-        </div>
-      )}
-    </div>
+    <button
+      type="button"
+      className="btn btn-primary"
+      onClick={handleClick}
+      disabled={selectedLeads.length === 0 || loading || queueRunning}
+    >
+      {buttonLabel}
+    </button>
   );
 }
