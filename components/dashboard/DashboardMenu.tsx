@@ -295,78 +295,88 @@ export default function DashboardMenu({
             <CallQueueActiveCard />
             <CallQueueScheduledList />
           </div>
-          {/* <ToastViewport inline className="dashboard-menu__toast-viewport" /> */}
+          <ToastViewport inline className="dashboard-menu__toast-viewport" />
         </div>
 
-            <div
-              className={`menu-item ${isNotificationsOpen ? 'has-active-submenu' : ''}`}
-              onClick={() => handleParentClick('notifications')}
-            >
-              <span className="menu-item-content">
-                <NotificationsIcon aria-hidden="true" className="menu-icon" />
-                Notifications
-              </span>
-            </div>
-            <AnimatePresence initial={false}>
-              {isNotificationsOpen && (
-                <motion.ul
-                  key="notifications-submenu"
-                  className="submenu-list notifications-submenu-list"
-                  initial={{ height: 0, opacity: 0, y: -5 }}
-                  animate={{ height: 'auto', opacity: 1, y: 0 }}
-                  exit={{ height: 0, opacity: 0, y: -5 }}
-                  transition={{ duration: 0.25, ease: 'easeInOut' }}
-                >
-                  {hasNotifications ? (
-                    history.map((entry) => (
-                      <motion.li
-                        key={`${entry.id}-${entry.timestamp}`}
-                        className="submenu-item notifications-submenu-item"
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -10 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <div className="notifications-submenu-entry">
-                          <div className="notifications-submenu-entry-header">
-                            <span
-                              className={`notifications-submenu-badge notifications-submenu-badge--${
-                                entry.variant ?? 'default'
-                              }`}
-                            >
-                              {(entry.variant ?? 'default').toUpperCase()}
-                            </span>
-                            <time
-                              className="notifications-submenu-time"
-                              dateTime={new Date(entry.timestamp).toISOString()}
-                            >
-                              {formatTimestamp(entry.timestamp)}
-                            </time>
-                          </div>
-                          {entry.title ? (
-                            <p className="notifications-submenu-title">{entry.title}</p>
-                          ) : null}
-                          <p className="notifications-submenu-message">{entry.message}</p>
-                        </div>
-                      </motion.li>
-                    ))
-                  ) : (
+        <ul className="menu-list">
+          <li
+            className={`menu-item ${isNotificationsOpen ? 'has-active-submenu' : ''}`}
+            onClick={() => handleParentClick('notifications')}
+          >
+            <span className="menu-item-content">
+              <NotificationsIcon aria-hidden="true" className="menu-icon" />
+              Notifications
+            </span>
+          </li>
+
+          <AnimatePresence initial={false}>
+            {isNotificationsOpen && (
+              <motion.ul
+                key="notifications-submenu"
+                className="submenu-list notifications-submenu-list"
+                initial={{ height: 0, opacity: 0, y: -5 }}
+                animate={{ height: 'auto', opacity: 1, y: 0 }}
+                exit={{ height: 0, opacity: 0, y: -5 }}
+                transition={{ duration: 0.25, ease: 'easeInOut' }}
+              >
+                {hasNotifications ? (
+                  history.map((entry) => (
                     <motion.li
-                      className="submenu-item notifications-submenu-item notifications-submenu-empty"
+                      key={`${entry.id}-${entry.timestamp}`}
+                      className="submenu-item notifications-submenu-item"
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -10 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <span>No notifications yet.</span>
+                      <div className="notifications-submenu-entry">
+                        <div className="notifications-submenu-entry-header">
+                          <span
+                            className={`notifications-submenu-badge notifications-submenu-badge--${
+                              entry.variant ?? 'default'
+                            }`}
+                          >
+                            {(entry.variant ?? 'default').toUpperCase()}
+                          </span>
+                          <time
+                            className="notifications-submenu-time"
+                            dateTime={new Date(entry.timestamp).toISOString()}
+                          >
+                            {formatTimestamp(entry.timestamp)}
+                          </time>
+                        </div>
+                        {entry.title ? (
+                          <p className="notifications-submenu-title">{entry.title}</p>
+                        ) : null}
+                        <p className="notifications-submenu-message">{entry.message}</p>
+                      </div>
                     </motion.li>
-                  )}
-                </motion.ul>
-              )}
-            </AnimatePresence>
+                  ))
+                ) : (
+                  <motion.li
+                    className="submenu-item notifications-submenu-item notifications-submenu-empty"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <span>No notifications yet.</span>
+                  </motion.li>
+                )}
+              </motion.ul>
+            )}
+          </AnimatePresence>
 
+          <li
+            className={`menu-item ${userSubmenuActive ? 'has-active-submenu' : ''}`}
+            onClick={() => handleParentClick('user')}
+          >
+            <span className="menu-item-content">
+              <UserIcon aria-hidden="true" className="menu-icon" />
+              <UserClient className="" />
+            </span>
+          </li>
 
-        <ul className="menu-list">
           <AnimatePresence initial={false}>
             {isUserMenuOpen && (
               <motion.ul
@@ -390,7 +400,7 @@ export default function DashboardMenu({
                     className=""
                     onClick={() => handleUserSelection('user-profile')}
                   >
-                    <span className='menu-item-content'>
+                    <span className="menu-item-content">
                       <UserIcon aria-hidden="true" className="menu-icon" />
                       Profile
                     </span>
@@ -409,7 +419,7 @@ export default function DashboardMenu({
                     className=""
                     onClick={() => handleUserSelection('settings-general')}
                   >
-                    <span className='menu-item-content'>
+                    <span className="menu-item-content">
                       <SettingsIcon aria-hidden="true" className="menu-icon" />
                       Settings
                     </span>
@@ -429,7 +439,7 @@ export default function DashboardMenu({
                     onClick={() => handleUserSelection('user-billing')}
                     disabled={isBillingLaunching}
                   >
-                    <span className='menu-item-content'>
+                    <span className="menu-item-content">
                       <ReceiptText aria-hidden="true" className="menu-icon" />
                       Billing
                     </span>
@@ -448,7 +458,7 @@ export default function DashboardMenu({
                     className=""
                     onClick={() => handleUserSelection('user-help')}
                   >
-                    <span className='menu-item-content'>
+                    <span className="menu-item-content">
                       <HelpCircle aria-hidden="true" className="menu-icon" />
                       Help
                     </span>
@@ -468,16 +478,6 @@ export default function DashboardMenu({
               </motion.ul>
             )}
           </AnimatePresence>
-
-          <li
-            className={`menu-item ${userSubmenuActive ? 'has-active-submenu' : ''}`}
-            onClick={() => handleParentClick('user')}
-          >
-            <span className="menu-item-content">
-              <UserIcon aria-hidden="true" className="menu-icon" />
-              <UserClient className="" />
-            </span>
-          </li>
         </ul>
       </div>
     </div>
