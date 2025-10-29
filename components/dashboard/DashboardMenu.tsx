@@ -299,24 +299,14 @@ export default function DashboardMenu({
         </div>
 
         <ul className="menu-list">
-          <li
-            className={`menu-item ${isNotificationsOpen ? 'has-active-submenu' : ''}`}
-            onClick={() => handleParentClick('notifications')}
-          >
-            <span className="menu-item-content">
-              <NotificationsIcon aria-hidden="true" className="menu-icon" />
-              Notifications
-            </span>
-          </li>
-
           <AnimatePresence initial={false}>
             {isNotificationsOpen && (
               <motion.ul
                 key="notifications-submenu"
                 className="submenu-list notifications-submenu-list"
-                initial={{ height: 0, opacity: 0, y: -5 }}
+                initial={{ height: 0, opacity: 0, y: -12 }}
                 animate={{ height: 'auto', opacity: 1, y: 0 }}
-                exit={{ height: 0, opacity: 0, y: -5 }}
+                exit={{ height: 0, opacity: 0, y: -12 }}
                 transition={{ duration: 0.25, ease: 'easeInOut' }}
               >
                 {hasNotifications ? (
@@ -324,9 +314,9 @@ export default function DashboardMenu({
                     <motion.li
                       key={`${entry.id}-${entry.timestamp}`}
                       className="submenu-item notifications-submenu-item"
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -10 }}
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
                       transition={{ duration: 0.2 }}
                     >
                       <div className="notifications-submenu-entry">
@@ -355,9 +345,9 @@ export default function DashboardMenu({
                 ) : (
                   <motion.li
                     className="submenu-item notifications-submenu-item notifications-submenu-empty"
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -10 }}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
                   >
                     <span>No notifications yet.</span>
@@ -368,12 +358,12 @@ export default function DashboardMenu({
           </AnimatePresence>
 
           <li
-            className={`menu-item ${userSubmenuActive ? 'has-active-submenu' : ''}`}
-            onClick={() => handleParentClick('user')}
+            className={`menu-item ${isNotificationsOpen ? 'has-active-submenu' : ''}`}
+            onClick={() => handleParentClick('notifications')}
           >
             <span className="menu-item-content">
-              <UserIcon aria-hidden="true" className="menu-icon" />
-              <UserClient className="" />
+              <NotificationsIcon aria-hidden="true" className="menu-icon" />
+              Notifications
             </span>
           </li>
 
@@ -382,17 +372,17 @@ export default function DashboardMenu({
               <motion.ul
                 key="user-submenu"
                 className="profilemenu-list"
-                initial={{ height: 0, opacity: 0, y: -5 }}
+                initial={{ height: 0, opacity: 0, y: -12 }}
                 animate={{ height: 'auto', opacity: 1, y: 0 }}
-                exit={{ height: 0, opacity: 0, y: -5 }}
+                exit={{ height: 0, opacity: 0, y: -12 }}
                 transition={{ duration: 0.25, ease: 'easeInOut' }}
               >
                 <motion.li
                   key="user-profile"
                   className={`menu-item ${displayTab === 'user-profile' ? 'is-active' : ''}`}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
                 >
                   <button
@@ -409,9 +399,9 @@ export default function DashboardMenu({
                 <motion.li
                   key="user-settings"
                   className={`menu-item ${isSettingsTab ? 'is-active' : ''}`}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.25, delay: 0.05 }}
                 >
                   <button
@@ -428,9 +418,9 @@ export default function DashboardMenu({
                 <motion.li
                   key="user-billing"
                   className={`menu-item ${isBillingLaunching ? 'is-active' : ''}`}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.25, delay: 0.1 }}
                 >
                   <button
@@ -448,9 +438,9 @@ export default function DashboardMenu({
                 <motion.li
                   key="user-help"
                   className={`menu-item ${displayTab === 'user-help' ? 'is-active' : ''}`}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.25, delay: 0.15 }}
                 >
                   <button
@@ -468,9 +458,9 @@ export default function DashboardMenu({
                   key="user-logout"
                   className="menu-item"
                   onClick={() => setUserMenuOpen(false)}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.3, delay: 0.2 }}
                 >
                   <Logout />
@@ -478,6 +468,16 @@ export default function DashboardMenu({
               </motion.ul>
             )}
           </AnimatePresence>
+
+          <li
+            className={`menu-item ${userSubmenuActive ? 'has-active-submenu' : ''}`}
+            onClick={() => handleParentClick('user')}
+          >
+            <span className="menu-item-content">
+              <UserIcon aria-hidden="true" className="menu-icon" />
+              <UserClient className="" />
+            </span>
+          </li>
         </ul>
       </div>
     </div>

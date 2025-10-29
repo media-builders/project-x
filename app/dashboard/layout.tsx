@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { db } from "@/utils/db/db";
@@ -7,8 +6,6 @@ import { usersTable } from "@/utils/db/schema";
 import { eq } from "drizzle-orm";
 import LogoIntroOverlay from "@/components/LogoIntroOverlay";
 import ToastLayoutClient from "./ToastLayoutClient";
-
-const inter = Inter({ subsets: ["latin"] });
 
 // ✅ Dynamic metadata with first name + email
 export async function generateMetadata(): Promise<Metadata> {
@@ -66,13 +63,24 @@ export default async function DashboardLayout({
     redirect("/subscribe");
   }
 
+  const meta = user.user_metadata ?? {};
+  const rawFullName =
+    (typeof meta.full_name === "string" && meta.full_name.trim().length > 0
+      ? meta.full_name
+      : undefined) ??
+    (typeof meta.name === "string" && meta.name.trim().length > 0
+      ? meta.name
+      : undefined) ??
+    user.email?.split("@")[0] ??
+    "User";
+  const fullName = rawFullName.trim();
+  const email = user.email ?? "";
+
   // --- Layout structure ---
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <LogoIntroOverlay />
-        <ToastLayoutClient>{children}</ToastLayoutClient>
-      </body>
-    </html>
+    <div className="dashboard-layout">
+      <LogoIntroOverlay />
+      <ToastLayoutClient user={{ name: fullName, email }}>{children}</ToastLayoutClient>
+    </div>
   );
 }
