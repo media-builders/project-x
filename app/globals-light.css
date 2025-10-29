@@ -1728,7 +1728,6 @@ nav {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding-right: 26px;
 }
 
 .notifications-submenu-entry-header {

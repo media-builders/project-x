@@ -337,7 +337,7 @@ export default function DashboardMenu({
                   history.map((entry) => (
                     <motion.li
                       key={`${entry.id}-${entry.timestamp}`}
-                      className="submenu-item notifications-submenu-item"
+                      className="menu-item notifications-submenu-item"
                       initial={{ opacity: 0, y: -12, scaleY: 0.94 }}
                       animate={{ opacity: 1, y: 0, scaleY: 1 }}
                       exit={{ opacity: 0, y: -10, scaleY: 0.97 }}
