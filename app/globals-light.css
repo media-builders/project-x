@@ -1669,6 +1669,7 @@ nav {
   width: 15vw;
   min-width: 200px;
   color: var(--txt-1);
+  overflow: hidden;
 }
 
 .dashboard-window {
@@ -1705,7 +1706,6 @@ nav {
 .notifications-submenu-list {
   max-height: 300px;
   overflow-y: auto;
-  padding: 6px 0;
 }
 
 .notifications-submenu-list::-webkit-scrollbar {
@@ -1833,6 +1833,12 @@ nav {
 .notifications-submenu-clear:hover {
   background: rgba(99, 102, 241, 0.6);
   color: #fff;
+}
+
+.menu-container {
+  > :nth-child(2) {
+    border-top: var(--border-thin-dark);
+  }
 }
 
 
@@ -4277,7 +4283,7 @@ input.help-center__search-input:focus-visible {
 
 .call-queue-card,
 .call-queue-list {
-  border: var(--border-thin-dark);
+  border-bottom: var(--border-thin-dark);
   padding: var(--padding-s);
   color: var(--txt-1);
   transition: var(--transition);
