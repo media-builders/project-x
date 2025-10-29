@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ToastViewport } from '@/components/notifications/ToastProvider';
+import { ToastViewport, useToast } from '@/components/notifications/ToastProvider';
 import {
   User as UserIcon,
   Settings as SettingsIcon,
@@ -16,6 +16,7 @@ import {
   Folder as FilesIcon,
   PhoneCall as CallsIcon,
   Megaphone as CampaignsIcon,
+  Bell as NotificationsIcon,
 } from 'lucide-react';
 import Logout from '@/components/Logout';
 import BNLogo from '@/public/images/brokernest/SVG/BrokerNest - Logo - WhiteLogo.svg';
@@ -40,11 +41,23 @@ export default function DashboardMenu({
   onUserMenuPrefetch,
   resolveBillingPortalUrl,
 }: DashboardMenuProps) {
+  const { history } = useToast();
   const [hasForcedDefault, setHasForcedDefault] = useState(false);
   const [displayTab, setDisplayTab] = useState('leads-table');
   const [isUserMenuOpen, setUserMenuOpen] = useState(false);
   const [isBillingLaunching, setIsBillingLaunching] = useState(false);
+  const [isNotificationsOpen, setNotificationsOpen] = useState(false);
   const wasUserRelatedRef = useRef(false);
+
+  const hasNotifications = history.length > 0;
+
+  const formatTimestamp = (ts: number) =>
+    new Date(ts).toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
 
   // Ensure the leads submenu is active by default on initial load
   useEffect(() => {
@@ -80,7 +93,15 @@ export default function DashboardMenu({
   }, [shouldKeepUserMenuOpen]);
   // Handlers for parent clicks that auto-select the first submenu item
   const handleParentClick = (menu: string) => {
+    if (menu === 'notifications') {
+      setUserMenuOpen(false);
+      setIsBillingLaunching(false);
+      setNotificationsOpen((prev) => !prev);
+      return;
+    }
+
     if (menu === 'user') {
+      setNotificationsOpen(false);
       setUserMenuOpen((prev) => {
         const next = !prev;
         if (!next) {
@@ -95,6 +116,7 @@ export default function DashboardMenu({
 
     setIsBillingLaunching(false);
     setUserMenuOpen(false);
+    setNotificationsOpen(false);
 
     switch (menu) {
       case 'leads':
@@ -233,6 +255,8 @@ export default function DashboardMenu({
               </span>
             </li>
 
+
+
             {/* Google Mail */}
             {/* <li
               className={`menu-item ${displayTab === 'google-mail' ? 'is-active' : ''}`}
@@ -271,8 +295,77 @@ export default function DashboardMenu({
             <CallQueueActiveCard />
             <CallQueueScheduledList />
           </div>
-          <ToastViewport inline className="dashboard-menu__toast-viewport" />
+          {/* <ToastViewport inline className="dashboard-menu__toast-viewport" /> */}
         </div>
+
+            <div
+              className={`menu-item ${isNotificationsOpen ? 'has-active-submenu' : ''}`}
+              onClick={() => handleParentClick('notifications')}
+            >
+              <span className="menu-item-content">
+                <NotificationsIcon aria-hidden="true" className="menu-icon" />
+                Notifications
+              </span>
+            </div>
+            <AnimatePresence initial={false}>
+              {isNotificationsOpen && (
+                <motion.ul
+                  key="notifications-submenu"
+                  className="submenu-list notifications-submenu-list"
+                  initial={{ height: 0, opacity: 0, y: -5 }}
+                  animate={{ height: 'auto', opacity: 1, y: 0 }}
+                  exit={{ height: 0, opacity: 0, y: -5 }}
+                  transition={{ duration: 0.25, ease: 'easeInOut' }}
+                >
+                  {hasNotifications ? (
+                    history.map((entry) => (
+                      <motion.li
+                        key={`${entry.id}-${entry.timestamp}`}
+                        className="submenu-item notifications-submenu-item"
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -10 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <div className="notifications-submenu-entry">
+                          <div className="notifications-submenu-entry-header">
+                            <span
+                              className={`notifications-submenu-badge notifications-submenu-badge--${
+                                entry.variant ?? 'default'
+                              }`}
+                            >
+                              {(entry.variant ?? 'default').toUpperCase()}
+                            </span>
+                            <time
+                              className="notifications-submenu-time"
+                              dateTime={new Date(entry.timestamp).toISOString()}
+                            >
+                              {formatTimestamp(entry.timestamp)}
+                            </time>
+                          </div>
+                          {entry.title ? (
+                            <p className="notifications-submenu-title">{entry.title}</p>
+                          ) : null}
+                          <p className="notifications-submenu-message">{entry.message}</p>
+                        </div>
+                      </motion.li>
+                    ))
+                  ) : (
+                    <motion.li
+                      className="submenu-item notifications-submenu-item notifications-submenu-empty"
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -10 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <span>No notifications yet.</span>
+                    </motion.li>
+                  )}
+                </motion.ul>
+              )}
+            </AnimatePresence>
+
+
         <ul className="menu-list">
           <AnimatePresence initial={false}>
             {isUserMenuOpen && (

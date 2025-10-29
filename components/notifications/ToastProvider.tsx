@@ -23,6 +23,8 @@ type ToastContextValue = {
   show: (t: Omit<Toast, "id">) => void;
   remove: (id: string) => void;
   toasts: (Toast & { closing?: boolean })[];
+  history: ToastHistoryEntry[];
+  clearHistory: () => void;
 };
 
 const ToastContext = createContext<ToastContextValue | null>(null);
@@ -41,16 +43,25 @@ type ToastProviderProps = {
 const joinClasses = (...parts: (string | false | null | undefined)[]) =>
   parts.filter(Boolean).join(" ");
 
+export type ToastHistoryEntry = Toast & {
+  timestamp: number;
+};
+
 export const ToastProvider: React.FC<ToastProviderProps> = ({
   children,
   renderContainer = true,
 }) => {
   const [toasts, setToasts] = useState<(Toast & { closing?: boolean })[]>([]);
+  const [history, setHistory] = useState<ToastHistoryEntry[]>([]);
 
   const show = useCallback((t: Omit<Toast, "id">) => {
     const id = crypto.randomUUID();
     const toast: Toast = { id, duration: 3500, variant: "default", ...t };
     setToasts((prev) => [...prev, toast]);
+    setHistory((prev) => {
+      const next = [{ ...toast, timestamp: Date.now() }, ...prev];
+      return next.slice(0, 50);
+    });
 
     if (toast.duration && toast.duration > 0) {
       setTimeout(() => {
@@ -77,13 +88,19 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({
     }, 350);
   }, []);
 
+  const clearHistory = useCallback(() => {
+    setHistory([]);
+  }, []);
+
   const value = useMemo(
     () => ({
       show,
       remove,
       toasts,
+      history,
+      clearHistory,
     }),
-    [show, remove, toasts]
+    [show, remove, toasts, history, clearHistory]
   );
 
   return (
