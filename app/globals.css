@@ -158,6 +158,58 @@ img, video {
 }
 
 /* Helpful utility */
+
+/* ==========================================================
+   Call Queue Components
+   ========================================================== */
+
+.call-queue-card,
+.call-queue-list {
+  background: rgba(255, 255, 255, 0.04);
+  border: var(--border-thin);
+  border-radius: 14px;
+  padding: 16px;
+  color: var(--txt-1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(8, 12, 20, 0.35);
+  transition: var(--transition);
+}
+
+.call-queue-card:hover,
+.call-queue-list:hover {
+  border-color: rgba(70, 170, 255, 0.25);
+  box-shadow: var(--shadow-hover);
+}
+
+.call-queue-card_header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.call-queue-card_badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--navy-1);
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  box-shadow: 0 4px 12px rgba(70, 170, 255, 0.35);
+}
+
+.call-queue-list_title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--txt-2);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
 .strong { font-weight: 600; }
 
 /* Buttons */

@@ -220,13 +220,13 @@ export default function CallButton({ selectedLeads }: { selectedLeads: Lead[] })
   const progress = Math.min(completed + inFlight, total || 0);
 
   const queueRunning = Boolean(
-    (status && ACTIVE_QUEUE_STATUSES.has(status.status)) || activeJob
+    (status &&
+      status.status !== "scheduled" &&
+      ACTIVE_QUEUE_STATUSES.has(status.status)) ||
+      (!status && activeJob && !activeJob.scheduledAt)
   );
 
   const buttonLabel = (() => {
-    if (status?.status === "scheduled" || activeJob?.scheduledAt) {
-      return "Queue scheduled";
-    }
     if (loading || queueRunning || isPolling) {
       if (total > 0) {
         return `Calling ${progress}/${total}`;

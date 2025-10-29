@@ -20,7 +20,8 @@ import Logout from '@/components/Logout';
 import BNLogo from '@/public/images/brokernest/SVG/BrokerNest - Logo - WhiteLogo.svg';
 import UserClient from '@/components/HiUserClient';
 import LeadsShortcutWindow from './LeadsShortcutWindow';
-import CallQueueStatusBar from '../leads/CallQueueStatusBar';
+import CallQueueActiveCard from '../leads/CallQueueActiveCard';
+import CallQueueScheduledList from '../leads/CallQueueScheduledList';
 
 const USER_OWNED_TABS = ['user-profile', 'user-help'];
 const SETTINGS_TABS = ['settings-general', 'settings-integrations', 'settings-billing'];
@@ -265,8 +266,11 @@ export default function DashboardMenu({
             </li> */}
           </ul>
 
-          
-          <CallQueueStatusBar />
+
+          <div className="mt-6 space-y-3">
+            <CallQueueActiveCard />
+            <CallQueueScheduledList />
+          </div>
         </div>
         <ul className="menu-list">
           <AnimatePresence initial={false}>

@@ -32,6 +32,16 @@ export type QueueStatusResponse = {
   updated_at?: string | null;
 };
 
+export type QueueJobSummary = {
+  id: string;
+  status: string;
+  scheduled_start_at: string | null;
+  total_leads: number;
+  lead_snapshot: unknown;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
 export const ACTIVE_QUEUE_STATUSES = new Set(["pending", "running", "scheduled"]);
 
 type CallQueueContextValue = {
@@ -41,6 +51,8 @@ type CallQueueContextValue = {
   beginQueue: (jobId: string, total?: number, scheduledAt?: string | null) => void;
   clearQueue: () => void;
   refresh: () => Promise<void>;
+  upcomingJobs: QueueJobSummary[];
+  refreshUpcoming: () => Promise<void>;
 };
 
 const CallQueueContext = createContext<CallQueueContextValue | undefined>(
@@ -69,9 +81,11 @@ export function CallQueueProvider({ children }: { children: React.ReactNode }) {
   const [activeJob, setActiveJob] = useState<StoredQueueJob | null>(null);
   const [status, setStatus] = useState<QueueStatusResponse | null>(null);
   const [isPolling, setIsPolling] = useState(false);
+  const [upcomingJobs, setUpcomingJobs] = useState<QueueJobSummary[]>([]);
 
   const pollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const upcomingAbortRef = useRef<AbortController | null>(null);
   const hydratedRef = useRef(false);
 
   useEffect(() => {
@@ -86,6 +100,29 @@ export function CallQueueProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setStoredQueueJob(activeJob);
   }, [activeJob?.jobId, activeJob?.total, activeJob?.scheduledAt]);
+
+  const refreshUpcoming = useCallback(async () => {
+    try {
+      upcomingAbortRef.current?.abort();
+      const controller = new AbortController();
+      upcomingAbortRef.current = controller;
+      const res = await fetch("/api/outbound-calls/queue?scope=upcoming", {
+        method: "GET",
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData?.error || `Upcoming request failed with ${res.status}`);
+      }
+      const data = await res.json();
+      const jobs = Array.isArray(data?.jobs) ? data.jobs : [];
+      setUpcomingJobs(jobs);
+    } catch (err: any) {
+      if (err?.name === "AbortError") return;
+      console.error("[CallQueue] upcoming fetch error", err);
+    }
+  }, []);
 
   const pollStatus = useCallback(
     async (jobId: string) => {
@@ -108,6 +145,8 @@ export function CallQueueProvider({ children }: { children: React.ReactNode }) {
           setActiveJob(null);
           setStoredQueueJob(null);
         }
+
+        void refreshUpcoming();
 
         return data;
       } catch (err: any) {
@@ -175,8 +214,9 @@ export function CallQueueProvider({ children }: { children: React.ReactNode }) {
     (jobId: string, total?: number, scheduledAt?: string | null) => {
       setStatus(null);
       setActiveJob({ jobId, total, scheduledAt: scheduledAt ?? null });
+      void refreshUpcoming();
     },
-    []
+    [refreshUpcoming]
   );
 
   const clearQueue = useCallback(() => {
@@ -195,6 +235,17 @@ export function CallQueueProvider({ children }: { children: React.ReactNode }) {
     await pollStatus(activeJob.jobId);
   }, [activeJob?.jobId, pollStatus]);
 
+  useEffect(() => {
+    void refreshUpcoming();
+    const interval = setInterval(() => {
+      void refreshUpcoming();
+    }, 60_000);
+    return () => {
+      clearInterval(interval);
+      upcomingAbortRef.current?.abort();
+    };
+  }, [refreshUpcoming]);
+
   const value = useMemo(
     () => ({
       activeJob,
@@ -203,8 +254,19 @@ export function CallQueueProvider({ children }: { children: React.ReactNode }) {
       beginQueue,
       clearQueue,
       refresh,
+      upcomingJobs,
+      refreshUpcoming,
     }),
-    [activeJob, status, isPolling, beginQueue, clearQueue, refresh]
+    [
+      activeJob,
+      status,
+      isPolling,
+      beginQueue,
+      clearQueue,
+      refresh,
+      upcomingJobs,
+      refreshUpcoming,
+    ]
   );
 
   return (

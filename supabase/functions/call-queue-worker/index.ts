@@ -13,7 +13,7 @@ if (!supabaseUrl || !serviceKey || !queueApiUrl || !queueApiKey) {
 console.log(`[Worker:${WORKER_ID}] ✅ Environment variables loaded`);
 const supabase = createClient(supabaseUrl, serviceKey);
 const sleep = (ms)=>new Promise((res)=>setTimeout(res, ms));
-const RUNNING_JOB_STALE_MS = 30_000;
+const RUNNING_JOB_STALE_MS = 45_000;
 // ---------- Helper: touch running job (quiet logs) ----------
 let lastHeartbeatLog = 0;
 async function touchRunningJob(jobId) {
@@ -64,71 +64,118 @@ async function pollConversation(conversationId, jobId) {
   console.warn(`[Worker:${WORKER_ID}] ⚠️ Conversation ${conversationId} polling timed out`);
   throw new Error("Call status polling timed out");
 }
+async function fetchNextPendingJob() {
+  const { data, error } = await supabase
+    .from("call_queue_jobs")
+    .select("*")
+    .eq("status", "pending")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    console.error(`[Worker:${WORKER_ID}] ❌ Failed to fetch pending job:`, error);
+  }
+  return data ?? null;
+}
+
+async function fetchNextScheduledJob(nowIso: string) {
+  const { data, error } = await supabase
+    .from("call_queue_jobs")
+    .select("*")
+    .eq("status", "scheduled")
+    .lte("scheduled_start_at", nowIso)
+    .order("scheduled_start_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    console.error(`[Worker:${WORKER_ID}] ❌ Failed to fetch scheduled job:`, error);
+  }
+  return data ?? null;
+}
+
+async function fetchStaleRunningJob(now: number) {
+  const staleThreshold = new Date(now - RUNNING_JOB_STALE_MS).toISOString();
+  const { data, error } = await supabase
+    .from("call_queue_jobs")
+    .select("*")
+    .eq("status", "running")
+    .lt("updated_at", staleThreshold)
+    .order("updated_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    console.error(`[Worker:${WORKER_ID}] ❌ Failed to fetch stale running job:`, error);
+  }
+  return data ?? null;
+}
+
+async function claimJob(
+  job: Record<string, any> | null,
+  expectedStatus: "pending" | "scheduled" | "running",
+  nowIso: string
+) {
+  if (!job) return null;
+  const { data, error } = await supabase
+    .from("call_queue_jobs")
+    .update({
+      status: "running",
+      worker_id: WORKER_ID,
+      updated_at: nowIso,
+    })
+    .eq("id", job.id)
+    .eq("status", expectedStatus)
+    .select("*")
+    .maybeSingle();
+  if (error) {
+    console.error(
+      `[Worker:${WORKER_ID}] ❌ Failed to claim ${expectedStatus} job ${job.id}:`,
+      error
+    );
+    return null;
+  }
+  if (!data) return null;
+  return data;
+}
+
 // ---------- Main Worker ----------
-Deno.serve(async ()=>{
+Deno.serve(async () => {
   console.log(`[Worker:${WORKER_ID}] --- Invocation start ---`);
   const now = Date.now();
   const nowIso = new Date(now).toISOString();
   let job = null;
-  // 1️⃣ Atomic claim: oldest PENDING job
+
   console.log(`[Worker:${WORKER_ID}] Attempting to claim PENDING job...`);
-  let claim1 = await supabase.from("call_queue_jobs").update({
-    status: "running",
-    worker_id: WORKER_ID,
-    updated_at: nowIso
-  }).eq("status", "pending").order("created_at", {
-    ascending: true
-  }).limit(1).select("*").single();
-  if (claim1.error && claim1.error.code !== "PGRST116") {
-    console.error(`[Worker:${WORKER_ID}] ❌ Claim PENDING failed:`, claim1.error);
-    return new Response("claim error", {
-      status: 500
-    });
+  const pendingCandidate = await fetchNextPendingJob();
+  job = await claimJob(pendingCandidate, "pending", nowIso);
+  if (job) {
+    console.log(
+      `[Worker:${WORKER_ID}] ✅ Claimed PENDING queue user=${job.user_id} queue_id=${job.id} leads=${job.total_leads}`
+    );
   }
-  if (claim1.data) {
-    job = claim1.data;
-    console.log(`[Worker:${WORKER_ID}] ✅ Claimed PENDING queue user=${job.user_id} queue_id=${job.id} leads=${job.total_leads}`);
-  }
-  // 2️⃣ If none, atomic claim: oldest SCHEDULED job ready to run (scheduled_start_at <= now)
+
   if (!job) {
-    console.log(`[Worker:${WORKER_ID}] No PENDING jobs; attempting to claim SCHEDULED-ready job...`);
-    const claim2 = await supabase.from("call_queue_jobs").update({
-      status: "running",
-      worker_id: WORKER_ID,
-      updated_at: nowIso
-    }).eq("status", "scheduled").lte("scheduled_start_at", nowIso).order("scheduled_start_at", {
-      ascending: true
-    }).limit(1).select("*").single();
-    if (claim2.error && claim2.error.code !== "PGRST116") {
-      console.error(`[Worker:${WORKER_ID}] ❌ Claim SCHEDULED-ready failed:`, claim2.error);
-      return new Response("claim error", {
-        status: 500
-      });
-    }
-    if (claim2.data) {
-      job = claim2.data;
-      console.log(`[Worker:${WORKER_ID}] ✅ Claimed SCHEDULED-ready queue user=${job.user_id} queue_id=${job.id} leads=${job.total_leads}`);
+    console.log(
+      `[Worker:${WORKER_ID}] No PENDING jobs; attempting to claim SCHEDULED-ready job...`
+    );
+    const scheduledCandidate = await fetchNextScheduledJob(nowIso);
+    job = await claimJob(scheduledCandidate, "scheduled", nowIso);
+    if (job) {
+      console.log(
+        `[Worker:${WORKER_ID}] ✅ Claimed SCHEDULED-ready queue user=${job.user_id} queue_id=${job.id} leads=${job.total_leads}`
+      );
     }
   }
-  // 3️⃣ If still none, try to reclaim a stale RUNNING job
+
   if (!job) {
-    console.log(`[Worker:${WORKER_ID}] No ready jobs found; checking for STALE running jobs...`);
-    const staleThreshold = new Date(now - RUNNING_JOB_STALE_MS).toISOString();
-    const reclaim = await supabase.from("call_queue_jobs").update({
-      updated_at: nowIso,
-      worker_id: WORKER_ID
-    }).eq("status", "running").lt("updated_at", staleThreshold).order("updated_at", {
-      ascending: true
-    }).limit(1).select("*").single();
-    if (reclaim.error && reclaim.error.code !== "PGRST116") {
-      console.error(`[Worker:${WORKER_ID}] ❌ Stale reclaim failed:`, reclaim.error);
-      return new Response("reclaim error", {
-        status: 500
-      });
-    }
-    if (reclaim.data) {
-      job = reclaim.data;
-      console.log(`[Worker:${WORKER_ID}] ♻️ Reclaimed STALE job user=${job.user_id} queue_id=${job.id} leads=${job.total_leads}`);
+    console.log(
+      `[Worker:${WORKER_ID}] No ready jobs found; checking for STALE running jobs...`
+    );
+    const staleCandidate = await fetchStaleRunningJob(now);
+    job = await claimJob(staleCandidate, "running", nowIso);
+    if (job) {
+      console.log(
+        `[Worker:${WORKER_ID}] ♻️ Reclaimed STALE job user=${job.user_id} queue_id=${job.id} leads=${job.total_leads}`
+      );
     }
   }
   // 4️⃣ No job available at all
