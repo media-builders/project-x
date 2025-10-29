@@ -17,6 +17,7 @@ import {
   PhoneCall as CallsIcon,
   Megaphone as CampaignsIcon,
   Bell as NotificationsIcon,
+  X as CloseIcon,
 } from 'lucide-react';
 import Logout from '@/components/Logout';
 import BNLogo from '@/public/images/brokernest/SVG/BrokerNest - Logo - WhiteLogo.svg';
@@ -41,7 +42,7 @@ export default function DashboardMenu({
   onUserMenuPrefetch,
   resolveBillingPortalUrl,
 }: DashboardMenuProps) {
-  const { history } = useToast();
+  const { history, clearHistory, removeHistoryEntry } = useToast();
   const [hasForcedDefault, setHasForcedDefault] = useState(false);
   const [displayTab, setDisplayTab] = useState('leads-table');
   const [isUserMenuOpen, setUserMenuOpen] = useState(false);
@@ -311,6 +312,28 @@ export default function DashboardMenu({
                 layout
               >
                 {hasNotifications ? (
+                  <motion.li
+                    key="notifications-actions"
+                    className="notifications-submenu-actions"
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.18 }}
+                  >
+                    <button
+                      type="button"
+                      className="notifications-submenu-clear"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        clearHistory();
+                      }}
+                    >
+                      Clear all
+                    </button>
+                  </motion.li>
+                ) : null}
+
+                {hasNotifications ? (
                   history.map((entry) => (
                     <motion.li
                       key={`${entry.id}-${entry.timestamp}`}
@@ -321,6 +344,26 @@ export default function DashboardMenu({
                       transition={{ duration: 0.24, ease: 'easeOut' }}
                       layout
                     >
+                      <button
+                        type="button"
+                        className="notifications-submenu-dismiss"
+                        onClick={async (event) => {
+                          event.stopPropagation();
+                          removeHistoryEntry(entry.recordId ?? entry.id ?? entry.toastId ?? entry.id);
+                          try {
+                            await fetch('/api/notifications', {
+                              method: 'DELETE',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ ids: [entry.recordId ?? entry.id ?? entry.toastId ?? entry.id] }),
+                            });
+                          } catch (error) {
+                            console.error('[Notifications] Failed to delete entry', error);
+                          }
+                        }}
+                        aria-label="Dismiss notification"
+                      >
+                        <CloseIcon size={14} aria-hidden="true" />
+                      </button>
                       <div className="notifications-submenu-entry">
                         <div className="notifications-submenu-entry-header">
                           <span

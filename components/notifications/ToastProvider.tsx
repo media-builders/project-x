@@ -30,6 +30,7 @@ type ToastContextValue = {
   toasts: (Toast & { closing?: boolean })[];
   history: ToastHistoryEntry[];
   clearHistory: () => void;
+  removeHistoryEntry: (id: string) => void;
 };
 
 const ToastContext = createContext<ToastContextValue | null>(null);
@@ -220,6 +221,14 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({
     });
   }, []);
 
+  const removeHistoryEntry = useCallback((id: string) => {
+    setHistory((prev) =>
+      prev.filter(
+        (entry) => entry.id !== id && entry.recordId !== id && entry.toastId !== id,
+      ),
+    );
+  }, []);
+
   const value = useMemo(
     () => ({
       show,
@@ -227,8 +236,9 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({
       toasts,
       history,
       clearHistory,
+      removeHistoryEntry,
     }),
-    [show, remove, toasts, history, clearHistory],
+    [show, remove, toasts, history, clearHistory, removeHistoryEntry],
   );
 
   return (
