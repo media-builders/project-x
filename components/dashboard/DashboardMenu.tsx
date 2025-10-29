@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ToastViewport } from '@/components/notifications/ToastProvider';
 import {
   User as UserIcon,
   Settings as SettingsIcon,
@@ -266,11 +267,11 @@ export default function DashboardMenu({
             </li> */}
           </ul>
 
-
           <div className="mt-6 space-y-3">
             <CallQueueActiveCard />
             <CallQueueScheduledList />
           </div>
+          <ToastViewport inline className="dashboard-menu__toast-viewport" />
         </div>
         <ul className="menu-list">
           <AnimatePresence initial={false}>

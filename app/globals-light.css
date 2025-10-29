@@ -577,6 +577,19 @@ nav {
   pointer-events: none;
 }
 
+.toast-container--inline {
+  position: static;
+  bottom: auto;
+  right: auto;
+  width: 100%;
+  align-items: stretch;
+}
+
+.toast-container--inline .toast {
+  width: 100%;
+  max-width: none;
+}
+
 .toast {
   pointer-events: all;
   min-width: 260px;
@@ -1735,6 +1748,10 @@ nav {
   display: flex;
   flex-direction: column;
   height: 100%;
+}
+
+.dashboard-menu__toast-viewport {
+  margin-top: 18px;
 }
 
 

@@ -8,5 +8,5 @@ export default function ToastLayoutClient({
 }: {
   children: React.ReactNode;
 }) {
-  return <ToastProvider>{children}</ToastProvider>;
+  return <ToastProvider renderContainer={false}>{children}</ToastProvider>;
 }
