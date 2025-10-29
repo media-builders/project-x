@@ -291,7 +291,7 @@ export default function DashboardMenu({
             </li> */}
           </ul>
 
-          <div className="mt-6 space-y-3">
+          <div className="">
             <CallQueueActiveCard />
             <CallQueueScheduledList />
           </div>
