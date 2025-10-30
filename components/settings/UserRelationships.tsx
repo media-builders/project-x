@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabase-client";
 
 type Invite = {
@@ -29,11 +29,12 @@ export default function UserRelationships({
   const [errorMsg, setErrorMsg] = useState("");
 
   // =========================================================
-  // Shared realtime channel (reused by all actions)
+  // Stable shared realtime channel
   // =========================================================
-  const channel = supabase.channel("team-sync", {
-    config: { broadcast: { self: true } },
-  });
+  const channel = useMemo(
+    () => supabase.channel("team-sync", { config: { broadcast: { self: true } } }),
+    []
+  );
 
   // =========================================================
   // Fetch invites from API (memoized)
@@ -78,7 +79,7 @@ export default function UserRelationships({
   // =========================================================
   // Send invite
   // =========================================================
-  const handleSendInvite = async () => {
+  const handleSendInvite = useCallback(async () => {
     setLoading(true);
     setSuccessMsg("");
     setErrorMsg("");
@@ -116,85 +117,91 @@ export default function UserRelationships({
         setErrorMsg(`❌ ${result.error || "Failed to send invite."}`);
       }
     } catch (error) {
-      console.error(error);
+      console.error("❌ SendInvite error:", error);
       setErrorMsg("❌ Network or server error.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [email, currentUserEmail, channel, fetchInvites]);
 
   // =========================================================
   // Accept invite (instant + broadcast sync)
   // =========================================================
-  const handleAcceptInvite = async (inviteId: string) => {
-    try {
-      const res = await fetch("/api/user-relationships", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ inviteId }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        setSuccessMsg("✅ Invite accepted!");
-        fetchInvites();
-
-        // 🚀 Trigger instant local refresh for Team component
-        window.dispatchEvent(new CustomEvent("team-refresh"));
-
-        // 🌍 Notify other clients
-        await channel.send({
-          type: "broadcast",
-          event: "team_refresh",
-          payload: { inviteId, status: "accepted" },
+  const handleAcceptInvite = useCallback(
+    async (inviteId: string) => {
+      try {
+        const res = await fetch("/api/user-relationships", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ inviteId }),
         });
-      } else {
-        setErrorMsg(`❌ ${data.error || "Failed to accept invite."}`);
+
+        const data = await res.json();
+
+        if (res.ok) {
+          setSuccessMsg("✅ Invite accepted!");
+          fetchInvites();
+
+          // 🚀 Trigger instant local refresh for Team component
+          window.dispatchEvent(new CustomEvent("team-refresh"));
+
+          // 🌍 Notify other clients
+          await channel.send({
+            type: "broadcast",
+            event: "team_refresh",
+            payload: { inviteId, status: "accepted" },
+          });
+        } else {
+          setErrorMsg(`❌ ${data.error || "Failed to accept invite."}`);
+        }
+      } catch (err) {
+        console.error("❌ AcceptInvite error:", err);
+        setErrorMsg("❌ Network or server error.");
       }
-    } catch (err) {
-      console.error(err);
-      setErrorMsg("❌ Network or server error.");
-    }
-  };
+    },
+    [channel, fetchInvites]
+  );
 
   // =========================================================
   // Delete invite (instant + broadcast sync)
   // =========================================================
-  const handleDeleteInvite = async (inviteId: string) => {
-    try {
-      const res = await fetch("/api/user-relationships", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ inviteId }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        setSuccessMsg("🗑️ Invite deleted successfully.");
-        fetchInvites();
-
-        // 🚀 Trigger instant local refresh
-        window.dispatchEvent(new CustomEvent("team-refresh"));
-
-        // 🌍 Notify other clients
-        await channel.send({
-          type: "broadcast",
-          event: "team_refresh",
-          payload: { inviteId, deleted: true },
+  const handleDeleteInvite = useCallback(
+    async (inviteId: string) => {
+      try {
+        const res = await fetch("/api/user-relationships", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ inviteId }),
         });
-      } else {
-        setErrorMsg(`❌ ${data.error || "Failed to delete invite."}`);
+
+        const data = await res.json();
+
+        if (res.ok) {
+          setSuccessMsg("🗑️ Invite deleted successfully.");
+          fetchInvites();
+
+          // 🚀 Trigger instant local refresh
+          window.dispatchEvent(new CustomEvent("team-refresh"));
+
+          // 🌍 Notify other clients
+          await channel.send({
+            type: "broadcast",
+            event: "team_refresh",
+            payload: { inviteId, deleted: true },
+          });
+        } else {
+          setErrorMsg(`❌ ${data.error || "Failed to delete invite."}`);
+        }
+      } catch (err) {
+        console.error("❌ DeleteInvite error:", err);
+        setErrorMsg("❌ Network or server error.");
       }
-    } catch (err) {
-      console.error(err);
-      setErrorMsg("❌ Network or server error.");
-    }
-  };
+    },
+    [channel, fetchInvites]
+  );
 
   // =========================================================
-  // Supabase Realtime Subscriptions (clean + dependency-safe)
+  // Supabase Realtime Subscription
   // =========================================================
   useEffect(() => {
     if (!currentUserEmail) return;
@@ -232,6 +239,7 @@ export default function UserRelationships({
       });
 
     return () => {
+      console.log("🧹 Cleaning up UserRelationships channel");
       supabase.removeChannel(subscription);
     };
   }, [currentUserEmail, channel, fetchInvites]);
