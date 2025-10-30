@@ -23,8 +23,7 @@ function createSupabaseClient(req: NextRequest) {
           }));
         },
         setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
-          for (const { name, value, options } of cookiesToSet) {
-            // ✅ use safe mutation method for NextRequest
+          for (const { name, value } of cookiesToSet) {
             req.cookies.set(name, value);
           }
         },
@@ -82,13 +81,17 @@ export async function GET(req: NextRequest) {
       if (!acceptedRelations.length)
         return NextResponse.json({ team: [] }, { status: 200 });
 
-      const relatedUserIds = acceptedRelations
+      // 🧩 Fix: safely filter out nulls, ensure string[]
+      const relatedUserIdsCleaned = acceptedRelations
         .map((rel) =>
           rel.masterUserId === currentUserId
             ? rel.invitedUserId
             : rel.masterUserId
         )
-        .filter(Boolean);
+        .filter((id): id is string => typeof id === "string");
+
+      if (relatedUserIdsCleaned.length === 0)
+        return NextResponse.json({ team: [] }, { status: 200 });
 
       const users = await db
         .select({
@@ -98,7 +101,7 @@ export async function GET(req: NextRequest) {
           plan: usersTable.plan,
         })
         .from(usersTable)
-        .where(inArray(usersTable.id, relatedUserIds));
+        .where(inArray(usersTable.id, relatedUserIdsCleaned));
 
       return NextResponse.json({ team: users }, { status: 200 });
     }
