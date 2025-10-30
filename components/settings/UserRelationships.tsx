@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { supabase } from "@/lib/supabase-client";
 
 type Invite = {
   id: string;
@@ -21,7 +21,6 @@ export default function UserRelationships({
   currentUserId = "",
   currentUserEmail = "",
 }: Props) {
-  const supabase = createClientComponentClient();
   const [email, setEmail] = useState("");
   const [sentInvites, setSentInvites] = useState<Invite[]>([]);
   const [receivedInvites, setReceivedInvites] = useState<Invite[]>([]);

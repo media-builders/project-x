@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { supabase } from "@/lib/supabase-client";
 
 type User = {
   id: string;
@@ -19,7 +19,6 @@ type RelationshipInvitePayload = {
 };
 
 export default function Team() {
-  const supabase = createClientComponentClient();
   const [teamMembers, setTeamMembers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
