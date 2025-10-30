@@ -3,12 +3,12 @@ import { eq, or, and, inArray, ne } from "drizzle-orm";
 import { db } from "@/utils/db/db";
 import { userRelationshipInvites, usersTable } from "@/utils/db/schema";
 import { v4 as uuidv4 } from "uuid";
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
 export const dynamic = "force-dynamic";
 
 // ===================================================
-// Helper: Supabase client
+// Helper: Supabase client (fixed typing for cookies)
 // ===================================================
 function createSupabaseClient(req: NextRequest) {
   return createServerClient(
@@ -16,15 +16,17 @@ function createSupabaseClient(req: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll: () =>
-          req.cookies.getAll().map((cookie) => ({
+        getAll() {
+          return req.cookies.getAll().map((cookie) => ({
             name: cookie.name,
             value: cookie.value,
-          })),
-        setAll: (cookiesToSet) => {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            req.cookies.set({ name, value, ...options });
-          });
+          }));
+        },
+        setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
+          for (const { name, value, options } of cookiesToSet) {
+            // ✅ use safe mutation method for NextRequest
+            req.cookies.set(name, value);
+          }
         },
       },
     }
@@ -110,7 +112,7 @@ export async function GET(req: NextRequest) {
       .where(
         and(
           eq(userRelationshipInvites.masterUserId, currentUserId),
-          ne(userRelationshipInvites.status, "accepted") // ✅ filter accepted
+          ne(userRelationshipInvites.status, "accepted")
         )
       );
 
@@ -120,7 +122,7 @@ export async function GET(req: NextRequest) {
       .where(
         and(
           eq(userRelationshipInvites.invitedEmail, currentUserEmail),
-          ne(userRelationshipInvites.status, "accepted") // ✅ filter accepted
+          ne(userRelationshipInvites.status, "accepted")
         )
       );
 
@@ -132,7 +134,7 @@ export async function GET(req: NextRequest) {
 }
 
 // ===================================================
-// POST — Secure Invite (no enumeration risk)
+// POST — Secure Invite
 // ===================================================
 export async function POST(req: NextRequest) {
   try {
