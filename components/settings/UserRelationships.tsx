@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase-client";
 
 type Invite = {
@@ -36,9 +36,9 @@ export default function UserRelationships({
   });
 
   // =========================================================
-  // Fetch invites from API
+  // Fetch invites from API (memoized)
   // =========================================================
-  const fetchInvites = async () => {
+  const fetchInvites = useCallback(async () => {
     if (!currentUserId || !currentUserEmail) return;
 
     try {
@@ -60,15 +60,20 @@ export default function UserRelationships({
             i.status !== "accepted" && i.invitedEmail === currentUserEmail
         )
       );
+
+      setErrorMsg("");
     } catch (err) {
       console.error("❌ FetchInvites error:", err);
       setErrorMsg("Failed to load invites.");
     }
-  };
+  }, [currentUserId, currentUserEmail]);
 
+  // =========================================================
+  // Initial fetch
+  // =========================================================
   useEffect(() => {
     fetchInvites();
-  }, [currentUserId, currentUserEmail]);
+  }, [fetchInvites]);
 
   // =========================================================
   // Send invite
@@ -189,7 +194,7 @@ export default function UserRelationships({
   };
 
   // =========================================================
-  // Supabase Realtime Subscriptions
+  // Supabase Realtime Subscriptions (clean + dependency-safe)
   // =========================================================
   useEffect(() => {
     if (!currentUserEmail) return;
@@ -229,7 +234,7 @@ export default function UserRelationships({
     return () => {
       supabase.removeChannel(subscription);
     };
-  }, [currentUserEmail]);
+  }, [currentUserEmail, channel, fetchInvites]);
 
   // =========================================================
   // JSX
@@ -245,7 +250,9 @@ export default function UserRelationships({
 
       {/* Invite Form */}
       <div className="mb-6">
-        <label className="block text-sm mb-1">Invite existing user by email:</label>
+        <label className="block text-sm mb-1">
+          Invite existing user by email:
+        </label>
         <div className="flex gap-2">
           <input
             type="email"
