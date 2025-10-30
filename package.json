@@ -54,7 +54,8 @@
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.164.1",
-    "twilio": "^5.10.2"
+    "twilio": "^5.10.2",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@types/node": "^24.9.1",

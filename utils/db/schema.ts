@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, bigint, jsonb, uuid, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, bigint, jsonb, uuid, integer,uniqueIndex } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 
 // ==========================
@@ -161,3 +161,66 @@ export const agentSettingsRelations = relations(agentSettingsTable, ({ one }) =>
     references: [userAgentsTable.agent_id],
   }),
 }));
+
+// USER RELATIONS
+
+export const userRelationshipInvites = pgTable(
+  "user_relationship_invites",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    // The sender’s user ID
+    masterUserId: uuid("master_user_id").notNull(),
+
+    // The sender’s email address
+    inviteeEmail: text("invitee_email").notNull(),
+
+    // The invited user’s email address
+    invitedEmail: text("invited_email").notNull(),
+
+    // Invite metadata
+    inviteToken: text("invite_token").notNull().unique(),
+    permissions: jsonb("permissions")
+      .$type<Record<string, any>>()
+      .notNull()
+      .default({}),
+    status: text("status").notNull().default("pending"),
+
+    // Timestamps
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+
+    // The invited user’s ID (set when known)
+    invitedUserId: uuid("invited_user_id"),
+
+    // Optional expiration
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+  },
+  (table) => ({
+    // ✅ Each sender can only invite a specific email once
+    uniqueInvitePerPair: uniqueIndex("user_relationship_invites_master_invited_idx").on(
+      table.masterUserId,
+      table.invitedEmail
+    ),
+
+    // ✅ Unique invite token constraint
+    tokenUnique: uniqueIndex("user_relationship_invites_token_idx").on(table.inviteToken),
+  })
+);
+
+export const userRelationshipInvitesRelations = relations(
+  userRelationshipInvites,
+  ({ one }) => ({
+    // sender
+    masterUser: one(usersTable, {
+      fields: [userRelationshipInvites.masterUserId],
+      references: [usersTable.id],
+    }),
+
+    // recipient (once accepted or if they exist)
+    invitedUser: one(usersTable, {
+      fields: [userRelationshipInvites.invitedUserId],
+      references: [usersTable.id],
+    }),
+  })
+);

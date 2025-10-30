@@ -1,19 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
-import SetupWizard from "@/components/settings/setup/SetupWizard"; // ✅ import the wizard
+import SetupWizard from "@/components/settings/setup/SetupWizard";
 import FUBLogo from "@/public/images/fub/FUB Logo RGB_Knockout.png";
 import Integrations from "@/components/settings/Integrations";
-
-
+import UserRelationships from "@/components/settings/UserRelationships";
+import Team from "@/components/settings/Team";
 
 
 export default function SettingsPanel() {
   const [CRMKey, setCRMKey] = useState("");
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [showWizard, setShowWizard] = useState(false); // ✅ wizard modal control
+  const [showWizard, setShowWizard] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{ id: string; email: string } | null>(null);
+
+  // ✅ Supabase-style session load (consistent with AgentProfile)
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const res = await fetch("/api/auth/session", { credentials: "include" });
+        const { user } = await res.json();
+        if (user?.id && user?.email) {
+          setCurrentUser({ id: user.id, email: user.email });
+        }
+      } catch (err) {
+        console.error("Failed to load user session", err);
+      }
+    };
+    loadUser();
+  }, []);
 
   const handleSave = async () => {
     setLoading(true);
@@ -39,15 +56,13 @@ export default function SettingsPanel() {
   };
 
   return (
-    <div className="">
+    <div>
       {/* Header */}
       <div className="pb-4 border-b border-gray-800 mb-5 flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold text-white/90">Settings</h2>
           <p className="text-sm text-gray-400">Manage general settings.</p>
         </div>
-
-        {/* ✅ Setup Wizard Button */}
         <button
           onClick={() => setShowWizard(true)}
           className="btn btn-primary px-4 py-2 text-sm font-medium"
@@ -58,7 +73,7 @@ export default function SettingsPanel() {
 
       {/* CRM API Key form */}
       <div className="flex flex-col gap-4 max-w-md">
-        <div className="">
+        <div>
           <Image
             src={FUBLogo}
             alt="Follow Up Boss Logo"
@@ -69,15 +84,13 @@ export default function SettingsPanel() {
           />
         </div>
 
-        <div>
-          <input
-            type="text"
-            value={CRMKey}
-            onChange={(e) => setCRMKey(e.target.value)}
-            placeholder="Enter your CRM API Key"
-            className="w-full border border-gray-600 bg-gray-800 rounded-md px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+        <input
+          type="text"
+          value={CRMKey}
+          onChange={(e) => setCRMKey(e.target.value)}
+          placeholder="Enter your CRM API Key"
+          className="w-full border border-gray-600 bg-gray-800 rounded-md px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
 
         <button
           onClick={handleSave}
@@ -96,24 +109,18 @@ export default function SettingsPanel() {
             ✅ API Key Saved Successfully!
           </p>
         )}
-
-
-
       </div>
 
-      {/* ✅ Modal Overlay for Setup Wizard */}
+      {/* Modal Overlay for Setup Wizard */}
       {showWizard && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
           <div className="relative w-[90%] max-w-5xl bg-gray-900 rounded-xl shadow-2xl overflow-hidden border border-gray-700">
-            {/* Close Button */}
             <button
               onClick={() => setShowWizard(false)}
               className="absolute top-4 right-4 text-gray-400 hover:text-white transition"
             >
               ✕
             </button>
-
-            {/* Wizard Content */}
             <div className="p-4">
               <SetupWizard />
             </div>
@@ -121,11 +128,28 @@ export default function SettingsPanel() {
         </div>
       )}
 
-      <div className="">
+      {/* Integrations */}
+      <div>
         <Integrations />
       </div>
 
-      
+      {/* User Relationship Section */}
+      <div className="mt-8">
+        <h3 className="text-lg font-semibold text-white/90 mb-2">User Relationship Invites</h3>
+        <p className="text-sm text-gray-400 mb-4">Invite team members or accept invites from others.</p>
+        {currentUser ? (
+          <UserRelationships
+            currentUserId={currentUser.id}
+            currentUserEmail={currentUser.email}
+          />
+        ) : (
+          <p className="text-gray-400 text-sm">Loading user session…</p>
+        )}
+      </div>
+
+      <div className="mt-8">
+        <Team />
+      </div>
 
 
     </div>
