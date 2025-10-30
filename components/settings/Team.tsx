@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabase-client";
 
 type User = {
@@ -12,9 +12,10 @@ type User = {
 
 type RelationshipInvitePayload = {
   id: string;
-  master_user_id: string;
-  invited_user_id: string | null;
-  invited_email: string;
+  masterUserId: string;
+  invitedUserId: string | null;
+  invitedEmail: string;
+  inviteeEmail: string;
   status: string;
 };
 
@@ -24,13 +25,18 @@ export default function Team() {
   const [error, setError] = useState("");
   const [currentUser, setCurrentUser] = useState<{ id: string; email: string } | null>(null);
 
-  // Shared realtime channel (must match UserRelationships)
-  const channel = supabase.channel("team-sync", { config: { broadcast: { self: true } } });
+  // =====================================================
+  // Stable Supabase channel
+  // =====================================================
+  const channel = useMemo(
+    () => supabase.channel("team-sync", { config: { broadcast: { self: true } } }),
+    []
+  );
 
-  // ---------------------------------------------
+  // =====================================================
   // Fetch team data
-  // ---------------------------------------------
-  const fetchTeam = async () => {
+  // =====================================================
+  const fetchTeam = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch("/api/user-relationships?mode=team");
@@ -39,35 +45,42 @@ export default function Team() {
       setTeamMembers(data.team || []);
       setError("");
     } catch (err) {
-      console.error("Error fetching team:", err);
-      setError("Network or server error");
+      console.error("❌ Error fetching team:", err);
+      setError("Network or server error.");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  // ---------------------------------------------
-  // Load current user first
-  // ---------------------------------------------
+  // =====================================================
+  // Load current user session
+  // =====================================================
   useEffect(() => {
     const loadUser = async () => {
       try {
         const res = await fetch("/api/auth/session");
+        if (!res.ok) {
+          setError("Could not verify session");
+          return;
+        }
+
         const session = await res.json();
         if (session?.user?.id && session?.user?.email) {
           setCurrentUser({ id: session.user.id, email: session.user.email });
-        } else setError("User not logged in");
+        } else {
+          setError("User not logged in");
+        }
       } catch (err) {
-        console.error("Failed to load session:", err);
+        console.error("❌ Failed to load session:", err);
         setError("Could not load user session");
       }
     };
     loadUser();
   }, []);
 
-  // ---------------------------------------------
-  // Local event listener for instant refresh
-  // ---------------------------------------------
+  // =====================================================
+  // Local team refresh event
+  // =====================================================
   useEffect(() => {
     const refreshTeam = () => {
       console.log("⚡ Local team-refresh event triggered");
@@ -75,11 +88,11 @@ export default function Team() {
     };
     window.addEventListener("team-refresh", refreshTeam);
     return () => window.removeEventListener("team-refresh", refreshTeam);
-  }, []);
+  }, [fetchTeam]);
 
-  // ---------------------------------------------
-  // Subscribe to realtime updates (Supabase)
-  // ---------------------------------------------
+  // =====================================================
+  // Supabase Realtime subscription
+  // =====================================================
   useEffect(() => {
     if (!currentUser?.id || !currentUser?.email) return;
 
@@ -96,17 +109,18 @@ export default function Team() {
         (payload) => {
           const newRow = payload.new as RelationshipInvitePayload | null;
           const oldRow = payload.old as RelationshipInvitePayload | null;
-          const eventType = payload.eventType;
 
           const involvesUser =
-            newRow?.invited_email === currentUser.email ||
-            oldRow?.invited_email === currentUser.email ||
-            newRow?.master_user_id === currentUser.id ||
-            oldRow?.master_user_id === currentUser.id;
+            newRow?.invitedEmail === currentUser.email ||
+            oldRow?.invitedEmail === currentUser.email ||
+            newRow?.inviteeEmail === currentUser.email ||
+            oldRow?.inviteeEmail === currentUser.email ||
+            newRow?.masterUserId === currentUser.id ||
+            oldRow?.masterUserId === currentUser.id;
 
           if (!involvesUser) return;
 
-          console.log("🔄 Team relationship changed, refreshing...");
+          console.log("🔄 Relationship changed — refreshing team list...");
           fetchTeam();
         }
       )
@@ -119,13 +133,14 @@ export default function Team() {
       });
 
     return () => {
+      console.log("🧹 Cleaning up team channel subscription");
       supabase.removeChannel(subscription);
     };
-  }, [currentUser?.id, currentUser?.email]);
+  }, [currentUser?.id, currentUser?.email, channel, fetchTeam]);
 
-  // ---------------------------------------------
+  // =====================================================
   // Render UI
-  // ---------------------------------------------
+  // =====================================================
   if (loading)
     return <div className="text-gray-400 text-sm mt-4">Loading team...</div>;
 
